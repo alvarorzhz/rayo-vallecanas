@@ -5,6 +5,7 @@ export type Campaign = {
   kind: "lottery" | "raffle";
   lottery_number: string | null;
   winning_number: number | null;
+  archived_at: string | null;
   draw_type: string;
   draw_date: string | null;
   price_cents: number;

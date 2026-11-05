@@ -71,6 +71,30 @@ export async function updateCampaign(id: string, _: ActionState, f: FormData): P
   redirect(`/loteria/${id}`);
 }
 
+// ---------------------------------------------------------------- Archivar / eliminar (solo superadmin)
+export async function archiveCampaign(id: string, archive: boolean) {
+  const supabase = await createClient();
+  const patch: Record<string, unknown> = { archived_at: archive ? new Date().toISOString() : null };
+  if (archive) {
+    const { data } = await supabase.from("lottery_campaigns").select("status").eq("id", id).single();
+    if (data?.status === "active") patch.status = "closed";
+  }
+  const { error } = await supabase.from("lottery_campaigns").update(patch).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/loteria/${id}`);
+  revalidatePath("/loteria");
+  revalidatePath("/");
+}
+
+export async function deleteCampaign(id: string, _: ActionState, f: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("lottery_delete_campaign", { p_campaign_id: id, p_confirm_name: str(f, "confirm_name") });
+  if (error) return { error: errMsg(error) };
+  revalidatePath("/loteria");
+  revalidatePath("/");
+  redirect("/loteria?eliminada=1");
+}
+
 export async function setCampaignStatus(id: string, status: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("lottery_campaigns").update({ status }).eq("id", id);

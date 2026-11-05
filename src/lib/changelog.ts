@@ -7,6 +7,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.2.0",
+    date: "2026-11-05",
+    title: "Archivar campañas y app más rápida",
+    changes: [
+      "Los superadministradores pueden archivar campañas (se ocultan pero no se pierde nada) y recuperarlas.",
+      "Los superadministradores pueden eliminar una campaña para siempre, escribiendo su nombre para confirmar.",
+      "Explicaciones paso a paso al registrar una venta y al crear una campaña.",
+      "Las páginas cargan bastante más rápido: el servidor de la app está ahora en Europa, junto a la base de datos.",
+      "Animaciones al cambiar de página y una barra de carga arriba mientras se abre la siguiente.",
+    ],
+  },
+  {
     version: "1.1.0",
     date: "2026-11-05",
     title: "Rifas y novedades",

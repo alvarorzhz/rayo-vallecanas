@@ -4,7 +4,9 @@ import { getSession } from "@/lib/session";
 import { ROLE_LABEL } from "@/lib/format";
 import { BottomNav, Sidebar, type NavItem } from "@/components/nav";
 import { signOut } from "@/app/login/actions";
+import { Suspense } from "react";
 import { WhatsNew } from "@/components/whats-new";
+import { NavProgress } from "@/components/nav-progress";
 import { APP_VERSION } from "@/lib/changelog";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -39,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-8">
-          {children}
+          <div className="page-enter">{children}</div>
           <footer className="mt-10 text-center text-xs text-negro/40 lg:hidden">
             <Link href="/novedades" className="hover:text-rojo">Rayo Vallecañas · v{APP_VERSION} · Novedades</Link>
           </footer>
@@ -47,6 +49,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <BottomNav items={items} />
       <WhatsNew />
+      <Suspense>
+        <NavProgress />
+      </Suspense>
     </div>
   );
 }

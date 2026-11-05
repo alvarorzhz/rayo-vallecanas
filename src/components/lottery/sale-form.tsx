@@ -1,10 +1,22 @@
 "use client";
 import { useActionState, useState } from "react";
-import { Minus, Plus, Mail, MessageCircle, Ban } from "lucide-react";
+import { Minus, Plus, Mail, MessageCircle, Ban, Info } from "lucide-react";
 import type { ActionState } from "@/app/(app)/loteria/actions";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { euros, parseRanges, ranges } from "@/lib/format";
+
+function Step({ n, title, help }: { n: number; title: string; help: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="flex items-center gap-2 font-bold">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rojo text-sm font-black text-white">{n}</span>
+        {title}
+      </h2>
+      <p className="mt-1 text-sm text-negro/60">{help}</p>
+    </div>
+  );
+}
 
 type Props = {
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
@@ -47,7 +59,6 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
     else next.add(n);
     setManual(ranges([...next].sort((a, b) => a - b)));
   };
-  const units = raffle ? "Números" : "Participaciones";
   const total = quantity * priceCents;
 
   return (
@@ -55,8 +66,16 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
       <input type="hidden" name="unit_price_cents" value={priceCents} />
       <input type="hidden" name="quantity" value={quantity} />
 
+      <div className="flex gap-3 rounded-2xl bg-dorado/15 p-4 text-sm text-negro/80 animate-fade-up">
+        <Info size={20} className="mt-0.5 shrink-0 text-dorado" />
+        <div>
+          <b>Cómo registrar una venta:</b> rellena los {(sellers?.length ?? 0) > 0 ? 5 : 4} pasos de abajo y pulsa el botón rojo{" "}
+          <b>Registrar venta</b> del final. Si te equivocas, no pasa nada: la directiva puede anular la venta.
+        </div>
+      </div>
+
       <section className="card space-y-4">
-        <h2 className="font-bold">1. Comprador</h2>
+        <Step n={1} title="¿Quién compra?" help="Escribe el nombre y apellidos de la persona que compra y su móvil. Al móvil le llegará el justificante por WhatsApp." />
         <div>
           <label className="label" htmlFor="buyer_name">Nombre y apellidos</label>
           <input id="buyer_name" name="buyer_name" required autoComplete="off" className="input" />
@@ -76,7 +95,16 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
       </section>
 
       <section className="card space-y-4">
-        <h2 className="font-bold">2. {units}</h2>
+        <Step n={2} title={raffle ? "¿Qué números le das?" : "¿Cuántas participaciones?"}
+          help={
+            mode === "manual"
+              ? raffle
+                ? "Toca los números que se lleva: se pondrán en rojo. Si tocas otra vez, se quita. Solo aparecen los números que quedan libres."
+                : "Toca o escribe los números de las participaciones que le entregas (por ejemplo 12, 13, 40-42)."
+              : mode === "booklet"
+                ? "Pulsa + o − para indicar cuántas le das. Se cogen automáticamente de tu talonario, en orden."
+                : "Pulsa + o − para indicar cuántas compra. El sistema le asigna los números siguientes que estén libres."
+          } />
         {mode === "manual" ? (
           <div>
             {availableNumbers && availableNumbers.length > 0 && (
@@ -125,7 +153,7 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
       </section>
 
       <section className="card space-y-4">
-        <h2 className="font-bold">3. Pago</h2>
+        <Step n={3} title="¿Ha pagado?" help={<><b>Pagado</b>: te ha dado todo el dinero. <b>Pendiente</b>: pagará más tarde y queda apuntado. <b>Parcial</b>: te ha dado solo una parte; escribe cuánto.</>} />
         <div className="grid grid-cols-3 gap-2">
           {([["full", "Pagado"], ["none", "Pendiente"], ["partial", "Parcial"]] as const).map(([v, l]) => (
             <label key={v} className={`btn cursor-pointer ring-1 ${paid === v ? "bg-rojo text-white ring-rojo" : "bg-white ring-black/10"}`}>
@@ -157,7 +185,7 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
       </section>
 
       <section className="card space-y-4">
-        <h2 className="font-bold">4. Justificante</h2>
+        <Step n={4} title="¿Cómo le mandamos el justificante?" help="El justificante es el comprobante de su compra, con sus números y una referencia. Recomendado: WhatsApp." />
         <div className="grid grid-cols-3 gap-2">
           {([
             ["whatsapp", "WhatsApp", MessageCircle],
@@ -172,7 +200,7 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
         </div>
         {channel === "whatsapp" && !whatsappApi && (
           <p className="text-xs text-negro/50">
-            Tras registrar la venta podrás abrir WhatsApp con el mensaje ya escrito para enviarlo desde tu móvil.
+            Después de registrar la venta verás el botón <b>Abrir en WhatsApp</b>: se abrirá WhatsApp con el mensaje ya escrito y solo tendrás que pulsar enviar.
           </p>
         )}
         <label className="flex items-start gap-2 text-sm text-negro/70">
@@ -183,7 +211,8 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
 
       {(sellers?.length ?? 0) > 0 && (
         <section className="card">
-          <label className="label" htmlFor="seller_id">Vendedor</label>
+          <Step n={5} title="¿Quién lo ha vendido?" help="Normalmente tú. Cámbialo solo si estás apuntando una venta que hizo otro compañero." />
+          <label className="label mt-3" htmlFor="seller_id">Vendedor</label>
           <select id="seller_id" name="seller_id" className="input" defaultValue={currentUserId}>
             {sellers!.map((s) => (
               <option key={s.id} value={s.id}>{s.full_name}{s.id === currentUserId ? " (yo)" : ""}</option>
@@ -194,6 +223,7 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
 
       <section className="card">
         <label className="label" htmlFor="notes">Observaciones (opcional)</label>
+        <p className="mb-2 text-xs text-negro/50">Cualquier detalle útil, por ejemplo «paga el viernes» o «es el padre de Javi».</p>
         <textarea id="notes" name="notes" rows={2} className="input" />
       </section>
 

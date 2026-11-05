@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Download, Pencil, ShoppingCart, Users, Grid3x3, List, Trophy } from "lucide-react";
+import { Archive, ArchiveRestore, Download, Pencil, ShoppingCart, Users, Grid3x3, List, Trophy, ShieldAlert } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha, NUMBERING_MODE_LABEL } from "@/lib/format";
 import { CampaignBadge, Empty, PageHeader, Progress, Stat } from "@/components/ui";
 import { SalesTable } from "@/components/lottery/sales-table";
 import { fetchNumbers, fetchSales, type NumberRow } from "@/lib/lottery/queries";
-import { RaffleDrawForm } from "@/components/lottery/client-forms";
-import { drawRaffle, setCampaignStatus, setWinningPrize } from "../actions";
+import { DeleteCampaignForm, RaffleDrawForm } from "@/components/lottery/client-forms";
+import { archiveCampaign, deleteCampaign, drawRaffle, setCampaignStatus, setWinningPrize } from "../actions";
 import type { Campaign, Summary } from "@/lib/types";
 
 type Rank = { seller_id: string; full_name: string; sales_count: number; shares: number; sold_cents: number; paid_cents: number; pending_cents: number };
@@ -62,10 +62,12 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
     <>
       <PageHeader
         title={c.name}
-        back={{ href: "/loteria", label: "Lotería" }}
+        back={c.archived_at ? { href: "/loteria?archivadas=1", label: "Archivadas" } : { href: "/loteria", label: "Lotería" }}
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
-            <CampaignBadge status={c.status} /> {c.draw_type} · {fecha(c.draw_date)} · {NUMBERING_MODE_LABEL[c.numbering_mode]}
+            <CampaignBadge status={c.status} />
+            {c.archived_at && <span className="badge bg-negro/10 text-negro/70">Archivada</span>}
+            {c.draw_type} · {fecha(c.draw_date)} · {NUMBERING_MODE_LABEL[c.numbering_mode]}
           </span>
         }
         actions={
@@ -143,7 +145,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
           {s.can("lottery_admin", "update") && (
             <>
               <Link href={`/loteria/${id}/editar`} className="btn-ghost"><Pencil size={16} /> Editar</Link>
-              {NEXT_STATUS[c.status].map((n) => (
+              {!c.archived_at && NEXT_STATUS[c.status].map((n) => (
                 <form key={n.to} action={setCampaignStatus.bind(null, id, n.to)}>
                   <button className={n.cls}>{n.label}</button>
                 </form>
@@ -223,6 +225,29 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
           </section>
         )}
       </div>
+
+      {s.profile.role === "superadmin" && (
+        <section className="card mt-6 space-y-4 ring-1 ring-rojo/20">
+          <div>
+            <h2 className="flex items-center gap-2 font-bold"><ShieldAlert size={18} className="text-rojo" /> Archivar o eliminar</h2>
+            <p className="text-sm text-negro/60">
+              Solo lo ven los superadministradores. <b>Archivar</b> quita la campaña de la lista pero conserva todos los datos y se puede recuperar.
+              <b> Eliminar</b> la borra para siempre.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-start gap-2">
+            <form action={archiveCampaign.bind(null, id, !c.archived_at)}>
+              <button className="btn-dark">
+                {c.archived_at ? <><ArchiveRestore size={16} /> Recuperar de archivadas</> : <><Archive size={16} /> Archivar campaña</>}
+              </button>
+            </form>
+            <DeleteCampaignForm action={deleteCampaign.bind(null, id)} name={c.name} sales={summary.sales_count ?? 0} />
+          </div>
+          {!c.archived_at && c.status === "active" && (
+            <p className="text-xs text-negro/50">Al archivar, las ventas se cierran automáticamente.</p>
+          )}
+        </section>
+      )}
     </>
   );
 }

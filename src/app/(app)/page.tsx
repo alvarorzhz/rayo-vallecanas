@@ -20,7 +20,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   // Campaña activa más reciente visible para el usuario
   let campaign: Campaign | null = null;
   if (isAdmin) {
-    const { data } = await supabase.from("lottery_campaigns").select("*").in("status", ["active", "closed"]).order("created_at", { ascending: false }).limit(1).returns<Campaign[]>();
+    const { data } = await supabase.from("lottery_campaigns").select("*").in("status", ["active", "closed"]).is("archived_at", null).order("created_at", { ascending: false }).limit(1).returns<Campaign[]>();
     campaign = data?.[0] ?? null;
   } else if (canSell) {
     const { data } = await supabase

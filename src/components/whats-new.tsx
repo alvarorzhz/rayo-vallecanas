@@ -29,8 +29,8 @@ export function WhatsNew() {
   if (!open) return null;
   const r = CHANGELOG[0];
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">
-      <div className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
+    <div className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-black/50 p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">
+      <div className="max-h-[85dvh] w-full max-w-md animate-pop overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold tracking-widest text-rojo">
