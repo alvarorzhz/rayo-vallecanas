@@ -23,9 +23,9 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Verifica el token en local y lo renueva si ha caducado
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub;
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));

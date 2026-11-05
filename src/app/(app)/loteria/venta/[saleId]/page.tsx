@@ -53,7 +53,10 @@ export default async function SalePage({
           {sp.enviado === "email" && "Justificante enviado por email."}
           {sp.enviado === "whatsapp" && "Justificante enviado por WhatsApp."}
           {sp.envio_error && <span className="text-rojo">No se pudo enviar el justificante: {sp.envio_error}. Puedes reenviarlo abajo.</span>}
-          {!sp.enviado && !sp.envio_error && receipt.preferredChannel === "whatsapp" && "Pulsa “Abrir en WhatsApp” para mandarle el justificante."}
+          {!sp.enviado && !sp.envio_error && receipt.preferredChannel === "whatsapp" && "Ahora pulsa “Abrir en WhatsApp” (más abajo) y luego enviar, para mandarle el justificante."}
+          <div className="mt-1 font-normal text-green-900/80">
+            Para vender otra vez, vuelve a la campaña y pulsa <b>Nueva venta</b>. Si el comprador paga más tarde, apúntalo aquí en <b>Cobros</b>.
+          </div>
         </div>
       )}
       {cancelled && (

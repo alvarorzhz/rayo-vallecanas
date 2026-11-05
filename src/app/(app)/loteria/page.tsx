@@ -8,7 +8,9 @@ import type { Campaign, Summary } from "@/lib/types";
 
 export const metadata = { title: "Lotería" };
 
-export default async function LotteryPage() {
+export default async function LotteryPage({ searchParams }: { searchParams: Promise<{ archivadas?: string; eliminada?: string }> }) {
+  const sp = await searchParams;
+  const showArchived = sp.archivadas === "1";
   const s = await getSession();
   const isAdmin = s.can("lottery_admin");
   const supabase = await createClient();
@@ -18,7 +20,13 @@ export default async function LotteryPage() {
     const { data: mine } = await supabase.from("lottery_campaign_sellers").select("campaign_id").eq("user_id", s.user.id);
     query = query.in("id", (mine ?? []).map((m) => m.campaign_id)).neq("status", "draft");
   }
-  const { data: campaigns } = await query.returns<Campaign[]>();
+  query = showArchived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
+  const [{ data: campaigns }, { count: archivedCount }] = await Promise.all([
+    query.returns<Campaign[]>(),
+    isAdmin
+      ? supabase.from("lottery_campaigns").select("id", { count: "exact", head: true }).not("archived_at", "is", null)
+      : Promise.resolve({ count: 0 }),
+  ]);
   const summaries = await Promise.all(
     (campaigns ?? []).map(async (c) => (await supabase.rpc("lottery_campaign_summary", { p_campaign_id: c.id })).data as Summary),
   );
@@ -26,7 +34,7 @@ export default async function LotteryPage() {
   return (
     <>
       <PageHeader
-        title="Lotería"
+        title={showArchived ? "Campañas archivadas" : "Lotería"}
         subtitle={isAdmin ? "Campañas, participaciones, vendedores y cobros" : "Campañas en las que eres vendedor"}
         actions={
           s.can("lottery_admin", "create") && (
@@ -36,7 +44,19 @@ export default async function LotteryPage() {
           )
         }
       />
+      {sp.eliminada && (
+        <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Campaña eliminada definitivamente.</p>
+      )}
+      {isAdmin && (showArchived || (archivedCount ?? 0) > 0) && (
+        <div className="mb-4 flex gap-1">
+          <Link href="/loteria" className={`badge px-3 py-1.5 ${!showArchived ? "bg-negro text-white" : "bg-white ring-1 ring-black/10"}`}>En curso</Link>
+          <Link href="/loteria?archivadas=1" className={`badge px-3 py-1.5 ${showArchived ? "bg-negro text-white" : "bg-white ring-1 ring-black/10"}`}>
+            Archivadas ({archivedCount ?? 0})
+          </Link>
+        </div>
+      )}
       {!campaigns?.length ? (
+        showArchived ? <Empty>No hay campañas archivadas.</Empty> :
         <Empty>
           {isAdmin ? "Aún no hay campañas. Crea la primera para empezar a vender." : "No estás asignado a ninguna campaña activa."}
         </Empty>

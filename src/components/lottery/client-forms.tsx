@@ -1,5 +1,6 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { Trash2 } from "lucide-react";
 import type { ActionState } from "@/app/(app)/loteria/actions";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -59,6 +60,37 @@ export function RaffleDrawForm({ action, total }: { action: A; total: number }) 
       </div>
       <p className="text-xs text-negro/50">El sorteo al azar elige uno de los números vendidos. Una vez registrado el ganador no se puede cambiar.</p>
       <FormMessage state={state} />
+    </form>
+  );
+}
+
+export function DeleteCampaignForm({ action, name, sales }: { action: A; name: string; sales: number }) {
+  const [state, formAction] = useActionState(action, undefined);
+  const [typed, setTyped] = useState("");
+  const [open, setOpen] = useState(false);
+  if (!open)
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="btn-ghost text-rojo ring-rojo/30">
+        <Trash2 size={16} /> Eliminar campaña
+      </button>
+    );
+  return (
+    <form action={formAction} className="space-y-3 rounded-xl bg-rojo/5 p-4 ring-1 ring-rojo/20">
+      <p className="text-sm">
+        <b>Esto no se puede deshacer.</b> Se borrarán la campaña{sales > 0 ? `, sus ${sales} ventas y todos sus cobros` : ""} y sus números.
+        {sales > 0 && " Si solo quieres quitarla de la lista, mejor archívala."} Queda una copia del resumen en Auditoría.
+      </p>
+      <div>
+        <label className="label" htmlFor="confirm_name">Para confirmar, escribe el nombre: <b>{name}</b></label>
+        <input id="confirm_name" name="confirm_name" value={typed} onChange={(e) => setTyped(e.target.value)} className="input" autoComplete="off" />
+      </div>
+      <FormMessage state={state} />
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => { setOpen(false); setTyped(""); }} className="btn-ghost">Cancelar</button>
+        <SubmitButton className="btn-primary" pendingText="Eliminando…" disabled={typed.trim() !== name.trim()}>
+          <Trash2 size={16} /> Eliminar definitivamente
+        </SubmitButton>
+      </div>
     </form>
   );
 }

@@ -23,6 +23,12 @@ export function CampaignForm({
   const unit = raffle ? "número" : "participación";
   return (
     <form action={formAction} className="space-y-6">
+      {!campaign && (
+        <p className="rounded-2xl bg-dorado/15 p-4 text-sm text-negro/80">
+          Elige si es una <b>lotería</b> o una <b>rifa</b>, rellena los datos y pulsa <b>Crear campaña</b>. Se crea como borrador:
+          después asigna los vendedores y pulsa <b>Activar ventas</b> para que puedan empezar a vender.
+        </p>
+      )}
       <section className="card grid gap-4 sm:grid-cols-2">
         <h2 className="font-bold sm:col-span-2">Datos del sorteo</h2>
         <fieldset className="sm:col-span-2">
@@ -113,6 +119,10 @@ export function CampaignForm({
             <option value="booklet">Talonarios por vendedor</option>
             <option value="manual">El vendedor elige los números</option>
           </select>
+          <p className="mt-1 text-xs text-negro/50">
+            Automática: la app reparte los números en orden. Talonarios: cada vendedor tiene su bloque de números.
+            El vendedor elige: al vender se tocan los números concretos (lo normal en una rifa).
+          </p>
         </div>
         <div>
           <label className="label" htmlFor="ref_prefix">Prefijo de referencia</label>
