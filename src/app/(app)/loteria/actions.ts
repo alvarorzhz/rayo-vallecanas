@@ -15,23 +15,25 @@ const errMsg = (e: unknown) =>
 
 // ---------------------------------------------------------------- Campañas
 function campaignFromForm(f: FormData) {
-  const lottery_number = str(f, "lottery_number").padStart(5, "0");
-  if (!/^\d{5}$/.test(lottery_number)) throw new Error("El número de lotería debe tener 5 cifras");
+  const kind = str(f, "kind") === "raffle" ? "raffle" : "lottery";
+  const lottery_number = kind === "raffle" ? null : str(f, "lottery_number").padStart(5, "0");
+  if (lottery_number !== null && !/^\d{5}$/.test(lottery_number)) throw new Error("El número de lotería debe tener 5 cifras");
   const total_shares = Number(str(f, "total_shares"));
   if (!Number.isInteger(total_shares) || total_shares < 1) throw new Error("Número de participaciones no válido");
   const price_cents = parseEuros(f.get("price"));
   if (price_cents <= 0) throw new Error("Indica el precio de la participación");
-  const played_cents = parseEuros(f.get("played"));
-  const donation_cents = parseEuros(f.get("donation"));
+  const played_cents = kind === "raffle" ? 0 : parseEuros(f.get("played"));
+  const donation_cents = kind === "raffle" ? 0 : parseEuros(f.get("donation"));
   if (played_cents && played_cents + donation_cents > price_cents)
     throw new Error("Importe jugado + donativo no puede superar el precio");
   const name = str(f, "name");
   if (!name) throw new Error("Pon un nombre a la campaña");
   return {
+    kind,
     name,
     year: Number(str(f, "year")),
     lottery_number,
-    draw_type: str(f, "draw_type") || "Sorteo Extraordinario de Navidad",
+    draw_type: str(f, "draw_type") || (kind === "raffle" ? "Rifa" : "Sorteo Extraordinario de Navidad"),
     draw_date: str(f, "draw_date") || null,
     price_cents,
     played_cents,
@@ -85,6 +87,24 @@ export async function setWinningPrize(id: string, f: FormData) {
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath(`/loteria/${id}`);
+}
+
+export async function drawRaffle(id: string, _: ActionState, f: FormData): Promise<ActionState> {
+  try {
+    const manual = str(f, "mode") === "random" ? "" : str(f, "number");
+    if (str(f, "mode") === "manual" && !manual) throw new Error("Escribe el número ganador o pulsa «Sortear al azar»");
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("lottery_draw_winner", {
+      p_campaign_id: id,
+      p_number: manual ? Number(manual) : null,
+    });
+    if (error) throw error;
+    const w = (data as { winning_number: number; buyer_name: string | null }[])[0];
+    revalidatePath(`/loteria/${id}`);
+    return { ok: `Número ganador: ${w.winning_number}${w.buyer_name ? ` · ${w.buyer_name}` : " · no estaba vendido"}` };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
 }
 
 // ---------------------------------------------------------------- Vendedores y talonarios

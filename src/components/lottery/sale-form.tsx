@@ -4,7 +4,7 @@ import { Minus, Plus, Mail, MessageCircle, Ban } from "lucide-react";
 import type { ActionState } from "@/app/(app)/loteria/actions";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
-import { euros, parseRanges } from "@/lib/format";
+import { euros, parseRanges, ranges } from "@/lib/format";
 
 type Props = {
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
@@ -15,9 +15,12 @@ type Props = {
   sellers?: { id: string; full_name: string }[];
   currentUserId: string;
   whatsappApi: boolean;
+  raffle?: boolean;
+  /** Números libres para elegir tocando (modo manual) */
+  availableNumbers?: number[];
 };
 
-export function SaleForm({ action, priceCents, available, mode, availableHint, sellers, currentUserId, whatsappApi }: Props) {
+export function SaleForm({ action, priceCents, available, mode, availableHint, sellers, currentUserId, whatsappApi, raffle = false, availableNumbers }: Props) {
   const [state, formAction] = useActionState(action, undefined);
   const [qty, setQty] = useState(1);
   const [manual, setManual] = useState("");
@@ -34,6 +37,17 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
     }
   }
   const quantity = mode === "manual" ? manualCount : qty;
+  let picked = new Set<number>();
+  try {
+    picked = new Set(parseRanges(manual));
+  } catch {}
+  const toggle = (n: number) => {
+    const next = new Set(picked);
+    if (next.has(n)) next.delete(n);
+    else next.add(n);
+    setManual(ranges([...next].sort((a, b) => a - b)));
+  };
+  const units = raffle ? "Números" : "Participaciones";
   const total = quantity * priceCents;
 
   return (
@@ -62,14 +76,27 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
       </section>
 
       <section className="card space-y-4">
-        <h2 className="font-bold">2. Participaciones</h2>
+        <h2 className="font-bold">2. {units}</h2>
         {mode === "manual" ? (
           <div>
-            <label className="label" htmlFor="share_numbers">Números de participación que entregas</label>
+            {availableNumbers && availableNumbers.length > 0 && (
+              <div className="mb-3">
+                <p className="mb-2 text-sm text-negro/60">Toca los números que vendes:</p>
+                <div className="grid max-h-72 grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1.5 overflow-y-auto p-0.5">
+                  {availableNumbers.map((n) => (
+                    <button key={n} type="button" onClick={() => toggle(n)} aria-pressed={picked.has(n)}
+                      className={`rounded-md py-2 text-center font-mono text-sm font-semibold ${picked.has(n) ? "bg-rojo text-white" : "bg-white text-negro ring-1 ring-black/10"}`}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <label className="label" htmlFor="share_numbers">{raffle ? "Números que vendes" : "Números de participación que entregas"}</label>
             <input id="share_numbers" name="share_numbers" value={manual} onChange={(e) => setManual(e.target.value)} required
               className="input font-mono" placeholder="Ej.: 12, 13, 40-42" inputMode="numeric" />
             <p className={`mt-1 text-xs ${manualError ? "text-rojo" : "text-negro/50"}`}>
-              {manualError || `${manualCount} seleccionadas. ${availableHint ?? ""}`}
+              {manualError || `${manualCount} ${raffle ? "seleccionados" : "seleccionadas"}. ${availableNumbers?.length ? "" : availableHint ?? ""}`}
             </p>
           </div>
         ) : (

@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { fetchNumbers } from "@/lib/lottery/queries";
 import { PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, ranges } from "@/lib/format";
 
 export const runtime = "nodejs";
@@ -14,6 +15,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 
   const { data: c } = await supabase.from("lottery_campaigns").select("*").eq("id", id).single();
   if (!c) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  const raffle = c.kind === "raffle";
 
   const fetchAll = async <T,>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null }>) => {
     const out: T[] = [];
@@ -58,7 +60,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     { header: "Email", key: "email", width: 28 },
     { header: "Vendedor", key: "seller", width: 22 },
     { header: "Cantidad", key: "qty", width: 10 },
-    { header: "Participaciones", key: "shares", width: 20 },
+    { header: raffle ? "Números" : "Participaciones", key: "shares", width: 20 },
     { header: "Importe", key: "total", width: 12, style: { numFmt: eur } },
     { header: "Cobrado", key: "paid", width: 12, style: { numFmt: eur } },
     { header: "Pendiente", key: "pending", width: 12, style: { numFmt: eur } },
@@ -102,7 +104,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   wr.columns = [
     { header: "Vendedor", key: "seller", width: 24 },
     { header: "Ventas", key: "n", width: 10 },
-    { header: "Participaciones", key: "q", width: 16 },
+    { header: raffle ? "Números" : "Participaciones", key: "q", width: 16 },
     { header: "Vendido", key: "total", width: 12, style: { numFmt: eur } },
     { header: "Cobrado", key: "paid", width: 12, style: { numFmt: eur } },
     { header: "Pendiente", key: "pending", width: 12, style: { numFmt: eur } },
@@ -112,9 +114,24 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   for (const r of ranking ?? [])
     wr.addRow({ seller: r.full_name, n: r.sales_count, q: r.shares, total: r.sold_cents / 100, paid: r.paid_cents / 100, pending: r.pending_cents / 100 });
 
+  const wn = wb.addWorksheet("Números");
+  wn.columns = [
+    { header: "Número", key: "n", width: 10 },
+    { header: "Estado", key: "status", width: 12 },
+    { header: "Venta", key: "ref", width: 16 },
+    { header: "Comprador", key: "buyer", width: 28 },
+    { header: "Teléfono", key: "phone", width: 16 },
+    { header: "Vendedor", key: "seller", width: 24 },
+  ];
+  header(wn);
+  const STATUS: Record<string, string> = { available: "Libre", reserved: "Reservado", sold: "Vendido", voided: "Anulado" };
+  for (const r of await fetchNumbers(supabase, id))
+    wn.addRow({ n: r.share_number, status: STATUS[r.status], ref: r.reference, buyer: r.buyer_name, phone: r.buyer_phone, seller: r.seller_name });
+
   await supabase.rpc("lottery_log_export", { p_campaign_id: id });
   const buf = await wb.xlsx.writeBuffer();
-  const file = `loteria-${c.year}-${c.lottery_number}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const slug = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
+  const file = `${raffle ? slug(c.name) : `loteria-${c.year}-${c.lottery_number}`}-${new Date().toISOString().slice(0, 10)}.xlsx`;
   return new NextResponse(buf as ArrayBuffer, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -4,6 +4,8 @@ import { getSession } from "@/lib/session";
 import { ROLE_LABEL } from "@/lib/format";
 import { BottomNav, Sidebar, type NavItem } from "@/components/nav";
 import { signOut } from "@/app/login/actions";
+import { WhatsNew } from "@/components/whats-new";
+import { APP_VERSION } from "@/lib/changelog";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
@@ -20,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-dvh">
-      <Sidebar items={items} name={s.profile.full_name} role={ROLE_LABEL[s.profile.role] ?? s.profile.role} />
+      <Sidebar items={items} name={s.profile.full_name} role={ROLE_LABEL[s.profile.role] ?? s.profile.role} version={APP_VERSION} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex items-center justify-between bg-negro px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] text-white lg:hidden">
           <Link href="/" className="flex items-center gap-2">
@@ -36,9 +38,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </button>
           </form>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-8">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-8">
+          {children}
+          <footer className="mt-10 text-center text-xs text-negro/40 lg:hidden">
+            <Link href="/novedades" className="hover:text-rojo">Rayo Vallecañas · v{APP_VERSION} · Novedades</Link>
+          </footer>
+        </main>
       </div>
       <BottomNav items={items} />
+      <WhatsNew />
     </div>
   );
 }

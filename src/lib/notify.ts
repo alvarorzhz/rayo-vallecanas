@@ -1,6 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
-import { receiptHtml, receiptText, type ReceiptData } from "@/lib/receipt";
+import { headline, receiptHtml, receiptText, type ReceiptData } from "@/lib/receipt";
 
 export type SendResult = { ok: true; providerId: string | null } | { ok: false; error: string };
 
@@ -35,7 +35,7 @@ export async function sendReceiptEmail(to: string, d: ReceiptData) {
       from: process.env.RESEND_FROM!,
       to,
       replyTo: process.env.RESEND_REPLY_TO || undefined,
-      subject: `Tu lotería del Rayo Vallecañas · ${d.reference}`,
+      subject: `${d.kind === "raffle" ? "Tu rifa" : "Tu lotería"} del Rayo Vallecañas · ${d.reference}`,
       html: receiptHtml(d),
       text: receiptText(d).replace(/[*_]/g, ""),
     });
@@ -72,7 +72,7 @@ export async function sendReceiptWhatsApp(toE164: string, d: ReceiptData, amount
           components: [
             {
               type: "body",
-              parameters: [d.buyerName, d.lotteryNumber, String(d.quantity), d.reference, amount].map((text) => ({ type: "text", text })),
+              parameters: [d.buyerName, headline(d), String(d.quantity), d.reference, amount].map((text) => ({ type: "text", text })),
             },
           ],
         },

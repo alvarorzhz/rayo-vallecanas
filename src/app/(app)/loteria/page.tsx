@@ -57,8 +57,17 @@ export default async function LotteryPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="rounded-xl bg-negro px-4 py-2 text-center">
-                    <div className="text-[10px] tracking-widest text-dorado">NÚMERO</div>
-                    <div className="font-mono text-2xl font-black tracking-[0.2em] text-white">{c.lottery_number}</div>
+                    {c.kind === "raffle" ? (
+                      <>
+                        <div className="text-[10px] tracking-widest text-dorado">RIFA</div>
+                        <div className="font-mono text-2xl font-black text-white">1–{c.total_shares}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[10px] tracking-widest text-dorado">NÚMERO</div>
+                        <div className="font-mono text-2xl font-black tracking-[0.2em] text-white">{c.lottery_number}</div>
+                      </>
+                    )}
                   </div>
                   <div className="flex-1 space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-negro/60">Precio</span><b>{euros(c.price_cents)}</b></div>
@@ -71,7 +80,7 @@ export default async function LotteryPage() {
                 {sum && (
                   <div>
                     <div className="mb-1 flex justify-between text-xs text-negro/60">
-                      <span>{sum.sold} vendidas de {sum.total}</span>
+                      <span>{sum.sold} {c.kind === "raffle" ? "vendidos" : "vendidas"} de {sum.total}</span>
                       <span>{sum.available} disponibles</span>
                     </div>
                     <Progress value={sum.sold} total={sum.total} />

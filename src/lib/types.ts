@@ -2,7 +2,9 @@ export type Campaign = {
   id: string;
   name: string;
   year: number;
-  lottery_number: string;
+  kind: "lottery" | "raffle";
+  lottery_number: string | null;
+  winning_number: number | null;
   draw_type: string;
   draw_date: string | null;
   price_cents: number;

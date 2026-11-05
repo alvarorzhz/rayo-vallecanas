@@ -15,7 +15,7 @@ export type SaleRow = {
 };
 
 /** Tabla en escritorio, tarjetas en móvil. */
-export function SalesTable({ rows, showSeller = true }: { rows: SaleRow[]; showSeller?: boolean }) {
+export function SalesTable({ rows, showSeller = true, unit = "part." }: { rows: SaleRow[]; showSeller?: boolean; unit?: string }) {
   return (
     <>
       <div className="hidden overflow-x-auto md:block">
@@ -55,7 +55,7 @@ export function SalesTable({ rows, showSeller = true }: { rows: SaleRow[]; showS
               <div className="min-w-0">
                 <div className="truncate font-semibold">{r.buyer?.full_name}</div>
                 <div className="text-xs text-negro/60">
-                  <span className="font-mono">{r.reference}</span> · {r.quantity} part.{showSeller && r.seller_name ? ` · ${r.seller_name}` : ""}
+                  <span className="font-mono">{r.reference}</span> · {r.quantity} {unit}{showSeller && r.seller_name ? ` · ${r.seller_name}` : ""}
                 </div>
               </div>
               <div className="shrink-0 text-right">

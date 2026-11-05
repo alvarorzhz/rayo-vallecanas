@@ -42,6 +42,7 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
   // Disponibilidad
   let available = 0;
   let hint: string | undefined;
+  let freeNumbers: number[] | undefined;
   if (c.numbering_mode === "booklet") {
     const { data: booklets } = await supabase.from("lottery_booklets").select("id").eq("campaign_id", id).eq("seller_id", s.user.id);
     const ids = (booklets ?? []).map((b) => b.id);
@@ -54,8 +55,9 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
     const { count } = await supabase.from("lottery_shares").select("id", { count: "exact", head: true }).eq("campaign_id", id).eq("status", "available");
     available = count ?? 0;
     if (c.numbering_mode === "manual") {
-      const { data } = await supabase.from("lottery_shares").select("share_number").eq("campaign_id", id).eq("status", "available").order("share_number").limit(300);
+      const { data } = await supabase.from("lottery_shares").select("share_number").eq("campaign_id", id).eq("status", "available").order("share_number").range(0, 999);
       const nums = (data ?? []).map((d) => d.share_number as number);
+      freeNumbers = nums;
       hint = nums.length ? `Libres: ${ranges(nums)}${available > nums.length ? "…" : ""}` : "No quedan libres.";
     }
   }
@@ -68,7 +70,7 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
 
   return (
     <>
-      <PageHeader title="Nueva venta" subtitle={`Número ${c.lottery_number} · ${c.name}`} back={back} />
+      <PageHeader title="Nueva venta" subtitle={c.kind === "raffle" ? `Rifa · ${c.name}` : `Número ${c.lottery_number} · ${c.name}`} back={back} />
       <div className="mx-auto max-w-2xl">
         <SaleForm
           action={registerSale.bind(null, id)}
@@ -79,6 +81,8 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
           sellers={sellers}
           currentUserId={s.user.id}
           whatsappApi={whatsappConfigured()}
+          raffle={c.kind === "raffle"}
+          availableNumbers={freeNumbers}
         />
       </div>
     </>

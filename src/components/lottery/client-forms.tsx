@@ -40,3 +40,25 @@ export function BookletForm({ action, sellers }: { action: A; sellers: { id: str
     </form>
   );
 }
+
+export function RaffleDrawForm({ action, total }: { action: A; total: number }) {
+  const [state, formAction] = useActionState(action, undefined);
+  return (
+    <form action={formAction} className="space-y-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <div>
+          <label className="label" htmlFor="number">Número ganador (si ya lo sabes)</label>
+          <input id="number" name="number" type="number" min={1} max={total} className="input w-40 font-mono" placeholder={`1 – ${total}`} />
+        </div>
+        <SubmitButton className="btn-dark" name="mode" value="manual" pendingText="Registrando…">Registrar número</SubmitButton>
+        <span className="pb-2 text-sm text-negro/50">o</span>
+        <SubmitButton className="btn-primary" name="mode" value="random" pendingText="Sorteando…"
+          formNoValidate onClick={(e) => { if (!confirm("¿Sortear ahora al azar entre los números vendidos? No se puede repetir.")) e.preventDefault(); }}>
+          Sortear al azar
+        </SubmitButton>
+      </div>
+      <p className="text-xs text-negro/50">El sorteo al azar elige uno de los números vendidos. Una vez registrado el ganador no se puede cambiar.</p>
+      <FormMessage state={state} />
+    </form>
+  );
+}

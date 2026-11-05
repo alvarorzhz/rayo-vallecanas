@@ -7,7 +7,7 @@ export async function loadReceipt(supabase: SupabaseClient, saleId: string) {
   const { data: sale, error } = await supabase
     .from("lottery_sales")
     .select(
-      "id, reference, quantity, total_cents, paid_cents, created_at, cancelled_at, seller_id, preferred_channel, buyer:buyers(full_name, email, phone), campaign:lottery_campaigns(name, lottery_number, draw_type, draw_date)",
+      "id, reference, quantity, total_cents, paid_cents, created_at, cancelled_at, seller_id, preferred_channel, buyer:buyers(full_name, email, phone), campaign:lottery_campaigns(name, kind, lottery_number, draw_type, draw_date)",
     )
     .eq("id", saleId)
     .single();
@@ -19,11 +19,12 @@ export async function loadReceipt(supabase: SupabaseClient, saleId: string) {
   ]);
 
   const buyer = sale.buyer as unknown as { full_name: string; email: string | null; phone: string | null };
-  const campaign = sale.campaign as unknown as { name: string; lottery_number: string; draw_type: string; draw_date: string | null };
+  const campaign = sale.campaign as unknown as { name: string; kind: "lottery" | "raffle"; lottery_number: string | null; draw_type: string; draw_date: string | null };
 
   const data: ReceiptData = {
     reference: sale.reference,
     buyerName: buyer.full_name,
+    kind: campaign.kind,
     lotteryNumber: campaign.lottery_number,
     drawType: campaign.draw_type,
     drawDate: campaign.draw_date,
