@@ -11,6 +11,14 @@ export function parseEuros(value: FormDataEntryValue | null): number {
   return Math.round(n * 100);
 }
 
+/** "lunes, 22 de diciembre de 2026" (para fechas sin hora, como la del sorteo). */
+export const fechaLarga = (d: string | null | undefined) =>
+  d
+    ? new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Madrid" }).format(
+        new Date(/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d}T12:00:00Z` : d),
+      )
+    : "";
+
 export const fecha = (d: string | Date | null | undefined, withTime = false) =>
   d
     ? new Intl.DateTimeFormat("es-ES", {

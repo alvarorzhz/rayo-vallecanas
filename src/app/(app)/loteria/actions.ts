@@ -316,12 +316,12 @@ export async function sendReceipt(saleId: string, channel: "email" | "whatsapp")
 }
 
 /** Envío manual desde el WhatsApp del propio vendedor (mientras no haya cuenta de WhatsApp Business). */
-export async function openWhatsAppManual(saleId: string) {
+export async function openWhatsAppManual(saleId: string): Promise<{ url?: string; error?: string }> {
   const supabase = await createClient();
   const r = await loadReceipt(supabase, saleId);
-  if (!r) throw new Error("Venta no encontrada");
+  if (!r) return { error: "Venta no encontrada" };
   const phone = phoneE164(r.buyer.phone);
-  if (!phone) throw new Error("El comprador no tiene un teléfono válido");
+  if (!phone) return { error: "El comprador no tiene un teléfono válido" };
   await supabase.from("notifications").insert({
     sale_id: saleId,
     channel: "whatsapp",
@@ -331,5 +331,7 @@ export async function openWhatsAppManual(saleId: string) {
     provider_id: "manual (wa.me)",
     sent_at: new Date().toISOString(),
   });
-  redirect(`https://wa.me/${phone}?text=${encodeURIComponent(receiptText(r.data))}`);
+  // Se devuelve el enlace y lo abre el navegador: una redirección del servidor estropeaba
+  // las comillas (&#34;) y los emojis del mensaje.
+  return { url: `https://wa.me/${phone}?text=${encodeURIComponent(receiptText(r.data))}` };
 }

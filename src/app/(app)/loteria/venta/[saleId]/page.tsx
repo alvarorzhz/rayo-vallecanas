@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { euros, fecha, PAYMENT_METHOD_LABEL, ranges } from "@/lib/format";
+import { euros, fecha, PAYMENT_METHOD_LABEL, ranges, fechaLarga } from "@/lib/format";
 import { PageHeader, PaymentBadge } from "@/components/ui";
 import { CancelForm, PaymentForm, SendReceipt } from "@/components/lottery/sale-actions";
 import { loadReceipt } from "@/lib/lottery/receipt-data";
@@ -79,7 +79,7 @@ export default async function SalePage({
             <div className="rounded-xl bg-negro p-4 text-center text-white">
               <div className="text-xs tracking-[0.3em] text-dorado">{headlineLabel(d)}</div>
               <div className={`font-mono font-black ${d.kind === "raffle" ? "break-words text-3xl tracking-wider" : "text-5xl tracking-[0.25em]"}`}>{headline(d)}</div>
-              <div className="text-xs text-white/60">{d.drawType}{d.drawDate ? ` · ${fecha(d.drawDate)}` : ""}</div>
+              <div className="text-xs text-white/70">{d.drawDate ? `Sorteo: ${fechaLarga(d.drawDate)}` : d.drawType}</div>
             </div>
             <dl className="divide-y divide-black/5 text-sm">
               {[
@@ -96,8 +96,7 @@ export default async function SalePage({
               ))}
               <div className="flex justify-between py-3"><dt className="font-bold">Importe</dt><dd className="text-xl font-black">{euros(d.totalCents)}</dd></div>
             </dl>
-            <p className="text-center font-bold">¡Mucha suerte y gracias por apoyar al Rayo Vallecañas! ⚡</p>
-            <p className="text-center text-[11px] text-negro/40">Este justificante no sustituye a la participación física.</p>
+            <p className="text-center font-bold">¡Muchísimas gracias por apoyar al Rayo Vallecañas y mucha suerte! 🍀⚡</p>
           </div>
         </article>
 

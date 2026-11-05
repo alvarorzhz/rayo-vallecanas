@@ -1,5 +1,5 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Mail, MessageCircle, Printer } from "lucide-react";
 import type { ActionState } from "@/app/(app)/loteria/actions";
 import { FormMessage } from "@/components/form-message";
@@ -66,12 +66,13 @@ export function SendReceipt({
 }: {
   email: A;
   whatsappApi?: A;
-  whatsappManual: () => Promise<void>;
+  whatsappManual: () => Promise<{ url?: string; error?: string }>;
   hasEmail: boolean;
   hasPhone: boolean;
 }) {
   const [emailState, emailAction] = useActionState(email, undefined);
   const [waState, waAction] = useActionState(whatsappApi ?? (async () => undefined), undefined);
+  const [manualError, setManualError] = useState("");
   return (
     <div className="space-y-3">
       <div className="grid gap-2 sm:grid-cols-2">
@@ -87,7 +88,13 @@ export function SendReceipt({
             </SubmitButton>
           </form>
         ) : (
-          <form action={whatsappManual}>
+          <form
+            action={async () => {
+              const r = await whatsappManual();
+              if (r.url) window.location.href = r.url;
+              else setManualError(r.error ?? "No se pudo abrir WhatsApp");
+            }}
+          >
             <SubmitButton className="btn-ghost w-full" pendingText="Abriendo…" disabled={!hasPhone}>
               <MessageCircle size={16} /> Abrir en WhatsApp
             </SubmitButton>
@@ -99,6 +106,7 @@ export function SendReceipt({
       </button>
       <FormMessage state={emailState} />
       <FormMessage state={waState} />
+      {manualError && <FormMessage state={{ error: manualError }} />}
     </div>
   );
 }
