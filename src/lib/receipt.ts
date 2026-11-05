@@ -3,7 +3,8 @@ import { euros, fecha, ranges } from "@/lib/format";
 export type ReceiptData = {
   reference: string;
   buyerName: string;
-  lotteryNumber: string;
+  kind: "lottery" | "raffle";
+  lotteryNumber: string | null;
   drawType: string;
   drawDate: string | null;
   quantity: number;
@@ -19,6 +20,10 @@ export const siteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localh
 
 const shareRef = (d: ReceiptData) => (d.shareNumbers.length ? ranges(d.shareNumbers) : "—");
 
+/** Lo que se muestra en grande: el número de lotería o los números de la rifa. */
+export const headline = (d: ReceiptData) => (d.kind === "raffle" ? shareRef(d) : (d.lotteryNumber ?? "—"));
+export const headlineLabel = (d: ReceiptData) => (d.kind === "raffle" ? (d.shareNumbers.length > 1 ? "TUS NÚMEROS" : "TU NÚMERO") : "NÚMERO");
+
 /** Texto del justificante (WhatsApp y versión texto del email). */
 export function receiptText(d: ReceiptData) {
   const pending = d.totalCents - d.paidCents;
@@ -27,11 +32,15 @@ export function receiptText(d: ReceiptData) {
     "",
     "¡Gracias por colaborar con nuestro equipo!",
     "",
-    "Tu compra de lotería ha quedado registrada.",
+    d.kind === "raffle" ? `Tu compra de la rifa "${d.campaignName}" ha quedado registrada.` : "Tu compra de lotería ha quedado registrada.",
     "",
-    `Número: ${d.lotteryNumber}`,
-    `Sorteo: ${d.drawType}${d.drawDate ? ` (${fecha(d.drawDate)})` : ""}`,
-    `Participaciones: ${d.quantity} (nº ${shareRef(d)})`,
+    ...(d.kind === "raffle"
+      ? [`${d.quantity > 1 ? "Tus números" : "Tu número"}: ${shareRef(d)}`, `Sorteo: ${d.drawType}${d.drawDate ? ` (${fecha(d.drawDate)})` : ""}`]
+      : [
+          `Número: ${d.lotteryNumber}`,
+          `Sorteo: ${d.drawType}${d.drawDate ? ` (${fecha(d.drawDate)})` : ""}`,
+          `Participaciones: ${d.quantity} (nº ${shareRef(d)})`,
+        ]),
     `Referencia: ${d.reference}`,
     `Importe: ${euros(d.totalCents)}${pending > 0 ? ` · pendiente de pago: ${euros(pending)}` : " · pagado"}`,
     "",
@@ -55,17 +64,17 @@ export function receiptHtml(d: ReceiptData) {
 <tr><td style="background:#080808;padding:24px;text-align:center;border-bottom:4px solid #D20D17">
 <img src="${siteUrl()}/escudo.png" width="72" alt="Rayo Vallecañas" style="display:block;margin:0 auto 8px"/>
 <div style="color:#fff;font-size:20px;font-weight:900;letter-spacing:1px">RAYO VALLECAÑAS</div>
-<div style="color:#D5AF32;font-size:12px;letter-spacing:2px;margin-top:4px">JUSTIFICANTE DE LOTERÍA</div></td></tr>
+<div style="color:#D5AF32;font-size:12px;letter-spacing:2px;margin-top:4px">${d.kind === "raffle" ? "JUSTIFICANTE DE RIFA" : "JUSTIFICANTE DE LOTERÍA"}</div></td></tr>
 <tr><td style="padding:24px">
 <p style="margin:0 0 4px;font-size:16px;color:#080808">Hola ${esc(d.buyerName)},</p>
-<p style="margin:0 0 16px;font-size:15px;color:#333">¡Gracias por colaborar con nuestro equipo! Tu compra de lotería ha quedado registrada.</p>
+<p style="margin:0 0 16px;font-size:15px;color:#333">¡Gracias por colaborar con nuestro equipo! Tu compra ${d.kind === "raffle" ? `de la rifa «${esc(d.campaignName)}»` : "de lotería"} ha quedado registrada.</p>
 <div style="text-align:center;background:#080808;border-radius:12px;padding:16px;margin-bottom:16px">
-<div style="color:#D5AF32;font-size:12px;letter-spacing:2px">NÚMERO</div>
-<div style="color:#fff;font-size:40px;font-weight:900;letter-spacing:6px">${esc(d.lotteryNumber)}</div>
+<div style="color:#D5AF32;font-size:12px;letter-spacing:2px">${headlineLabel(d)}</div>
+<div style="color:#fff;font-size:${d.kind === "raffle" ? 28 : 40}px;font-weight:900;letter-spacing:${d.kind === "raffle" ? 2 : 6}px">${esc(headline(d))}</div>
 <div style="color:#bbb;font-size:12px">${esc(d.drawType)}${d.drawDate ? ` · ${esc(fecha(d.drawDate))}` : ""}</div></div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #eee">
 ${row("Referencia", d.reference)}
-${row("Participaciones", `${d.quantity} (nº ${shareRef(d)})`)}
+${row(d.kind === "raffle" ? "Números" : "Participaciones", d.kind === "raffle" ? `${d.quantity}` : `${d.quantity} (nº ${shareRef(d)})`)}
 ${row("Vendedor", d.sellerName)}
 ${row("Fecha", fecha(d.createdAt, true))}
 ${row("Estado del pago", pending > 0 ? `Pendiente: ${euros(pending)}` : "Pagado")}

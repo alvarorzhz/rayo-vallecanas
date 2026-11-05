@@ -6,8 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { euros, fecha, NUMBERING_MODE_LABEL } from "@/lib/format";
 import { CampaignBadge, Empty, PageHeader, Progress, Stat } from "@/components/ui";
 import { SalesTable } from "@/components/lottery/sales-table";
-import { fetchSales } from "@/lib/lottery/queries";
-import { setCampaignStatus, setWinningPrize } from "../actions";
+import { fetchNumbers, fetchSales, type NumberRow } from "@/lib/lottery/queries";
+import { RaffleDrawForm } from "@/components/lottery/client-forms";
+import { drawRaffle, setCampaignStatus, setWinningPrize } from "../actions";
 import type { Campaign, Summary } from "@/lib/types";
 
 type Rank = { seller_id: string; full_name: string; sales_count: number; shares: number; sold_cents: number; paid_cents: number; pending_cents: number };
@@ -34,6 +35,14 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
     fetchSales(supabase, { campaignId: id, sellerId: isAdmin ? undefined : s.user.id, limit: 8 }),
     isAdmin ? supabase.rpc("lottery_seller_ranking", { p_campaign_id: id }).then((r) => (r.data ?? []) as Rank[]) : Promise.resolve([] as Rank[]),
   ]);
+
+  const raffle = c.kind === "raffle";
+  const unit = raffle ? "número" : "participación";
+  const units = raffle ? "números" : "participaciones";
+  let winner: NumberRow | undefined;
+  if (raffle && c.winning_number && isAdmin) {
+    [winner] = await fetchNumbers(supabase, id, { only: c.winning_number });
+  }
 
   // Totales propios (vendedor)
   let mine = { count: 0, shares: 0, total: 0, paid: 0 };
@@ -80,10 +89,19 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/escudo.png" alt="" width={56} height={66} />
           <div>
-            <div className="text-xs tracking-[0.3em] text-dorado">NÚMERO</div>
-            <div className="font-mono text-4xl font-black tracking-[0.25em]">{c.lottery_number}</div>
+            {raffle ? (
+              <>
+                <div className="text-xs tracking-[0.3em] text-dorado">RIFA</div>
+                <div className="font-mono text-3xl font-black">1 – {c.total_shares}</div>
+              </>
+            ) : (
+              <>
+                <div className="text-xs tracking-[0.3em] text-dorado">NÚMERO</div>
+                <div className="font-mono text-4xl font-black tracking-[0.25em]">{c.lottery_number}</div>
+              </>
+            )}
             <div className="mt-1 text-xs text-white/60">
-              {euros(c.price_cents)} / participación
+              {euros(c.price_cents)} / {unit}
               {c.played_cents > 0 && ` · juega ${euros(c.played_cents)}`}
               {c.donation_cents > 0 && ` · donativo ${euros(c.donation_cents)}`}
             </div>
@@ -91,10 +109,10 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
         </div>
         <div className="card flex flex-col justify-center gap-2">
           <div className="flex justify-between text-sm">
-            <span><b>{summary.sold}</b> vendidas de {summary.total}</span>
+            <span><b>{summary.sold}</b> {raffle ? "vendidos" : "vendidas"} de {summary.total}</span>
             <span className="text-negro/60">
-              {summary.available} disponibles{summary.reserved ? ` · ${summary.reserved} reservadas` : ""}
-              {summary.voided ? ` · ${summary.voided} anuladas` : ""}
+              {summary.available} disponibles{summary.reserved ? ` · ${summary.reserved} ${raffle ? "reservados" : "reservadas"}` : ""}
+              {summary.voided ? ` · ${summary.voided} ${raffle ? "anulados" : "anuladas"}` : ""}
             </span>
           </div>
           <Progress value={summary.sold} total={summary.total} />
@@ -110,7 +128,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
         </div>
       ) : (
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat label="Mis ventas" value={mine.count} hint={`${mine.shares} participaciones`} tone="dark" />
+          <Stat label="Mis ventas" value={mine.count} hint={`${mine.shares} ${units}`} tone="dark" />
           <Stat label="Vendido" value={euros(mine.total)} />
           <Stat label="Cobrado" value={euros(mine.paid)} tone="red" />
           <Stat label="Pendiente" value={euros(mine.total - mine.paid)} tone="gold" />
@@ -120,7 +138,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
       {isAdmin && (
         <div className="mb-6 flex flex-wrap gap-2">
           <Link href={`/loteria/${id}/ventas`} className="btn-ghost"><List size={16} /> Todas las ventas</Link>
-          <Link href={`/loteria/${id}/participaciones`} className="btn-ghost"><Grid3x3 size={16} /> Participaciones</Link>
+          <Link href={`/loteria/${id}/participaciones`} className="btn-ghost"><Grid3x3 size={16} /> {raffle ? "Números" : "Participaciones"}</Link>
           <Link href={`/loteria/${id}/vendedores`} className="btn-ghost"><Users size={16} /> Vendedores{c.numbering_mode === "booklet" ? " y talonarios" : ""}</Link>
           {s.can("lottery_admin", "update") && (
             <>
@@ -138,7 +156,27 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
       {isAdmin && c.status !== "draft" && s.can("lottery_admin", "update") && (
         <div className="card mb-6">
           <h2 className="mb-2 flex items-center gap-2 font-bold"><Trophy size={18} className="text-dorado" /> Sorteo</h2>
-          {c.status === "drawn" ? (
+          {raffle ? (
+            c.winning_number ? (
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="rounded-xl bg-dorado px-4 py-2 text-center text-negro">
+                  <div className="text-[10px] font-bold tracking-[0.3em]">GANADOR</div>
+                  <div className="font-mono text-3xl font-black">{c.winning_number}</div>
+                </div>
+                {winner?.sale_id ? (
+                  <div className="text-sm">
+                    <div>Comprador: <b>{winner.buyer_name}</b>{winner.buyer_phone ? ` · ${winner.buyer_phone}` : ""}</div>
+                    <div>Vendido por: <b>{winner.seller_name}</b></div>
+                    <Link href={`/loteria/venta/${winner.sale_id}`} className="font-semibold text-rojo">Ver venta {winner.reference}</Link>
+                  </div>
+                ) : (
+                  <p className="text-sm">Ese número no se vendió.</p>
+                )}
+              </div>
+            ) : (
+              <RaffleDrawForm action={drawRaffle.bind(null, id)} total={c.total_shares} />
+            )
+          ) : c.status === "drawn" ? (
             <p className="text-sm">
               Premio por participación: <b>{euros(c.winning_prize_cents)}</b>
               {c.winning_prize_cents ? ` · Total a repartir: ${euros((c.winning_prize_cents ?? 0) * summary.sold)}` : " · No ha resultado premiado."}
@@ -161,7 +199,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
             <h2 className="font-bold">{isAdmin ? "Últimas operaciones" : "Mis últimas ventas"}</h2>
             <Link href={isAdmin ? `/loteria/${id}/ventas` : "/mis-ventas"} className="text-sm font-semibold text-rojo">Ver todas</Link>
           </div>
-          {latest.length ? <SalesTable rows={latest} showSeller={isAdmin} /> : <Empty>Aún no hay ventas.</Empty>}
+          {latest.length ? <SalesTable rows={latest} showSeller={isAdmin} unit={raffle ? "núm." : "part."} /> : <Empty>Aún no hay ventas.</Empty>}
         </section>
         {isAdmin && (
           <section className="card min-w-0">
@@ -173,7 +211,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
                     <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${i === 0 ? "bg-dorado text-negro" : i < 3 ? "bg-negro text-white" : "bg-gris"}`}>{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-semibold">{r.full_name}</div>
-                      <div className="text-xs text-negro/50">{r.shares} part. · pendiente {euros(r.pending_cents)}</div>
+                      <div className="text-xs text-negro/50">{r.shares} {raffle ? "núm." : "part."} · pendiente {euros(r.pending_cents)}</div>
                     </div>
                     <div className="text-sm font-bold tabular-nums">{euros(r.sold_cents)}</div>
                   </li>

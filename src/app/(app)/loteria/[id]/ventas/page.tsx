@@ -21,7 +21,7 @@ export default async function SalesPage({
   const sp = await searchParams;
   await requirePerm("lottery_admin", "read");
   const supabase = await createClient();
-  const { data: c } = await supabase.from("lottery_campaigns").select("id, name").eq("id", id).single();
+  const { data: c } = await supabase.from("lottery_campaigns").select("id, name, kind").eq("id", id).single();
   if (!c) notFound();
   const page = Math.max(1, Number(sp.p) || 1);
   const [{ rows, count }, { data: sellers }] = await Promise.all([
@@ -63,7 +63,7 @@ export default async function SalesPage({
         <button className="btn-dark">Filtrar</button>
       </form>
       <div className="card">
-        {rows.length ? <SalesTable rows={rows} /> : <Empty>No hay ventas con estos filtros.</Empty>}
+        {rows.length ? <SalesTable rows={rows} unit={c.kind === "raffle" ? "núm." : "part."} /> : <Empty>No hay ventas con estos filtros.</Empty>}
         <Pager page={page} pageSize={PAGE} total={count} href={qs} />
       </div>
     </>

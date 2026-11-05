@@ -91,7 +91,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             </div>
           ) : (
             <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Stat label="Mis participaciones" value={mine.shares} tone="dark" />
+              <Stat label={campaign.kind === "raffle" ? "Mis números" : "Mis participaciones"} value={mine.shares} tone="dark" />
               <Stat label="Vendido" value={euros(mine.total)} />
               <Stat label="Cobrado" value={euros(mine.paid)} tone="red" />
               <Stat label="Pendiente" value={euros(mine.total - mine.paid)} tone="gold" />
@@ -99,7 +99,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           )}
           <div className="card mb-6">
             <div className="mb-1 flex justify-between text-xs text-negro/60">
-              <span>Número {campaign.lottery_number}</span>
+              <span>{campaign.kind === "raffle" ? `Rifa · números 1–${campaign.total_shares}` : `Número ${campaign.lottery_number}`}</span>
               <span>{Math.round((summary.sold / Math.max(1, summary.total)) * 100)}% vendido</span>
             </div>
             <Progress value={summary.sold} total={summary.total} />
@@ -108,7 +108,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <div className={`mb-6 grid gap-6 ${isAdmin ? "lg:grid-cols-[1fr_20rem]" : ""}`}>
             <section className="card min-w-0">
               <h3 className="mb-3 font-bold">{isAdmin ? "Últimas ventas" : "Mis últimas ventas"}</h3>
-              {latest.length ? <SalesTable rows={latest} showSeller={isAdmin} /> : <Empty>Aún no hay ventas.</Empty>}
+              {latest.length ? <SalesTable rows={latest} showSeller={isAdmin} unit={campaign.kind === "raffle" ? "núm." : "part."} /> : <Empty>Aún no hay ventas.</Empty>}
             </section>
             {isAdmin && (
               <section className="card min-w-0">

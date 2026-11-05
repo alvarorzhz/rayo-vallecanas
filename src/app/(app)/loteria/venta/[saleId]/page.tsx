@@ -5,6 +5,7 @@ import { euros, fecha, PAYMENT_METHOD_LABEL, ranges } from "@/lib/format";
 import { PageHeader, PaymentBadge } from "@/components/ui";
 import { CancelForm, PaymentForm, SendReceipt } from "@/components/lottery/sale-actions";
 import { loadReceipt } from "@/lib/lottery/receipt-data";
+import { headline, headlineLabel } from "@/lib/receipt";
 import { whatsappConfigured } from "@/lib/notify";
 import { addPayment, cancelSale, openWhatsAppManual, sendReceipt } from "../../actions";
 
@@ -68,19 +69,21 @@ export default async function SalePage({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/escudo.png" alt="" width={64} height={76} className="mx-auto" />
             <div className="mt-2 text-lg font-black tracking-wide">RAYO VALLECAÑAS</div>
-            <div className="text-xs tracking-[0.3em] text-dorado">JUSTIFICANTE DE LOTERÍA</div>
+            <div className="text-xs tracking-[0.3em] text-dorado">{d.kind === "raffle" ? "JUSTIFICANTE DE RIFA" : "JUSTIFICANTE DE LOTERÍA"}</div>
           </header>
           <div className="space-y-4 p-5">
             <p>¡Gracias por colaborar con nuestro equipo, <b>{d.buyerName}</b>!</p>
             <div className="rounded-xl bg-negro p-4 text-center text-white">
-              <div className="text-xs tracking-[0.3em] text-dorado">NÚMERO</div>
-              <div className="font-mono text-5xl font-black tracking-[0.25em]">{d.lotteryNumber}</div>
+              <div className="text-xs tracking-[0.3em] text-dorado">{headlineLabel(d)}</div>
+              <div className={`font-mono font-black ${d.kind === "raffle" ? "break-words text-3xl tracking-wider" : "text-5xl tracking-[0.25em]"}`}>{headline(d)}</div>
               <div className="text-xs text-white/60">{d.drawType}{d.drawDate ? ` · ${fecha(d.drawDate)}` : ""}</div>
             </div>
             <dl className="divide-y divide-black/5 text-sm">
               {[
                 ["Referencia", <span key="r" className="font-mono font-bold">{d.reference}</span>],
-                ["Participaciones", `${d.quantity} (nº ${d.shareNumbers.length ? ranges(d.shareNumbers) : "—"})`],
+                d.kind === "raffle"
+                  ? ["Números", String(d.quantity)]
+                  : ["Participaciones", `${d.quantity} (nº ${d.shareNumbers.length ? ranges(d.shareNumbers) : "—"})`],
                 ["Vendedor", d.sellerName],
                 ["Fecha", fecha(d.createdAt, true)],
                 ["Pagado", euros(sale.paid_cents)],
