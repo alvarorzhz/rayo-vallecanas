@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/receipt";
 
-export type ActionState = { error?: string; ok?: string } | undefined;
+export type ActionState = { error?: string; ok?: string; password?: string; name?: string; phone?: string | null; email?: string } | undefined;
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "matches"] as const;
 
@@ -20,19 +20,34 @@ export async function inviteUser(_: ActionState, f: FormData): Promise<ActionSta
   if (!email || !full_name) return { error: "Nombre y email son obligatorios" };
 
   const admin = createAdminClient();
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { full_name, phone },
-    redirectTo: `${siteUrl()}/auth/callback?next=/auth/nueva-clave`,
-  });
-  if (error) return { error: error.message.includes("already") ? "Ya existe un usuario con ese email" : error.message };
+  const byEmail = str(f, "mode") === "email";
+  // Sin dominio propio el email de Supabase tiene un límite muy bajo, así que por defecto
+  // se crea el usuario con una contraseña provisional que el gestor le pasa por WhatsApp.
+  const password = byEmail ? undefined : tempPassword();
+  const { data, error } = byEmail
+    ? await admin.auth.admin.inviteUserByEmail(email, {
+        data: { full_name, phone },
+        redirectTo: `${siteUrl()}/auth/callback?next=/auth/nueva-clave`,
+      })
+    : await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name, phone } });
+  if (error) return { error: /already|registered|exists/i.test(error.message) ? "Ya existe un usuario con ese email" : error.message };
+  if (!byEmail) await admin.from("profiles").update({ must_change_password: true }).eq("id", data.user.id);
 
   // El rol se asigna con la sesión del usuario actual: la BD comprueba que puede hacerlo.
   if (role !== "player") {
     const { error: roleErr } = await supabase.from("profiles").update({ role }).eq("id", data.user.id);
-    if (roleErr) return { error: `Invitación enviada, pero no se pudo asignar el rol: ${roleErr.message}` };
+    if (roleErr) return { error: `Usuario creado, pero no se pudo asignar el rol: ${roleErr.message}` };
   }
   revalidatePath("/admin/usuarios");
-  return { ok: `Invitación enviada a ${email}` };
+  if (byEmail) return { ok: `Invitación enviada a ${email}` };
+  return { ok: `Usuario creado: ${full_name}`, password, name: full_name, phone, email };
+}
+
+/** Contraseña provisional fácil de dictar: sin letras ambiguas (0/O, 1/l). */
+function tempPassword() {
+  const abc = "abcdefghjkmnpqrstuvwxyz";
+  const pick = (s: string, n: number) => Array.from(crypto.getRandomValues(new Uint32Array(n)), (x) => s[x % s.length]).join("");
+  return `Rayo-${pick(abc, 4)}-${pick("23456789", 4)}`;
 }
 
 export async function updateUser(uid: string, _: ActionState, f: FormData): Promise<ActionState> {
@@ -96,4 +111,22 @@ export async function setUserAccess(uid: string, enable: boolean) {
   }
   revalidatePath("/admin/usuarios");
   revalidatePath(`/admin/usuarios/${uid}`);
+}
+
+/** Crea una contraseña provisional nueva (por si la olvida o no le llega el email). */
+export async function resetPassword(uid: string): Promise<ActionState> {
+  const supabase = await createClient();
+  const { data: allowed } = await supabase.rpc("has_perm", { p_module: "users", p_action: "update" });
+  if (!allowed) return { error: "No tienes permiso para cambiar contraseñas" };
+  const { data: target } = await supabase.from("profiles").select("full_name, email, phone, role").eq("id", uid).single();
+  if (!target) return { error: "Usuario no encontrado" };
+  const { data: me } = await supabase.rpc("is_superadmin");
+  if (target.role === "superadmin" && !me) return { error: "Solo un superadministrador puede cambiar la contraseña de otro superadministrador" };
+
+  const password = tempPassword();
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(uid, { password });
+  if (error) return { error: error.message };
+  await admin.from("profiles").update({ must_change_password: true }).eq("id", uid);
+  return { ok: `Contraseña provisional nueva para ${target.full_name}`, password, name: target.full_name, phone: target.phone, email: target.email ?? "" };
 }

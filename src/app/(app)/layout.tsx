@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { ROLE_LABEL } from "@/lib/format";
 import { Avatar } from "@/components/avatar";
+import { PushPrompt } from "@/components/push-prompt";
 import { BottomNav, Sidebar, type NavItem } from "@/components/nav";
 import { signOut } from "@/app/login/actions";
 import { Suspense } from "react";
@@ -16,8 +17,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const items: NavItem[] = [{ href: "/", label: "Inicio", icon: "Home" }];
   if (s.can("lottery_admin") || s.can("lottery_sell")) items.push({ href: "/loteria", label: "Sorteos", icon: "Ticket" });
   if (s.can("lottery_sell", "create")) items.push({ href: "/mis-ventas", label: "Mis ventas", icon: "ShoppingBag" });
-  if (s.can("users")) items.push({ href: "/admin/usuarios", label: "Usuarios", icon: "Users" });
-  if (s.profile.role === "superadmin") items.push({ href: "/admin/auditoria", label: "Auditoría", icon: "ScrollText" });
+  // Panel de gestión: usuarios, perfiles, avisos, auditoría y copias de seguridad
+  if (s.can("users") || s.can("lottery_admin", "update") || s.profile.role === "superadmin")
+    items.push({ href: "/admin", label: "Gestión", icon: "Settings" });
   items.push(
     { href: "/finanzas", label: "Finanzas", icon: "Wallet", soon: true },
     { href: "/plantilla", label: "Plantilla", icon: "Shirt", soon: true },
@@ -49,13 +51,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-8">
           <div className="page-enter">{children}</div>
-          <footer className="mt-10 text-center text-xs text-negro/40 lg:hidden">
-            <Link href="/novedades" className="hover:text-rojo">Rayo Vallecañas · v{APP_VERSION} · Novedades</Link>
+          <footer className="mt-10 text-center text-xs text-negro/40">
+            <Link href="/novedades" className="hover:text-rojo lg:hidden">Rayo Vallecañas · v{APP_VERSION} · Novedades · </Link>
+            <Link href="/privacidad" className="hover:text-rojo">Protección de datos</Link>
           </footer>
         </main>
       </div>
       <BottomNav items={items} />
       <WhatsNew />
+      <PushPrompt />
       <Suspense>
         <NavProgress />
         <RefreshOnVisit />

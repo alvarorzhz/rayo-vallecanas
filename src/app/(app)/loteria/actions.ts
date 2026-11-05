@@ -1,5 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { lotteryManagers, sendPush } from "@/lib/push";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { euros, parseEuros, parseRanges, phoneE164 } from "@/lib/format";
@@ -97,8 +99,19 @@ export async function deleteCampaign(id: string, _: ActionState, f: FormData): P
 
 export async function setCampaignStatus(id: string, status: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("lottery_campaigns").update({ status }).eq("id", id);
+  const { data: c, error } = await supabase.from("lottery_campaigns").update({ status }).eq("id", id).select("name").single();
   if (error) throw new Error(error.message);
+  if (status === "active") {
+    after(async () => {
+      const { data: sellers } = await supabase.from("lottery_campaign_sellers").select("user_id").eq("campaign_id", id);
+      await sendPush((sellers ?? []).map((r) => r.user_id), {
+        title: "¡Ya puedes vender! 🎟️",
+        body: `${c.name} está abierta. Entra y registra tus ventas.`,
+        url: `/loteria/${id}`,
+        tag: `campaign-${id}`,
+      });
+    });
+  }
   revalidatePath(`/loteria/${id}`);
   revalidatePath("/loteria");
 }
@@ -124,6 +137,17 @@ export async function drawRaffle(id: string, _: ActionState, f: FormData): Promi
     });
     if (error) throw error;
     const w = (data as { winning_number: number; buyer_name: string | null }[])[0];
+    after(async () => {
+      const [{ data: c }, { data: sellers }] = await Promise.all([
+        supabase.from("lottery_campaigns").select("name").eq("id", id).single(),
+        supabase.from("lottery_campaign_sellers").select("user_id").eq("campaign_id", id),
+      ]);
+      await sendPush([...(sellers ?? []).map((r) => r.user_id), ...(await lotteryManagers())], {
+        title: `🏆 Número ganador: ${w.winning_number}`,
+        body: `${c?.name ?? "Sorteo"}${w.buyer_name ? ` · le ha tocado a ${w.buyer_name}` : " · el número no estaba vendido"}`,
+        url: `/loteria/${id}`,
+      });
+    });
     revalidatePath(`/loteria/${id}`);
     return { ok: `Número ganador: ${w.winning_number}${w.buyer_name ? ` · ${w.buyer_name}` : " · no estaba vendido"}` };
   } catch (e) {
@@ -220,6 +244,23 @@ export async function registerSale(campaignId: string, _: ActionState, f: FormDa
     });
     if (error) throw error;
     saleId = (data as { id: string }).id;
+    const sid = saleId;
+    after(async () => {
+      const { data: sale } = await supabase
+        .from("lottery_sales")
+        .select("seller_id, quantity, total_cents, campaign:lottery_campaigns(name, kind)")
+        .eq("id", sid)
+        .single();
+      if (!sale) return;
+      const camp = sale.campaign as unknown as { name: string; kind: string };
+      const { data: seller } = await supabase.from("member_directory").select("full_name").eq("id", sale.seller_id).single();
+      const unit = camp.kind === "raffle" ? (sale.quantity === 1 ? "número" : "números") : sale.quantity === 1 ? "participación" : "participaciones";
+      await sendPush(await lotteryManagers(sale.seller_id), {
+        title: "Nueva venta 💶",
+        body: `${seller?.full_name ?? "Un vendedor"} ha vendido ${sale.quantity} ${unit} de ${camp.name} (${euros(sale.total_cents)})`,
+        url: `/loteria/venta/${sid}`,
+      });
+    });
   } catch (e) {
     return { error: errMsg(e) };
   }

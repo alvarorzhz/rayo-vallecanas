@@ -9,7 +9,7 @@ export type Perms = Record<Module, Record<Action, boolean>>;
 
 export type Session = {
   user: { id: string; email: string | null };
-  profile: { id: string; full_name: string; role: string; email: string | null; phone: string | null; avatar_url: string | null };
+  profile: { id: string; full_name: string; role: string; email: string | null; phone: string | null; avatar_url: string | null; notify_sales: boolean };
   perms: Perms;
   can: (m: Module, a?: Action) => boolean;
 };
@@ -24,13 +24,15 @@ export const getSession = cache(async (): Promise<Session> => {
   const user = { id: claims.sub, email: (claims.email as string | undefined) ?? null };
 
   const [{ data: profile }, { data: permRows }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role, email, phone, active, avatar_url").eq("id", user.id).single(),
+    supabase.from("profiles").select("id, full_name, role, email, phone, active, avatar_url, notify_sales, must_change_password").eq("id", user.id).single(),
     supabase.rpc("my_permissions"),
   ]);
   if (!profile || !profile.active) {
     // Usuario deshabilitado: se le cierra la sesión en una ruta que sí puede borrar cookies
     redirect("/auth/salir?error=inactivo");
   }
+  // Alta con contraseña provisional: tiene que elegir la suya antes de seguir
+  if (profile.must_change_password) redirect("/auth/nueva-clave?provisional=1");
 
   const perms = {} as Perms;
   for (const r of (permRows ?? []) as Array<{ module: Module; can_read: boolean; can_create: boolean; can_update: boolean; can_delete: boolean }>) {

@@ -1,4 +1,5 @@
 import { euros, fecha, fechaLarga, ranges } from "@/lib/format";
+import { CLUB } from "@/lib/club";
 
 export type ReceiptData = {
   reference: string;
@@ -48,6 +49,7 @@ export function receiptText(d: ReceiptData) {
     `🔖 Referencia: ${d.reference}`,
     "",
     "Guarda este mensaje, es tu justificante de compra.",
+    `Tus datos solo se usan para gestionar tu compra: ${CLUB.privacyUrl}`,
     "",
     "¡Mucha suerte! 🍀⚡",
     "_Rayo Vallecañas_",
