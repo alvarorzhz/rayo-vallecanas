@@ -11,6 +11,7 @@ const display = Barlow_Condensed({
   display: "swap",
 });
 import { RegisterSW } from "@/components/register-sw";
+import { Splash } from "@/components/splash";
 
 export const metadata: Metadata = {
   title: { default: "Rayo Vallecañas", template: "%s · Rayo Vallecañas" },
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="es" className={`${body.variable} ${display.variable}`}>
       <body className="min-h-dvh antialiased">
+        <Splash />
         {children}
         <RegisterSW />
       </body>

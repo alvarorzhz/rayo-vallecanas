@@ -39,6 +39,7 @@ export function Sidebar({ items, name, role, version }: { items: NavItem[]; name
             <Link
               key={it.href}
               href={it.href}
+              prefetch
               className={`group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[15px] font-semibold transition ${
                 active ? "bg-rojo text-white shadow-[0_6px_16px_-8px_rgba(210,13,23,0.9)]" : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
@@ -80,6 +81,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
           <Link
             key={it.href}
             href={it.href}
+            prefetch
             className={`relative flex min-w-0 flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] font-semibold transition ${active ? "text-white" : "text-white/50"}`}
           >
             {active && <span aria-hidden className="absolute inset-x-4 top-0 h-[3px] -skew-x-[25deg] rounded-b bg-rojo" />}

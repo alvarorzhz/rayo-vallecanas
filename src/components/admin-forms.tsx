@@ -72,7 +72,8 @@ export function UserEditForm({
       <fieldset disabled={!canEdit} className="card">
         <h2 className="mb-1 font-bold">Permisos</h2>
         <p className="mb-4 text-sm text-negro/50">
-          Por defecto se aplican los del rol. Marca “Personalizar” para fijar permisos concretos en un módulo.
+          Por defecto se aplican los del rol. Marca “Personalizar” para fijar permisos concretos en un módulo.{" "}
+          <a href="/admin/perfiles" className="font-semibold text-rojo">¿Qué hace cada perfil?</a>
         </p>
         {role === "superadmin" ? (
           <p className="rounded-xl bg-gris p-3 text-sm">El superadministrador tiene acceso completo a todo.</p>

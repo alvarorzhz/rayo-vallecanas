@@ -69,7 +69,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </div>
         </div>
         {campaign && campaign.status === "active" && canSell && (
-          <Link href={`/loteria/${campaign.id}/vender`} className="btn-primary relative mt-6 w-full py-3.5 text-lg sm:w-auto">
+          <Link href={`/loteria/${campaign.id}/vender`} prefetch className="btn-primary relative mt-6 w-full py-3.5 text-lg sm:w-auto">
             <ShoppingCart size={20} /> {campaign.kind === "raffle" ? "Nueva venta de rifa" : "Nueva venta de lotería"}
           </Link>
         )}
@@ -79,7 +79,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <>
           <div className="mb-3 flex items-end justify-between gap-3">
             <h2 className="sport flex min-w-0 items-center gap-2 text-2xl font-black"><Ticket size={22} className="shrink-0 text-rojo" /> <span className="truncate">{campaign.name}</span></h2>
-            <Link href={`/loteria/${campaign.id}`} className="shrink-0 text-sm font-bold text-rojo">Ver panel →</Link>
+            <Link href={`/loteria/${campaign.id}`} prefetch className="shrink-0 text-sm font-bold text-rojo">Ver panel →</Link>
           </div>
           {isAdmin ? (
             <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
