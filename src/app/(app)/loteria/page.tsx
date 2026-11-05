@@ -112,7 +112,7 @@ export default async function LotteryPage({ searchParams }: { searchParams: Prom
                       <ShoppingCart size={16} /> Nueva venta
                     </Link>
                   )}
-                  <Link href={`/loteria/${c.id}`} className="btn-ghost flex-1">Ver panel</Link>
+                  <Link href={`/loteria/${c.id}`} prefetch className="btn-ghost flex-1">Ver panel</Link>
                 </div>
               </div>
             );

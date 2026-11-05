@@ -7,6 +7,7 @@ import { signOut } from "@/app/login/actions";
 import { Suspense } from "react";
 import { WhatsNew } from "@/components/whats-new";
 import { NavProgress } from "@/components/nav-progress";
+import { RefreshOnVisit } from "@/components/refresh-on-visit";
 import { APP_VERSION } from "@/lib/changelog";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -51,6 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <WhatsNew />
       <Suspense>
         <NavProgress />
+        <RefreshOnVisit />
       </Suspense>
     </div>
   );

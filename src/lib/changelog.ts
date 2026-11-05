@@ -7,6 +7,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.4.0",
+    date: "2026-11-05",
+    title: "Guía de perfiles y cambios de pantalla al instante",
+    changes: [
+      "Nueva página «Qué hace cada perfil» (en Usuarios): qué ve y qué puede hacer cada perfil, sacado de los permisos reales.",
+      "Las pantallas principales se cargan por adelantado al entrar en la app y se abren al instante.",
+      "Al volver a una pantalla ya vista se muestra enseguida y los datos se actualizan solos en segundo plano.",
+    ],
+  },
+  {
     version: "1.3.0",
     date: "2026-11-05",
     title: "Nuevo diseño y control de acceso",
