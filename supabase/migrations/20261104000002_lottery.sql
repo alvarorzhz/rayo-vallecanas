@@ -163,24 +163,17 @@ $$;
 create trigger lottery_campaign_shares after insert on public.lottery_campaigns
   for each row execute function public.lottery_generate_shares();
 
--- Ampliar o reducir el número de participaciones (solo quita las libres del final)
+-- Ampliar el número de participaciones (reducir no se permite: se anulan las que sobren)
 create or replace function public.lottery_campaign_shares_resize()
 returns trigger
 language plpgsql security definer set search_path = public
 as $$
-declare
-  v_blocked int;
 begin
   if new.total_shares > old.total_shares then
     insert into public.lottery_shares (campaign_id, share_number)
     select new.id, g from generate_series(old.total_shares + 1, new.total_shares) g;
   elsif new.total_shares < old.total_shares then
-    select count(*) into v_blocked from public.lottery_shares
-     where campaign_id = new.id and share_number > new.total_shares and status <> 'available';
-    if v_blocked > 0 then
-      raise exception 'No se puede reducir: hay % participaciones vendidas, reservadas o anuladas por encima del nuevo total', v_blocked;
-    end if;
-    delete from public.lottery_shares where campaign_id = new.id and share_number > new.total_shares;
+    raise exception 'No se puede reducir el número de participaciones; anula las que sobren desde Participaciones';
   end if;
   if new.price_cents <> old.price_cents and exists (select 1 from public.lottery_sales where campaign_id = new.id) then
     raise exception 'No se puede cambiar el precio de una campaña con ventas registradas';
@@ -262,7 +255,7 @@ create trigger lottery_payments_recalc after insert on public.lottery_payments
 
 -- Los pagos no se modifican ni borran: se corrigen con un apunte negativo
 create or replace function public.forbid_change()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = public as $$
 begin
   raise exception 'Operación no permitida: los registros económicos no se modifican ni se borran; registra una corrección';
 end;
@@ -618,10 +611,6 @@ create policy campaigns_insert on public.lottery_campaigns for insert to authent
   with check (public.has_perm('lottery_admin', 'create'));
 create policy campaigns_update on public.lottery_campaigns for update to authenticated
   using (public.has_perm('lottery_admin', 'update')) with check (public.has_perm('lottery_admin', 'update'));
-create policy campaigns_delete on public.lottery_campaigns for delete to authenticated
-  using (public.has_perm('lottery_admin', 'delete') and status = 'draft'
-         and not exists (select 1 from public.lottery_sales s where s.campaign_id = lottery_campaigns.id));
-
 create policy campaign_sellers_select on public.lottery_campaign_sellers for select to authenticated
   using (user_id = auth.uid() or public.has_perm('lottery_admin', 'read'));
 create policy campaign_sellers_write on public.lottery_campaign_sellers for all to authenticated
