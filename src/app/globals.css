@@ -6,7 +6,7 @@
   --color-negro: #080808;
   --color-negro-2: #161616;
   --color-dorado: #D5AF32;
-  --color-gris: #F4F4F4;
+  --color-gris: #F1F1EE;
   --animate-fade-up: fade-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-fade-in: fade-in 0.2s ease-out both;
   --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -29,24 +29,60 @@
     from { background-position: 200% 0; }
     to { background-position: -200% 0; }
   }
+  @keyframes grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
   @keyframes progress {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(250%); }
   }
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--nf-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: var(--nf-display), "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--color-gris);
   color: var(--color-negro);
+  /* Nada puede ensanchar la página en el móvil */
+  overflow-x: clip;
+}
+
+/* Textos largos (nombres, emails, referencias) parten línea en vez de desbordar */
+h1, h2, h3, p, li, td, dd, dt, label, a, span {
+  overflow-wrap: anywhere;
+}
+/* Los hijos de grids y flex pueden encoger (evita tarjetas más anchas que la pantalla) */
+.grid > *, .flex > * {
+  min-width: 0;
+}
+/* Por defecto un fieldset no encoge y empuja su contenido fuera de la pantalla */
+fieldset {
+  min-width: 0;
+}
+input, select, textarea {
+  min-width: 0;
+  max-width: 100%;
 }
 
 @utility card {
-  @apply rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 sm:p-5;
+  @apply rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.12)] ring-1 ring-black/5 sm:p-5;
+}
+/* Titulares deportivos: condensada, cursiva y en mayúsculas */
+@utility sport {
+  font-family: var(--font-display);
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+/* Franja diagonal roja del Rayo */
+@utility franja {
+  background-image: linear-gradient(115deg, transparent 0 58%, var(--color-rojo) 58% 74%, var(--color-dorado) 74% 76%, transparent 76%);
 }
 @utility skeleton {
   @apply rounded-xl animate-shimmer;
@@ -71,36 +107,47 @@ body {
   }
 }
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 bg-rojo text-white hover:bg-rojo-oscuro;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 bg-rojo text-white shadow-[0_6px_16px_-6px_rgba(210,13,23,0.6)] hover:bg-rojo-oscuro;
 }
 @utility btn-dark {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 bg-negro text-white hover:bg-negro-2;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 bg-negro text-white hover:bg-negro-2;
 }
 @utility btn-ghost {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 bg-white text-negro ring-1 ring-black/10 hover:bg-gris;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 bg-white text-negro ring-1 ring-black/10 hover:bg-gris;
 }
 @utility input {
   @apply w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 text-base outline-none transition focus:border-rojo focus:ring-2 focus:ring-rojo/20 disabled:bg-gris sm:text-sm;
 }
 @utility label {
-  @apply mb-1 block text-sm font-medium text-negro/80;
+  @apply mb-1 block text-sm font-semibold text-negro/80;
 }
 @utility badge {
-  @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold;
+  @apply inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide;
 }
 @utility h1 {
-  @apply text-2xl font-black tracking-tight sm:text-3xl;
+  @apply text-3xl leading-none font-black sm:text-4xl;
+  font-family: var(--font-display);
+  font-style: italic;
+  text-transform: uppercase;
 }
 @utility table {
   @apply w-full text-left text-sm;
 }
 
 @layer components {
+  .card h2 {
+    font-family: var(--font-display);
+    font-style: italic;
+    text-transform: uppercase;
+    font-size: 1.25rem;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+  }
   .table th {
-    @apply border-b border-black/10 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-negro/50;
+    @apply whitespace-nowrap border-b border-black/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-negro/50;
   }
   .table td {
     @apply border-b border-black/5 px-3 py-2.5;

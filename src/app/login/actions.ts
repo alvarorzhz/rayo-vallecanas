@@ -11,7 +11,10 @@ export async function signIn(_: FormState, formData: FormData): Promise<FormStat
   const next = String(formData.get("next") ?? "/");
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: "Email o contraseña incorrectos" };
+  if (error) {
+    if (error.code === "user_banned") return { error: "Tu acceso a la app está deshabilitado. Habla con la directiva." };
+    return { error: "Email o contraseña incorrectos" };
+  }
   redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");
 }
 

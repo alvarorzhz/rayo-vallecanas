@@ -68,7 +68,7 @@ export default async function LotteryPage({ searchParams }: { searchParams: Prom
               <div key={c.id} className="card flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <Link href={`/loteria/${c.id}`} className="block truncate text-lg font-bold hover:text-rojo">{c.name}</Link>
+                    <Link href={`/loteria/${c.id}`} className="sport block truncate text-2xl font-black hover:text-rojo">{c.name}</Link>
                     <div className="text-sm text-negro/60">
                       {c.draw_type} · {fecha(c.draw_date)}
                     </div>

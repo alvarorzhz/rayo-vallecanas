@@ -15,14 +15,18 @@ export function PageHeader({
   return (
     <div className="mb-6">
       {back && (
-        <Link href={back.href} className="mb-2 inline-block text-sm text-negro/50 hover:text-rojo">
+        <Link href={back.href} className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-negro/50 hover:text-rojo">
           ← {back.label}
         </Link>
       )}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
+          <div aria-hidden className="mb-2 flex gap-1">
+            <span className="h-1.5 w-8 -skew-x-[25deg] bg-rojo" />
+            <span className="h-1.5 w-2 -skew-x-[25deg] bg-dorado" />
+          </div>
           <h1 className="h1">{title}</h1>
-          {subtitle && <div className="mt-1 text-sm text-negro/60">{subtitle}</div>}
+          {subtitle && <div className="mt-1.5 text-sm text-negro/60">{subtitle}</div>}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
@@ -43,17 +47,18 @@ export function Stat({
 }) {
   const tones = {
     default: "bg-white text-negro ring-1 ring-black/5",
-    red: "bg-rojo text-white",
-    gold: "bg-white text-negro ring-2 ring-dorado",
-    dark: "bg-negro text-white",
+    red: "bg-gradient-to-br from-rojo to-rojo-oscuro text-white",
+    gold: "bg-white text-negro ring-1 ring-black/5",
+    dark: "bg-gradient-to-br from-negro-2 to-negro text-white",
   };
+  const accent = { default: "bg-negro/10", red: "bg-white/25", gold: "bg-dorado", dark: "bg-rojo" }[tone];
+  const muted = tone === "default" || tone === "gold" ? "text-negro/50" : "text-white/70";
   return (
-    <div className={`rounded-2xl p-4 shadow-sm ${tones[tone]}`}>
-      <div className={`text-xs font-semibold uppercase tracking-wide ${tone === "default" || tone === "gold" ? "text-negro/50" : "text-white/70"}`}>
-        {label}
-      </div>
-      <div className="mt-1 text-2xl font-black tabular-nums sm:text-3xl">{value}</div>
-      {hint && <div className={`mt-0.5 text-xs ${tone === "default" || tone === "gold" ? "text-negro/50" : "text-white/70"}`}>{hint}</div>}
+    <div className={`relative overflow-hidden rounded-2xl p-4 shadow-sm ${tones[tone]}`}>
+      <span aria-hidden className={`absolute -right-3 top-0 h-full w-6 -skew-x-[20deg] ${accent}`} />
+      <div className={`relative text-[11px] font-bold uppercase tracking-wider ${muted}`}>{label}</div>
+      <div className="relative mt-1 text-3xl leading-none font-black tabular-nums [font-family:var(--font-display)] italic sm:text-4xl">{value}</div>
+      {hint && <div className={`relative mt-1 text-xs ${muted}`}>{hint}</div>}
     </div>
   );
 }
@@ -85,8 +90,11 @@ export function Empty({ children }: { children: React.ReactNode }) {
 export function Progress({ value, total }: { value: number; total: number }) {
   const pct = total ? Math.round((value / total) * 100) : 0;
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-black/10">
-      <div className="h-full rounded-full bg-rojo" style={{ width: `${pct}%` }} />
+    <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/10">
+      <div
+        className="h-full origin-left animate-[grow_0.8s_cubic-bezier(0.22,1,0.36,1)_both] rounded-full bg-[repeating-linear-gradient(115deg,var(--color-rojo)_0_10px,var(--color-rojo-oscuro)_10px_14px)]"
+        style={{ width: `${pct}%` }}
+      />
     </div>
   );
 }

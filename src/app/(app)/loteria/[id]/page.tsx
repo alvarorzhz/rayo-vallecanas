@@ -87,7 +87,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
       />
 
       <div className="mb-6 grid gap-4 lg:grid-cols-[auto_1fr]">
-        <div className="flex items-center gap-5 rounded-2xl bg-negro p-5 text-white">
+        <div className="franja flex items-center gap-5 overflow-hidden rounded-2xl bg-negro p-5 text-white shadow-lg">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/escudo.png" alt="" width={56} height={66} />
           <div>

@@ -26,16 +26,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-dvh">
       <Sidebar items={items} name={s.profile.full_name} role={ROLE_LABEL[s.profile.role] ?? s.profile.role} version={APP_VERSION} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex items-center justify-between bg-negro px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] text-white lg:hidden">
-          <Link href="/" className="flex items-center gap-2">
+        <header className="franja sticky top-0 z-20 flex items-center justify-between bg-negro px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] text-white shadow-lg lg:hidden">
+          <Link href="/" className="flex min-w-0 items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/escudo.png" alt="" width={30} height={35} />
-            <span className="font-black tracking-tight">
-              RAYO <span className="text-dorado">VALLECAÑAS</span>
+            <img src="/escudo.png" alt="" width={32} height={38} className="drop-shadow" />
+            <span className="sport truncate text-xl font-black">
+              Rayo <span className="text-dorado">Vallecañas</span>
             </span>
           </Link>
           <form action={signOut}>
-            <button aria-label="Cerrar sesión" className="rounded-lg p-2 text-white/70 hover:text-white">
+            <button aria-label="Cerrar sesión" className="relative rounded-lg bg-black/30 p-2 text-white/80 hover:text-white">
               <LogOut size={18} />
             </button>
           </form>

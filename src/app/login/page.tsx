@@ -4,7 +4,7 @@ import { LoginForm } from "./login-form";
 export const metadata = { title: "Iniciar sesión" };
 
 const ERRORS: Record<string, string> = {
-  inactivo: "Tu usuario está desactivado. Habla con la directiva.",
+  inactivo: "Tu acceso a la app está deshabilitado. Habla con la directiva.",
   enlace: "El enlace no es válido o ha caducado. Solicita uno nuevo.",
 };
 
