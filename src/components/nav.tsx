@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDays, LogOut } from "lucide-react";
 import { signOut } from "@/app/login/actions";
+import { Avatar } from "@/components/avatar";
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; soon?: boolean; mobile?: boolean };
 
@@ -12,7 +13,7 @@ function isActive(path: string, href: string) {
   return href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
 }
 
-export function Sidebar({ items, name, role, version }: { items: NavItem[]; name: string; role: string; version?: string }) {
+export function Sidebar({ items, name, role, version, avatar }: { items: NavItem[]; name: string; role: string; version?: string; avatar?: string | null }) {
   const path = usePathname();
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-negro text-white lg:flex">
@@ -51,8 +52,13 @@ export function Sidebar({ items, name, role, version }: { items: NavItem[]; name
         })}
       </nav>
       <div className="border-t border-white/10 p-4">
-        <div className="truncate text-sm font-semibold">{name}</div>
-        <div className="text-xs text-dorado">{role}</div>
+        <Link href="/perfil" prefetch className="-m-1 flex items-center gap-3 rounded-xl p-1 hover:bg-white/10" title="Mi perfil">
+          <Avatar name={name} url={avatar} size={40} />
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold">{name}</span>
+            <span className="block text-xs text-dorado">{role}</span>
+          </span>
+        </Link>
         <div className="mt-3 flex items-center justify-between">
           <form action={signOut}>
             <button className="flex items-center gap-2 text-xs text-white/60 hover:text-white">

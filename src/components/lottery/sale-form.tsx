@@ -19,6 +19,7 @@ function Step({ n, title, help }: { n: number; title: string; help: React.ReactN
 }
 
 type Props = {
+  emailEnabled?: boolean;
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
   priceCents: number;
   available: number;
@@ -32,7 +33,7 @@ type Props = {
   availableNumbers?: number[];
 };
 
-export function SaleForm({ action, priceCents, available, mode, availableHint, sellers, currentUserId, whatsappApi, raffle = false, availableNumbers }: Props) {
+export function SaleForm({ action, priceCents, available, mode, availableHint, sellers, currentUserId, whatsappApi, emailEnabled = false, raffle = false, availableNumbers }: Props) {
   const [state, formAction] = useActionState(action, undefined);
   const [qty, setQty] = useState(1);
   const [manual, setManual] = useState("");
@@ -70,7 +71,7 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
         <Info size={20} className="mt-0.5 shrink-0 text-dorado" />
         <div>
           <b>Cómo registrar una venta:</b> rellena los {(sellers?.length ?? 0) > 0 ? 5 : 4} pasos de abajo y pulsa el botón rojo{" "}
-          <b>Registrar venta</b> del final. Si te equivocas, no pasa nada: la directiva puede anular la venta.
+          <b>Registrar venta</b> del final. Si te equivocas, no pasa nada: un gestor puede anular la venta.
         </div>
       </div>
 
@@ -191,13 +192,18 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
             ["whatsapp", "WhatsApp", MessageCircle],
             ["email", "Email", Mail],
             ["none", "No enviar", Ban],
-          ] as const).map(([v, l, Icon]) => (
-            <label key={v} className={`btn cursor-pointer ring-1 ${channel === v ? "bg-negro text-white ring-negro" : "bg-white ring-black/10"}`}>
-              <input type="radio" name="channel" value={v} checked={channel === v} onChange={() => setChannel(v)} className="sr-only" />
-              <Icon size={16} /> {l}
-            </label>
-          ))}
+          ] as const).map(([v, l, Icon]) => {
+            const off = v === "email" && !emailEnabled;
+            return (
+              <label key={v} title={off ? "El envío por email aún no está disponible" : undefined}
+                className={`btn ring-1 ${off ? "cursor-not-allowed opacity-40" : "cursor-pointer"} ${channel === v ? "bg-negro text-white ring-negro" : "bg-white ring-black/10"}`}>
+                <input type="radio" name="channel" value={v} checked={channel === v} disabled={off} onChange={() => setChannel(v)} className="sr-only" />
+                <Icon size={16} /> {l}
+              </label>
+            );
+          })}
         </div>
+        {!emailEnabled && <p className="text-xs text-negro/50">El envío por email estará disponible más adelante.</p>}
         {channel === "whatsapp" && !whatsappApi && (
           <p className="text-xs text-negro/50">
             Después de registrar la venta verás el botón <b>Abrir en WhatsApp</b>: se abrirá WhatsApp con el mensaje ya escrito y solo tendrás que pulsar enviar.

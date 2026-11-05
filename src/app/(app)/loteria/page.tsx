@@ -6,7 +6,7 @@ import { euros, fecha, NUMBERING_MODE_LABEL } from "@/lib/format";
 import { CampaignBadge, Empty, PageHeader, Progress } from "@/components/ui";
 import type { Campaign, Summary } from "@/lib/types";
 
-export const metadata = { title: "Lotería" };
+export const metadata = { title: "Sorteos" };
 
 export default async function LotteryPage({ searchParams }: { searchParams: Promise<{ archivadas?: string; eliminada?: string }> }) {
   const sp = await searchParams;
@@ -34,7 +34,7 @@ export default async function LotteryPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHeader
-        title={showArchived ? "Campañas archivadas" : "Lotería"}
+        title={showArchived ? "Campañas archivadas" : "Sorteos"}
         subtitle={isAdmin ? "Campañas, participaciones, vendedores y cobros" : "Campañas en las que eres vendedor"}
         actions={
           s.can("lottery_admin", "create") && (

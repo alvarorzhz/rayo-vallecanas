@@ -9,7 +9,7 @@ export default async function NewCampaignPage() {
   await requirePerm("lottery_admin", "create");
   return (
     <>
-      <PageHeader title="Nueva campaña" subtitle="Se crea en borrador. Actívala cuando esté lista para vender." back={{ href: "/loteria", label: "Lotería" }} />
+      <PageHeader title="Nueva campaña" subtitle="Se crea en borrador. Actívala cuando esté lista para vender." back={{ href: "/loteria", label: "Sorteos" }} />
       <CampaignForm action={createCampaign} />
     </>
   );

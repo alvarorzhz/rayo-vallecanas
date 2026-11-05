@@ -19,7 +19,7 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       { name: "Mis ventas", url: "/mis-ventas" },
-      { name: "Lotería", url: "/loteria" },
+      { name: "Sorteos", url: "/loteria" },
     ],
   };
 }

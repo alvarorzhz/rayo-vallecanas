@@ -133,7 +133,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <div className="mb-6">
           <Empty>
             {isAdmin ? (
-              <>No hay ninguna campaña de lotería activa. <Link href="/loteria" className="font-semibold text-rojo">Ir a Lotería</Link></>
+              <>No hay ningún sorteo activo. <Link href="/loteria" className="font-semibold text-rojo">Ir a Sorteos</Link></>
             ) : (
               "No hay ninguna campaña de lotería activa en la que seas vendedor."
             )}

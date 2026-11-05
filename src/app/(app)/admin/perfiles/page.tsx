@@ -9,7 +9,7 @@ import { MENU_BY_MODULE, MODULE_GUIDE, ROLE_INFO, type Act } from "@/lib/role-gu
 export const metadata = { title: "Perfiles y permisos" };
 
 type Row = { role: string; module: string; can_read: boolean; can_create: boolean; can_update: boolean; can_delete: boolean };
-const ROLES = ["superadmin", "admin", "coach", "player"];
+const ROLES = ["superadmin", "admin", "player"];
 const ACTS: Act[] = ["read", "create", "update", "delete"];
 
 export default async function ProfilesGuide() {
@@ -45,7 +45,7 @@ export default async function ProfilesGuide() {
           const modules = Object.entries(MODULE_GUIDE).filter(([m, g]) => !g.soon && ACTS.some((a) => can(role, m, a)));
           const soon = Object.entries(MODULE_GUIDE).filter(([m, g]) => g.soon && ACTS.some((a) => can(role, m, a)));
           const menu = MENU_BY_MODULE.filter((x) => can(role, x.module, x.act)).map((x) => x.label);
-          const menuUnique = menu.includes("Lotería (todas las campañas)") ? menu.filter((l) => l !== "Lotería (sus campañas)") : menu;
+          const menuUnique = menu.includes("Sorteos (todas las campañas)") ? menu.filter((l) => l !== "Sorteos (sus campañas)") : menu;
           return (
             <section key={role} className={`card ${role === "superadmin" ? "ring-2 ring-rojo/30" : ""}`}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

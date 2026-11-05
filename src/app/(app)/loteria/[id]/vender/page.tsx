@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ranges } from "@/lib/format";
 import { Empty, PageHeader } from "@/components/ui";
 import { SaleForm } from "@/components/lottery/sale-form";
-import { whatsappConfigured } from "@/lib/notify";
+import { emailConfigured, whatsappConfigured } from "@/lib/notify";
 import { registerSale } from "../../actions";
 import type { Campaign } from "@/lib/types";
 
@@ -34,7 +34,7 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
     return (
       <>
         <PageHeader title="Nueva venta" back={back} />
-        <Empty>No estás asignado como vendedor en esta campaña. Pídeselo a la directiva.</Empty>
+        <Empty>No estás asignado como vendedor en esta campaña. Pídeselo a un gestor.</Empty>
       </>
     );
   }
@@ -81,6 +81,7 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
           sellers={sellers}
           currentUserId={s.user.id}
           whatsappApi={whatsappConfigured()}
+          emailEnabled={emailConfigured()}
           raffle={c.kind === "raffle"}
           availableNumbers={freeNumbers}
         />
