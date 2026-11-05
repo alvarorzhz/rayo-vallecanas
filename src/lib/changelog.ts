@@ -7,6 +7,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.4.1",
+    date: "2026-11-05",
+    title: "Justificante más cercano",
+    changes: [
+      "El mensaje de WhatsApp del justificante es más cercano, saluda por el nombre e indica el día del sorteo.",
+      "Arreglado: las comillas salían como «&#34;» y algún emoji se veía roto.",
+      "Se quita el aviso de que no sustituye a la participación física.",
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-11-05",
     title: "Guía de perfiles y cambios de pantalla al instante",
