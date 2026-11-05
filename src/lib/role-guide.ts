@@ -7,12 +7,8 @@ export const ROLE_INFO: Record<string, { summary: string; who: string }> = {
     summary: "Puede hacerlo todo, sin excepciones. Es el único que puede archivar o eliminar campañas, nombrar a otros superadministradores y modificarlos.",
   },
   admin: {
-    who: "Miembros de la directiva que llevan la lotería, las cuentas y los usuarios.",
-    summary: "Gestiona las campañas de lotería y rifas de principio a fin, ve todas las ventas y cobros, y da de alta y gestiona usuarios.",
-  },
-  coach: {
-    who: "Entrenadores y responsables deportivos.",
-    summary: "Vende lotería y rifas en las campañas en las que está asignado. Más adelante gestionará plantilla y partidos.",
+    who: "Quienes gestionan los sorteos, las cuentas y los usuarios del club.",
+    summary: "Gestiona los sorteos (lotería y rifas) de principio a fin, ve todas las ventas y cobros, y da de alta y gestiona usuarios.",
   },
   player: {
     who: "Jugadores del equipo.",
@@ -22,7 +18,7 @@ export const ROLE_INFO: Record<string, { summary: string; who: string }> = {
 
 export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts: Partial<Record<Act, string>> }> = {
   lottery_admin: {
-    title: "Lotería y rifas · gestión",
+    title: "Sorteos · gestión",
     acts: {
       read: "Ver todas las campañas (también los borradores), todas las ventas, cobros, compradores, la lista de números, el ranking de vendedores y descargar el Excel.",
       create: "Crear campañas de lotería o rifa y registrar ventas a nombre de cualquier vendedor.",
@@ -31,7 +27,7 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
     },
   },
   lottery_sell: {
-    title: "Lotería y rifas · vender",
+    title: "Sorteos · vender",
     acts: {
       read: "Ver las campañas activas en las que está asignado como vendedor y sus propias ventas.",
       create: "Registrar ventas en esas campañas y enviar el justificante al comprador.",
@@ -47,7 +43,7 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
     },
   },
   audit: {
-    title: "Auditoría",
+    title: "Auditoría (solo superadministradores)",
     acts: { read: "Consultar el registro de todo lo que se ha hecho en la app: quién, qué y cuándo." },
   },
   finances: { title: "Finanzas", soon: true, acts: { read: "Ver ingresos, gastos y saldo.", create: "Apuntar movimientos.", update: "Corregir movimientos." } },
@@ -56,8 +52,8 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
 };
 
 export const MENU_BY_MODULE: { module: string; act: Act; label: string }[] = [
-  { module: "lottery_admin", act: "read", label: "Lotería (todas las campañas)" },
-  { module: "lottery_sell", act: "read", label: "Lotería (sus campañas)" },
+  { module: "lottery_admin", act: "read", label: "Sorteos (todas las campañas)" },
+  { module: "lottery_sell", act: "read", label: "Sorteos (sus campañas)" },
   { module: "lottery_sell", act: "create", label: "Mis ventas" },
   { module: "users", act: "read", label: "Usuarios" },
   { module: "audit", act: "read", label: "Auditoría" },

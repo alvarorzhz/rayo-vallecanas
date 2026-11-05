@@ -7,7 +7,7 @@ import { setUserAccess, updateUser } from "../actions";
 import { Lock, LockOpen } from "lucide-react";
 
 export const metadata = { title: "Usuario" };
-const MODULES = ["lottery_admin", "lottery_sell", "users", "audit", "finances", "squad", "matches"];
+const MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "matches"];
 
 export default async function UserPage({ params }: { params: Promise<{ uid: string }> }) {
   const { uid } = await params;
@@ -21,7 +21,7 @@ export default async function UserPage({ params }: { params: Promise<{ uid: stri
   if (!profile) notFound();
   const isSuper = s.profile.role === "superadmin";
   const canEdit = s.can("users", "update") && (isSuper || profile.role !== "superadmin");
-  const roles = ["player", "coach", "admin", ...(isSuper || profile.role === "superadmin" ? ["superadmin"] : [])];
+  const roles = ["player", "admin", ...(isSuper || profile.role === "superadmin" ? ["superadmin"] : [])];
 
   return (
     <>

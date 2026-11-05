@@ -7,6 +7,20 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.5.0",
+    date: "2026-11-05",
+    title: "Fotos de perfil y justificante en PDF",
+    changes: [
+      "Cada usuario puede subir su foto desde «Mi perfil» (pulsando en su nombre o en su foto).",
+      "El perfil «Directiva» pasa a llamarse «Gestor» y se elimina «Responsable deportivo».",
+      "La sección «Lotería» del menú pasa a llamarse «Sorteos».",
+      "En el panel de cada sorteo lo primero es lo vendido y lo que queda por vender; lo cobrado pasa a segundo plano.",
+      "Nuevo botón «Descargar justificante (PDF)», que funciona también en la app instalada en el móvil.",
+      "El envío por email queda deshabilitado hasta que esté configurado.",
+      "La auditoría solo la ven los superadministradores.",
+    ],
+  },
+  {
     version: "1.4.2",
     date: "2026-11-05",
     title: "Emojis del justificante",

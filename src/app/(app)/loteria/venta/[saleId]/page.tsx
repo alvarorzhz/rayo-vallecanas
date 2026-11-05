@@ -6,7 +6,7 @@ import { PageHeader, PaymentBadge } from "@/components/ui";
 import { CancelForm, PaymentForm, SendReceipt } from "@/components/lottery/sale-actions";
 import { loadReceipt } from "@/lib/lottery/receipt-data";
 import { headline, headlineLabel } from "@/lib/receipt";
-import { whatsappConfigured } from "@/lib/notify";
+import { emailConfigured, whatsappConfigured } from "@/lib/notify";
 import { addPayment, cancelSale, openWhatsAppManual, sendReceipt } from "../../actions";
 
 export const metadata = { title: "Venta" };
@@ -118,6 +118,8 @@ export default async function SalePage({
                 whatsappManual={openWhatsAppManual.bind(null, saleId)}
                 hasEmail={Boolean(receipt.buyer.email)}
                 hasPhone={Boolean(receipt.buyer.phone)}
+                emailEnabled={emailConfigured()}
+                pdfUrl={`/api/loteria/venta/${saleId}/pdf`}
               />
               {(notifications?.length ?? 0) > 0 && (
                 <ul className="mt-4 space-y-1 border-t border-black/5 pt-3 text-xs">

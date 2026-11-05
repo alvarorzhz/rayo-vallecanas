@@ -94,13 +94,12 @@ export const KIND_LABEL: Record<string, string> = {
 };
 export const ROLE_LABEL: Record<string, string> = {
   superadmin: "Superadministrador",
-  admin: "Directiva",
-  coach: "Responsable deportivo",
+  admin: "Gestor",
   player: "Jugador",
 };
 export const MODULE_LABEL: Record<string, string> = {
-  lottery_admin: "Lotería · gestión",
-  lottery_sell: "Lotería · vender",
+  lottery_admin: "Sorteos · gestión",
+  lottery_sell: "Sorteos · vender",
   users: "Usuarios y permisos",
   audit: "Auditoría",
   finances: "Finanzas",

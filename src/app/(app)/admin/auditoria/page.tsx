@@ -1,4 +1,5 @@
-import { requirePerm } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fecha } from "@/lib/format";
 import { Empty, PageHeader } from "@/components/ui";
@@ -30,7 +31,8 @@ function diff(oldD: Record<string, unknown> | null, newD: Record<string, unknown
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ p?: string; t?: string }> }) {
   const sp = await searchParams;
-  await requirePerm("audit", "read");
+  const s = await getSession();
+  if (s.profile.role !== "superadmin") redirect("/?error=permiso");
   const supabase = await createClient();
   const page = Math.max(1, Number(sp.p) || 1);
   let q = supabase.from("audit_log").select("*", { count: "exact" }).order("created_at", { ascending: false }).range((page - 1) * PAGE, page * PAGE - 1);

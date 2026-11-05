@@ -6,7 +6,7 @@ import { siteUrl } from "@/lib/receipt";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
-const MODULES = ["lottery_admin", "lottery_sell", "users", "audit", "finances", "squad", "matches"] as const;
+const MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "matches"] as const;
 
 export async function inviteUser(_: ActionState, f: FormData): Promise<ActionState> {
   const supabase = await createClient();

@@ -37,6 +37,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   ]);
 
   const raffle = c.kind === "raffle";
+  const toSell = Math.max(0, summary.total - summary.sold - summary.voided);
   const unit = raffle ? "número" : "participación";
   const units = raffle ? "números" : "participaciones";
   let winner: NumberRow | undefined;
@@ -62,7 +63,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
     <>
       <PageHeader
         title={c.name}
-        back={c.archived_at ? { href: "/loteria?archivadas=1", label: "Archivadas" } : { href: "/loteria", label: "Lotería" }}
+        back={c.archived_at ? { href: "/loteria?archivadas=1", label: "Archivadas" } : { href: "/loteria", label: "Sorteos" }}
         subtitle={
           <span className="flex flex-wrap items-center gap-2">
             <CampaignBadge status={c.status} />
@@ -122,19 +123,22 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
       </div>
 
       {isAdmin ? (
-        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat label="Vendido" value={euros(summary.sold_cents)} hint={`${summary.sales_count} ventas · ${summary.buyers} compradores`} tone="dark" />
-          <Stat label="Cobrado" value={euros(summary.paid_cents)} tone="red" />
-          <Stat label="Pendiente de cobro" value={euros(summary.pending_cents)} hint={`${summary.pending_sales} ventas`} tone="gold" />
-          <Stat label="Disponibles" value={summary.available} hint={`de ${summary.total}`} />
-        </div>
+        <>
+          <div className="mb-3 grid grid-cols-2 gap-3">
+            <Stat label={raffle ? "Vendidos" : "Vendidas"} value={summary.sold} tone="dark"
+              hint={`${euros(summary.sold_cents ?? 0)} · ${summary.sales_count ?? 0} ${summary.sales_count === 1 ? "venta" : "ventas"}`} />
+            <Stat label="Pendiente de vender" value={toSell} tone="red" hint={`${euros(toSell * c.price_cents)} por vender`} />
+          </div>
+          <PaidLine paid={summary.paid_cents ?? 0} pending={summary.pending_cents ?? 0} pendingSales={summary.pending_sales} />
+        </>
       ) : (
-        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat label="Mis ventas" value={mine.count} hint={`${mine.shares} ${units}`} tone="dark" />
-          <Stat label="Vendido" value={euros(mine.total)} />
-          <Stat label="Cobrado" value={euros(mine.paid)} tone="red" />
-          <Stat label="Pendiente" value={euros(mine.total - mine.paid)} tone="gold" />
-        </div>
+        <>
+          <div className="mb-3 grid grid-cols-2 gap-3">
+            <Stat label="Mis ventas" value={mine.shares} hint={`${units} · ${mine.count} ${mine.count === 1 ? "venta" : "ventas"}`} tone="dark" />
+            <Stat label="Vendido" value={euros(mine.total)} tone="red" />
+          </div>
+          <PaidLine paid={mine.paid} pending={mine.total - mine.paid} />
+        </>
       )}
 
       {isAdmin && (
@@ -249,5 +253,18 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
         </section>
       )}
     </>
+  );
+}
+
+/** Cobrado y pendiente de cobro: dato secundario (casi todo se paga al momento). */
+function PaidLine({ paid, pending, pendingSales }: { paid: number; pending: number; pendingSales?: number }) {
+  return (
+    <p className="mb-6 flex flex-wrap gap-x-4 gap-y-1 rounded-xl bg-white px-4 py-2 text-sm text-negro/60 ring-1 ring-black/5">
+      <span>Cobrado: <b className="text-negro">{euros(paid)}</b></span>
+      <span>
+        Pendiente de cobro: <b className={pending > 0 ? "text-rojo" : "text-negro"}>{euros(pending)}</b>
+        {pendingSales ? ` (${pendingSales} ${pendingSales === 1 ? "venta" : "ventas"})` : ""}
+      </span>
+    </p>
   );
 }

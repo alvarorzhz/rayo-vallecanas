@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState } from "react";
-import { Mail, MessageCircle, Printer } from "lucide-react";
+import { FileDown, Mail, MessageCircle } from "lucide-react";
 import type { ActionState } from "@/app/(app)/loteria/actions";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -63,12 +63,16 @@ export function SendReceipt({
   whatsappManual,
   hasEmail,
   hasPhone,
+  emailEnabled,
+  pdfUrl,
 }: {
   email: A;
   whatsappApi?: A;
   whatsappManual: () => Promise<{ url?: string; error?: string }>;
   hasEmail: boolean;
   hasPhone: boolean;
+  emailEnabled: boolean;
+  pdfUrl: string;
 }) {
   const [emailState, emailAction] = useActionState(email, undefined);
   const [waState, waAction] = useActionState(whatsappApi ?? (async () => undefined), undefined);
@@ -77,8 +81,8 @@ export function SendReceipt({
     <div className="space-y-3">
       <div className="grid gap-2 sm:grid-cols-2">
         <form action={emailAction}>
-          <SubmitButton className="btn-ghost w-full" pendingText="Enviando…" disabled={!hasEmail}>
-            <Mail size={16} /> Enviar por email
+          <SubmitButton className="btn-ghost w-full" pendingText="Enviando…" disabled={!emailEnabled || !hasEmail}>
+            <Mail size={16} /> Enviar por email{!emailEnabled && <span className="ml-1 rounded bg-negro/10 px-1.5 py-0.5 text-[10px] uppercase">Pronto</span>}
           </SubmitButton>
         </form>
         {whatsappApi ? (
@@ -101,9 +105,9 @@ export function SendReceipt({
           </form>
         )}
       </div>
-      <button type="button" onClick={() => window.print()} className="btn-ghost w-full">
-        <Printer size={16} /> Imprimir / guardar PDF
-      </button>
+      <a href={pdfUrl} target="_blank" rel="noopener" className="btn-ghost w-full">
+        <FileDown size={16} /> Descargar justificante (PDF)
+      </a>
       <FormMessage state={emailState} />
       <FormMessage state={waState} />
       {manualError && <FormMessage state={{ error: manualError }} />}
