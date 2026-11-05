@@ -67,9 +67,6 @@ export function UserEditForm({
             {roles.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
           </select>
         </div>
-        <label className="flex items-center gap-2 self-end pb-3 text-sm">
-          <input type="checkbox" name="active" defaultChecked={profile.active} className="h-4 w-4 accent-rojo" /> Usuario activo
-        </label>
       </fieldset>
 
       <fieldset disabled={!canEdit} className="card">

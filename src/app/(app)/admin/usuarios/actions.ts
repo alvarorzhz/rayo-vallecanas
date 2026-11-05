@@ -43,7 +43,6 @@ export async function updateUser(uid: string, _: ActionState, f: FormData): Prom
       full_name: str(f, "full_name"),
       phone: str(f, "phone") || null,
       role: str(f, "role"),
-      active: f.get("active") === "on",
     })
     .eq("id", uid);
   if (error) return { error: error.message };
@@ -69,4 +68,32 @@ export async function updateUser(uid: string, _: ActionState, f: FormData): Prom
   revalidatePath(`/admin/usuarios/${uid}`);
   revalidatePath("/admin/usuarios");
   return { ok: "Cambios guardados" };
+}
+
+/**
+ * Deshabilita o habilita el acceso de un usuario. Se marca en su perfil (la app y la
+ * base de datos lo bloquean al momento) y, si hay clave de servicio, se bloquea también
+ * su inicio de sesión en Supabase Auth.
+ */
+export async function setUserAccess(uid: string, enable: boolean) {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (claims?.claims?.sub === uid) throw new Error("No puedes deshabilitarte a ti mismo");
+
+  const { data: allowed } = await supabase.rpc("has_perm", { p_module: "users", p_action: "update" });
+  if (!allowed) throw new Error("No tienes permiso para cambiar el acceso de usuarios");
+
+  // La base de datos vuelve a comprobarlo (y que solo un superadmin toque a otro superadmin)
+  const { data: changed, error } = await supabase.from("profiles").update({ active: enable }).eq("id", uid).select("id");
+  if (error) throw new Error(error.message);
+  if (!changed?.length) throw new Error("No se pudo cambiar el acceso de este usuario");
+
+  try {
+    const admin = createAdminClient();
+    await admin.auth.admin.updateUserById(uid, { ban_duration: enable ? "none" : "876000h" });
+  } catch {
+    // Sin clave de servicio basta con el perfil: la app le cierra la sesión al entrar
+  }
+  revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${uid}`);
 }

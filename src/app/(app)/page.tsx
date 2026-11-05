@@ -57,30 +57,29 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <div className="mb-4 rounded-xl bg-rojo/10 p-3 text-sm font-medium text-rojo">No tienes permiso para acceder a esa sección.</div>
       )}
 
-      <section className="relative mb-6 overflow-hidden rounded-3xl bg-negro p-6 text-white sm:p-8">
-        <div aria-hidden className="absolute -right-10 -top-24 h-72 w-40 rotate-[30deg] bg-rojo" />
-        <div aria-hidden className="absolute -right-2 -top-24 h-72 w-3 rotate-[30deg] bg-dorado" />
-        <div className="relative flex items-center gap-5">
+      <section className="franja relative mb-6 overflow-hidden rounded-3xl bg-negro p-6 text-white shadow-xl sm:p-8">
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.10),transparent_55%)]" />
+        <div className="relative flex items-center gap-4 sm:gap-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/escudo.png" alt="Escudo del Rayo Vallecañas" width={84} height={100} className="hidden sm:block" />
-          <div>
-            <p className="text-sm text-dorado">¡Hola, {firstName}! ⚡</p>
-            <h1 className="text-2xl font-black tracking-tight sm:text-3xl">RAYO VALLECAÑAS</h1>
-            <p className="mt-1 text-sm text-white/60">{fecha(new Date())}</p>
+          <img src="/escudo.png" alt="Escudo del Rayo Vallecañas" width={84} height={100} className="w-16 shrink-0 drop-shadow-2xl sm:w-20" />
+          <div className="min-w-0">
+            <p className="sport text-sm font-bold tracking-[0.15em] text-dorado">¡Hola, {firstName}! ⚡</p>
+            <h1 className="sport text-4xl leading-[0.9] font-black sm:text-5xl">Rayo<br className="sm:hidden" /> Vallecañas</h1>
+            <p className="mt-2 text-sm text-white/60">{fecha(new Date())}</p>
           </div>
         </div>
         {campaign && campaign.status === "active" && canSell && (
-          <Link href={`/loteria/${campaign.id}/vender`} className="btn-primary relative mt-5 w-full py-3.5 text-base sm:w-auto">
-            <ShoppingCart size={18} /> Nueva venta de lotería
+          <Link href={`/loteria/${campaign.id}/vender`} className="btn-primary relative mt-6 w-full py-3.5 text-lg sm:w-auto">
+            <ShoppingCart size={20} /> {campaign.kind === "raffle" ? "Nueva venta de rifa" : "Nueva venta de lotería"}
           </Link>
         )}
       </section>
 
       {campaign && summary ? (
         <>
-          <div className="mb-3 flex items-end justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-bold"><Ticket size={20} className="text-rojo" /> {campaign.name}</h2>
-            <Link href={`/loteria/${campaign.id}`} className="text-sm font-semibold text-rojo">Ver panel</Link>
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <h2 className="sport flex min-w-0 items-center gap-2 text-2xl font-black"><Ticket size={22} className="shrink-0 text-rojo" /> <span className="truncate">{campaign.name}</span></h2>
+            <Link href={`/loteria/${campaign.id}`} className="shrink-0 text-sm font-bold text-rojo">Ver panel →</Link>
           </div>
           {isAdmin ? (
             <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -107,12 +106,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
           <div className={`mb-6 grid gap-6 ${isAdmin ? "lg:grid-cols-[1fr_20rem]" : ""}`}>
             <section className="card min-w-0">
-              <h3 className="mb-3 font-bold">{isAdmin ? "Últimas ventas" : "Mis últimas ventas"}</h3>
+              <h3 className="sport mb-3 text-xl font-black">{isAdmin ? "Últimas ventas" : "Mis últimas ventas"}</h3>
               {latest.length ? <SalesTable rows={latest} showSeller={isAdmin} unit={campaign.kind === "raffle" ? "núm." : "part."} /> : <Empty>Aún no hay ventas.</Empty>}
             </section>
             {isAdmin && (
               <section className="card min-w-0">
-                <h3 className="mb-3 font-bold">Ranking de vendedores</h3>
+                <h3 className="sport mb-3 text-xl font-black">Ranking de vendedores</h3>
                 {ranking.length ? (
                   <ol className="space-y-2">
                     {ranking.map((r, i) => (
@@ -142,7 +141,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
       )}
 
-      <h2 className="mb-3 text-lg font-bold">Próximamente</h2>
+      <h2 className="sport mb-3 text-2xl font-black">Próximamente</h2>
       <div className="grid gap-3 sm:grid-cols-3">
         {[
           { icon: Wallet, t: "Finanzas", d: "Ingresos, gastos y saldo (fase 2)", show: isAdmin },

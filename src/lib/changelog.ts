@@ -7,6 +7,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.3.0",
+    date: "2026-11-05",
+    title: "Nuevo diseño y control de acceso",
+    changes: [
+      "Nuevo diseño más deportivo: tipografía condensada, franja diagonal del Rayo y menús renovados.",
+      "Se puede deshabilitar temporalmente el acceso de un usuario (y volver a habilitarlo) desde Usuarios, sin perder sus datos.",
+      "Arreglos en móvil: tarjetas y textos largos ya no se salen de la pantalla.",
+    ],
+  },
+  {
     version: "1.2.0",
     date: "2026-11-05",
     title: "Archivar campañas y app más rápida",

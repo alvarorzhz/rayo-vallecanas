@@ -16,12 +16,12 @@ export function Sidebar({ items, name, role, version }: { items: NavItem[]; name
   const path = usePathname();
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-negro text-white lg:flex">
-      <Link href="/" className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
+      <Link href="/" className="franja relative flex items-center gap-3 overflow-hidden border-b border-white/10 px-5 py-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/escudo.png" alt="" width={40} height={47} />
-        <div className="leading-tight">
-          <div className="font-black tracking-tight">RAYO</div>
-          <div className="text-xs font-semibold tracking-widest text-dorado">VALLECAÑAS</div>
+        <img src="/escudo.png" alt="" width={44} height={52} className="relative drop-shadow-lg" />
+        <div className="relative leading-none">
+          <div className="sport text-2xl font-black">Rayo</div>
+          <div className="sport text-sm font-bold tracking-[0.2em] text-dorado">Vallecañas</div>
         </div>
       </Link>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
@@ -39,11 +39,12 @@ export function Sidebar({ items, name, role, version }: { items: NavItem[]; name
             <Link
               key={it.href}
               href={it.href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                active ? "bg-rojo text-white" : "text-white/75 hover:bg-white/10 hover:text-white"
+              className={`group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[15px] font-semibold transition ${
+                active ? "bg-rojo text-white shadow-[0_6px_16px_-8px_rgba(210,13,23,0.9)]" : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
-              <Icon size={18} /> {it.label}
+              {active && <span aria-hidden className="absolute -right-2 top-0 h-full w-5 -skew-x-[20deg] bg-dorado/80" />}
+              <Icon size={18} className="transition group-hover:scale-110" /> {it.label}
             </Link>
           );
         })}
@@ -69,7 +70,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
   const visible = items.filter((i) => !i.soon && i.mobile !== false).slice(0, 5);
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-negro pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-negro/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       style={{ gridTemplateColumns: `repeat(${visible.length}, minmax(0, 1fr))` }}
     >
       {visible.map((it) => {
@@ -79,12 +80,13 @@ export function BottomNav({ items }: { items: NavItem[] }) {
           <Link
             key={it.href}
             href={it.href}
-            className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${active ? "text-white" : "text-white/50"}`}
+            className={`relative flex min-w-0 flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] font-semibold transition ${active ? "text-white" : "text-white/50"}`}
           >
-            <span className={`rounded-full px-3 py-0.5 ${active ? "bg-rojo" : ""}`}>
-              <Icon size={20} />
+            {active && <span aria-hidden className="absolute inset-x-4 top-0 h-[3px] -skew-x-[25deg] rounded-b bg-rojo" />}
+            <span className={`flex h-8 w-12 items-center justify-center rounded-xl transition ${active ? "-skew-x-[10deg] bg-rojo" : ""}`}>
+              <Icon size={20} className={active ? "skew-x-[10deg]" : ""} />
             </span>
-            {it.label}
+            <span className="max-w-full truncate px-1">{it.label}</span>
           </Link>
         );
       })}

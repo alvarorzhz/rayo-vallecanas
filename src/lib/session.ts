@@ -28,8 +28,8 @@ export const getSession = cache(async (): Promise<Session> => {
     supabase.rpc("my_permissions"),
   ]);
   if (!profile || !profile.active) {
-    await supabase.auth.signOut();
-    redirect("/login?error=inactivo");
+    // Usuario deshabilitado: se le cierra la sesión en una ruta que sí puede borrar cookies
+    redirect("/auth/salir?error=inactivo");
   }
 
   const perms = {} as Perms;
