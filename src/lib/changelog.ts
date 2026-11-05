@@ -7,6 +7,12 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.4.2",
+    date: "2026-11-05",
+    title: "Emojis del justificante",
+    changes: ["Arreglado: los emojis del mensaje de WhatsApp salían como «�»."],
+  },
+  {
     version: "1.4.1",
     date: "2026-11-05",
     title: "Justificante más cercano",

@@ -328,10 +328,11 @@ export async function openWhatsAppManual(saleId: string): Promise<{ url?: string
     recipient: phone,
     status: "sent",
     attempts: 1,
-    provider_id: "manual (wa.me)",
+    provider_id: "manual (whatsapp)",
     sent_at: new Date().toISOString(),
   });
   // Se devuelve el enlace y lo abre el navegador: una redirección del servidor estropeaba
-  // las comillas (&#34;) y los emojis del mensaje.
-  return { url: `https://wa.me/${phone}?text=${encodeURIComponent(receiptText(r.data))}` };
+  // las comillas (&#34;) y los emojis del mensaje. Se usa api.whatsapp.com directamente:
+  // la redirección de wa.me vuelve a codificar el texto y rompe los emojis (salen como �).
+  return { url: `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(receiptText(r.data))}` };
 }
