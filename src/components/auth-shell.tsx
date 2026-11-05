@@ -13,6 +13,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
         </div>
         <div className="animate-fade-up rounded-2xl bg-white p-6 shadow-2xl">{children}</div>
         <p className="mt-6 text-center text-xs text-white/40">⚡ Un equipo. Una plataforma. Todo bajo control.</p>
+        <p className="mt-2 text-center text-xs"><a href="/privacidad" className="text-white/50 underline hover:text-dorado">Protección de datos</a></p>
       </div>
     </main>
   );

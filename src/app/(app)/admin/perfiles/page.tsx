@@ -30,7 +30,6 @@ export default async function ProfilesGuide() {
       <PageHeader
         title="Perfiles y permisos"
         subtitle="Qué hace y qué ve cada perfil en la app. Se lee directamente de los permisos configurados, así que siempre está al día."
-        back={{ href: "/admin/usuarios", label: "Usuarios" }}
       />
 
       <div className="mb-6 rounded-2xl bg-dorado/15 p-4 text-sm text-negro/80">

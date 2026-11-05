@@ -7,6 +7,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.6.0",
+    date: "2026-11-05",
+    title: "Avisos al móvil y nuevo panel de Gestión",
+    changes: [
+      "Notificaciones en el móvil: al entrar, la app pregunta si quieres activarlas. Avisa cuando se abre un sorteo, con cada venta nueva (a los gestores) y cuando sale el número ganador.",
+      "Nuevo apartado «Gestión» que reúne Usuarios, Perfiles, Avisos, Auditoría y Copia de seguridad.",
+      "Desde Gestión → Avisos se puede mandar una notificación a todo el equipo.",
+      "Alta de usuarios con contraseña provisional, sin necesidad de email: la app la crea y se manda por WhatsApp. Al entrar, cada uno elige la suya.",
+      "Copia de seguridad de todos los datos en Excel y en archivo completo (solo superadministradores).",
+      "Nueva página de Protección de datos, enlazada en el inicio de sesión, en la venta y en el justificante.",
+    ],
+  },
+  {
     version: "1.5.0",
     date: "2026-11-05",
     title: "Fotos de perfil y justificante en PDF",

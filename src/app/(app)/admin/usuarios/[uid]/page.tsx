@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
-import { UserEditForm } from "@/components/admin-forms";
-import { setUserAccess, updateUser } from "../actions";
+import { ResetPasswordForm, UserEditForm } from "@/components/admin-forms";
+import { resetPassword, setUserAccess, updateUser } from "../actions";
 import { Lock, LockOpen } from "lucide-react";
 
 export const metadata = { title: "Usuario" };
@@ -46,6 +46,12 @@ export default async function UserPage({ params }: { params: Promise<{ uid: stri
           </form>
         )}
         {uid === s.user.id && <p className="text-xs text-negro/50">Es tu propio usuario: no puedes deshabilitarlo.</p>}
+        {canEdit && uid !== s.user.id && profile.active && (
+          <div className="basis-full border-t border-black/5 pt-3">
+            <p className="mb-2 text-sm text-negro/60">¿Ha olvidado su contraseña? Crea una provisional y mándasela por WhatsApp.</p>
+            <ResetPasswordForm action={resetPassword.bind(null, uid)} />
+          </div>
+        )}
       </section>
       <UserEditForm
         action={updateUser.bind(null, uid)}

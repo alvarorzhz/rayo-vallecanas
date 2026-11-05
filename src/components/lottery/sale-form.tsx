@@ -93,6 +93,10 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
           </div>
         </div>
         <p className="text-xs text-negro/50">Necesitamos al menos un teléfono o un email para enviar el justificante.</p>
+        <p className="rounded-xl bg-gris p-3 text-xs text-negro/60">
+          🔒 Díselo al comprador: sus datos solo se usan para gestionar su compra y enviarle el justificante.
+          Más información en <a href="/privacidad" target="_blank" className="font-semibold text-rojo underline">Protección de datos</a>.
+        </p>
       </section>
 
       <section className="card space-y-4">

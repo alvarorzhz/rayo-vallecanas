@@ -26,7 +26,7 @@ export default async function UsersPage() {
       {s.can("users", "create") && (
         <section className="card mb-6">
           <h2 className="mb-1 font-bold">Dar de alta</h2>
-          <p className="mb-4 text-sm text-negro/50">Recibirá un email para crear su contraseña.</p>
+          <p className="mb-4 text-sm text-negro/50">Elige cómo le das acceso. Lo más sencillo es la contraseña provisional.</p>
           <InviteForm action={inviteUser} roles={roles} />
         </section>
       )}

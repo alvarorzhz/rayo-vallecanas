@@ -42,7 +42,8 @@ export async function setPassword(_: FormState, formData: FormData): Promise<For
   if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return { error: "Usa letras y números" };
   if (password !== confirm) return { error: "Las contraseñas no coinciden" };
   const supabase = await createClient();
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) return { error: error.message };
+  const { data: u, error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: /different|same/i.test(error.message) ? "Elige una contraseña distinta de la provisional" : error.message };
+  await supabase.from("profiles").update({ must_change_password: false }).eq("id", u.user.id);
   redirect("/");
 }

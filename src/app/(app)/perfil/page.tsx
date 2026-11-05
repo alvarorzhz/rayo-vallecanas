@@ -2,6 +2,7 @@ import { getSession } from "@/lib/session";
 import { ROLE_LABEL } from "@/lib/format";
 import { PageHeader } from "@/components/ui";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { PushSettings } from "@/components/push-settings";
 import { removeAvatar, uploadAvatar } from "./actions";
 
 export const metadata = { title: "Mi perfil" };
@@ -15,6 +16,10 @@ export default async function ProfilePage() {
       <div className="mx-auto max-w-md space-y-6">
         <section className="card">
           <AvatarUpload name={p.full_name} url={p.avatar_url} upload={uploadAvatar} remove={removeAvatar} />
+        </section>
+        <section className="card">
+          <h2 className="mb-3 font-bold">Avisos (notificaciones)</h2>
+          <PushSettings isManager={s.can("lottery_admin", "update")} notifySales={p.notify_sales} />
         </section>
         <section className="card">
           <dl className="divide-y divide-black/5 text-sm">

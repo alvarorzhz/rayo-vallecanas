@@ -20,7 +20,7 @@ const TABLE_LABEL: Record<string, string> = {
   profiles: "Usuario",
   user_permissions: "Permisos",
 };
-const ACTION_LABEL: Record<string, string> = { INSERT: "Alta", UPDATE: "Modificación", DELETE: "Borrado", CANCEL_SALE: "Anulación", EXPORT: "Exportación" };
+const ACTION_LABEL: Record<string, string> = { INSERT: "Alta", UPDATE: "Modificación", DELETE: "Borrado", CANCEL_SALE: "Anulación", EXPORT: "Exportación", BACKUP: "Copia de seguridad", NOTICE: "Aviso enviado", DELETE_CAMPAIGN: "Eliminación de campaña" };
 
 function diff(oldD: Record<string, unknown> | null, newD: Record<string, unknown> | null) {
   if (!oldD || !newD) return null;
