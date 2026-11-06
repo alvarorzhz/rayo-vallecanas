@@ -7,6 +7,14 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "2.2.2",
+    date: "2026-11-06",
+    title: "«Mis ventas» dentro de Sorteos",
+    changes: [
+      "«Mis ventas» deja la barra de abajo y pasa a ser un botón dentro de Sorteos, para que la barra no vaya tan cargada.",
+    ],
+  },
+  {
     version: "2.2.1",
     date: "2026-11-06",
     title: "Revisión de seguridad y accesibilidad",

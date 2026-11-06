@@ -5,12 +5,13 @@ import { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDa
 import { signOut } from "@/app/login/actions";
 import { Avatar } from "@/components/avatar";
 
-export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; soon?: boolean; mobile?: boolean };
+export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; soon?: boolean; mobile?: boolean; also?: string[] };
 
 const ICONS = { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDays, Settings };
 
-function isActive(path: string, href: string) {
-  return href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
+function isActive(path: string, href: string, also: string[] = []) {
+  const under = (h: string) => path === h || path.startsWith(h + "/");
+  return href === "/" ? path === "/" : under(href) || also.some(under);
 }
 
 export function Sidebar({ items, name, role, version, avatar }: { items: NavItem[]; name: string; role: string; version?: string; avatar?: string | null }) {
@@ -35,7 +36,7 @@ export function Sidebar({ items, name, role, version, avatar }: { items: NavItem
                 <span className="ml-auto rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase">Pronto</span>
               </div>
             );
-          const active = isActive(path, it.href);
+          const active = isActive(path, it.href, it.also);
           return (
             <Link
               aria-current={active ? "page" : undefined}
@@ -84,7 +85,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
     >
       {visible.map((it) => {
         const Icon = ICONS[it.icon];
-        const active = isActive(path, it.href);
+        const active = isActive(path, it.href, it.also);
         return (
           <Link
             key={it.href}
