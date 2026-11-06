@@ -7,6 +7,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.3.0",
+    date: "2026-11-07",
+    title: "Permisos personalizables",
+    changes: [
+      "Perfiles a medida: el superadministrador puede crear perfiles con nombre propio (Entrenador, Delegado, Tesorero…) y marcar con casillas lo que puede hacer cada uno.",
+      "Cada perfil nuevo parte de Gestor o de Jugador. Si parte de Jugador, nunca ve Finanzas ni los datos personales de otros.",
+      "También se puede cambiar lo que pueden hacer Gestor y Jugador, y los cambios se aplican al momento a todas sus personas.",
+      "En la ficha de cada usuario se elige su perfil (también los nuevos) y se siguen pudiendo personalizar sus permisos solo para esa persona.",
+      "La auditoría y la copia de seguridad siguen siendo solo del superadministrador.",
+    ],
+  },
+  {
     version: "3.2.0",
     date: "2026-11-06",
     title: "Actas y estadísticas",

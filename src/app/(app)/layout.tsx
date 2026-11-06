@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { getSession } from "@/lib/session";
-import { ROLE_LABEL } from "@/lib/format";
 import { Avatar } from "@/components/avatar";
 import { PushPrompt } from "@/components/push-prompt";
 import { BottomNav, Sidebar, type NavItem } from "@/components/nav";
@@ -27,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-dvh">
       <a href="#contenido" className="sr-only z-50 rounded-xl bg-rojo px-4 py-2 font-bold text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Saltar al contenido</a>
-      <Sidebar items={items} name={s.profile.full_name} role={ROLE_LABEL[s.profile.role] ?? s.profile.role} version={APP_VERSION} avatar={s.profile.avatar_url} />
+      <Sidebar items={items} name={s.profile.full_name} role={s.profile.role_label} version={APP_VERSION} avatar={s.profile.avatar_url} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="franja sticky top-0 z-20 flex items-center justify-between bg-negro px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] text-white shadow-lg lg:hidden">
           <Link href="/" className="flex min-w-0 items-center gap-2">

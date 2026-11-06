@@ -71,18 +71,10 @@ export async function sendPush(userIds: string[], payload: PushPayload) {
 /** Usuarios que gestionan sorteos (para avisos de ventas), según sus permisos efectivos. */
 export async function lotteryManagers(exclude?: string) {
   const admin = createAdminClient();
-  const [{ data: profiles }, { data: roles }, { data: custom }] = await Promise.all([
-    admin.from("profiles").select("id, role, notify_sales").eq("active", true),
-    admin.from("role_permissions").select("role, can_update").eq("module", "lottery_admin"),
-    admin.from("user_permissions").select("user_id, can_update").eq("module", "lottery_admin"),
+  const [{ data: profiles }, { data: ids }] = await Promise.all([
+    admin.from("profiles").select("id, notify_sales").eq("active", true),
+    admin.rpc("users_with_perm", { p_module: "lottery_admin", p_action: "update" }),
   ]);
-  return (profiles ?? [])
-    .filter((p) => p.notify_sales && p.id !== exclude)
-    .filter((p) => {
-      if (p.role === "superadmin") return true;
-      const c = custom?.find((u) => u.user_id === p.id);
-      if (c) return c.can_update;
-      return Boolean(roles?.find((r) => r.role === p.role)?.can_update);
-    })
-    .map((p) => p.id);
+  const allowed = new Set((ids ?? []) as string[]);
+  return (profiles ?? []).filter((p) => p.notify_sales && p.id !== exclude && allowed.has(p.id)).map((p) => p.id);
 }

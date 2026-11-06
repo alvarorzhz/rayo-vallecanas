@@ -1,8 +1,27 @@
 "use client";
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
-import { MODULE_LABEL, ROLE_LABEL, phoneE164 } from "@/lib/format";
+import { MODULE_LABEL, phoneE164 } from "@/lib/format";
+
+/** Perfil que se puede elegir para una persona (los de siempre y los creados a medida). */
+export type ProfileOption = { key: string; name: string; base: string; perms: Record<string, Partial<Record<"read" | "create" | "update" | "delete", boolean>>> };
+
+function ProfileOptions({ profiles }: { profiles: ProfileOption[] }) {
+  const fixed = profiles.filter((p) => p.key === p.base);
+  const custom = profiles.filter((p) => p.key !== p.base);
+  return (
+    <>
+      {fixed.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
+      {custom.length > 0 && (
+        <optgroup label="Perfiles a medida">
+          {custom.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
+        </optgroup>
+      )}
+    </>
+  );
+}
 
 type ActionState = { error?: string; ok?: string; password?: string; name?: string; phone?: string | null; email?: string } | undefined;
 type A = (s: ActionState, f: FormData) => Promise<ActionState>;
@@ -56,7 +75,7 @@ export function ResetPasswordForm({ action }: { action: A }) {
   );
 }
 
-export function InviteForm({ action, roles }: { action: A; roles: string[] }) {
+export function InviteForm({ action, profiles }: { action: A; profiles: ProfileOption[] }) {
   const [state, formAction] = useActionState(action, undefined);
   const [mode, setMode] = useState<"password" | "email">("password");
   if (state?.password) return <AccessResult state={state} again="Dar de alta a otro" />;
@@ -77,8 +96,8 @@ export function InviteForm({ action, roles }: { action: A; roles: string[] }) {
       <input name="full_name" required className="input" placeholder="Nombre y apellidos" />
       <input name="email" type="email" required className="input" placeholder="Email" />
       <input name="phone" type="tel" className="input" placeholder="Teléfono (opcional)" />
-      <select name="role" className="input" defaultValue="player" aria-label="Perfil">
-        {roles.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+      <select name="profile" className="input" defaultValue="player" aria-label="Perfil">
+        <ProfileOptions profiles={profiles} />
       </select>
       <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3">
         <FormMessage state={state} />
@@ -91,24 +110,27 @@ export function InviteForm({ action, roles }: { action: A; roles: string[] }) {
 export function UserEditForm({
   action,
   profile,
-  roles,
+  profiles,
   modules,
-  rolePerms,
   userPerms,
   canEdit,
 }: {
   action: A;
-  profile: { full_name: string; email: string | null; phone: string | null; role: string; active: boolean };
-  roles: string[];
+  profile: { full_name: string; email: string | null; phone: string | null; role: string; custom_role_id: string | null; active: boolean };
+  profiles: ProfileOption[];
   modules: string[];
-  rolePerms: PermRow[];
   userPerms: PermRow[];
   canEdit: boolean;
 }) {
   const [state, formAction] = useActionState(action, undefined);
-  const [role, setRole] = useState(profile.role);
+  const [key, setKey] = useState(profile.custom_role_id ?? profile.role);
+  const selected = profiles.find((p) => p.key === key);
+  const role = selected?.base ?? profile.role;
   const [custom, setCustom] = useState<Record<string, boolean>>(Object.fromEntries(userPerms.map((p) => [p.module, true])));
-  const base = (m: string) => rolePerms.find((p) => p.module === m && (p as PermRow & { role: string }).role === role);
+  const base = (m: string): PermRow | undefined => {
+    const p = selected?.perms[m];
+    return p && { module: m, can_read: !!p.read, can_create: !!p.create, can_update: !!p.update, can_delete: !!p.delete };
+  };
 
   return (
     <form action={formAction} className="space-y-6">
@@ -123,9 +145,9 @@ export function UserEditForm({
           <input id="phone" name="phone" defaultValue={profile.phone ?? ""} className="input" />
         </div>
         <div>
-          <label className="label" htmlFor="role">Rol</label>
-          <select id="role" name="role" value={role} onChange={(e) => setRole(e.target.value)} className="input">
-            {roles.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+          <label className="label" htmlFor="profile">Perfil</label>
+          <select id="profile" name="profile" value={key} onChange={(e) => setKey(e.target.value)} className="input">
+            <ProfileOptions profiles={profiles} />
           </select>
         </div>
       </fieldset>
@@ -133,8 +155,8 @@ export function UserEditForm({
       <fieldset disabled={!canEdit} className="card">
         <h2 className="mb-1 font-bold">Permisos</h2>
         <p className="mb-4 text-sm text-negro/65">
-          Por defecto se aplican los del rol. Marca “Personalizar” para fijar permisos concretos en un módulo.{" "}
-          <a href="/admin/perfiles" className="font-semibold text-rojo">¿Qué hace cada perfil?</a>
+          Por defecto se aplican los de su perfil{selected && selected.key !== selected.base ? ` (${selected.name})` : ""}. Marca “Personalizar” para fijar permisos concretos en un módulo solo para esta persona.{" "}
+          <Link href="/admin/perfiles" className="font-semibold text-rojo">¿Qué hace cada perfil?</Link>
         </p>
         {role === "player" && (
           <p className="mb-2 text-xs text-negro/65">Los jugadores no pueden acceder a Finanzas ni a los datos personales de otros en ningún caso.</p>
@@ -161,7 +183,7 @@ export function UserEditForm({
                       {ACTIONS.map(([a]) => (
                         <td key={a} className="text-center">
                           <input
-                            key={`${m}.${a}.${isCustom}.${role}`}
+                            key={`${m}.${a}.${isCustom}.${key}`}
                             type="checkbox"
                             name={`${m}.${a}`}
                             aria-label={`${MODULE_LABEL[m] ?? m}: ${ACTIONS.find(([x]) => x === a)?.[1] ?? a}`}

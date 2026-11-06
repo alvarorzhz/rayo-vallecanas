@@ -5,23 +5,24 @@ import { PageHeader } from "@/components/ui";
 import { ResetPasswordForm, UserEditForm } from "@/components/admin-forms";
 import { resetPassword, setUserAccess, updateUser } from "../actions";
 import { Lock, LockOpen } from "lucide-react";
+import { EDITABLE_MODULES, fetchProfileDefs } from "@/lib/roles";
 
 export const metadata = { title: "Usuario" };
-const MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "squad_private", "matches"];
 
 export default async function UserPage({ params }: { params: Promise<{ uid: string }> }) {
   const { uid } = await params;
   const s = await requirePerm("users", "read");
   const supabase = await createClient();
-  const [{ data: profile }, { data: rolePerms }, { data: userPerms }] = await Promise.all([
+  const [{ data: profile }, defs, { data: userPerms }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", uid).single(),
-    supabase.from("role_permissions").select("*"),
+    fetchProfileDefs(supabase),
     supabase.from("user_permissions").select("*").eq("user_id", uid),
   ]);
   if (!profile) notFound();
   const isSuper = s.profile.role === "superadmin";
   const canEdit = s.can("users", "update") && (isSuper || profile.role !== "superadmin");
-  const roles = ["player", "admin", ...(isSuper || profile.role === "superadmin" ? ["superadmin"] : [])];
+  const profiles = defs.filter((d) => d.key !== "superadmin" || isSuper || profile.role === "superadmin")
+    .map(({ key, name, base, perms }) => ({ key, name, base, perms }));
 
   return (
     <>
@@ -56,9 +57,8 @@ export default async function UserPage({ params }: { params: Promise<{ uid: stri
       <UserEditForm
         action={updateUser.bind(null, uid)}
         profile={profile}
-        roles={roles}
-        modules={MODULES}
-        rolePerms={rolePerms ?? []}
+        profiles={profiles}
+        modules={EDITABLE_MODULES}
         userPerms={userPerms ?? []}
         canEdit={canEdit}
       />

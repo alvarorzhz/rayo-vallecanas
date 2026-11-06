@@ -1,5 +1,4 @@
 import { getSession } from "@/lib/session";
-import { ROLE_LABEL } from "@/lib/format";
 import { PageHeader } from "@/components/ui";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { PushSettings } from "@/components/push-settings";
@@ -40,7 +39,7 @@ export default async function ProfilePage() {
           <dl className="divide-y divide-black/5 text-sm">
             {[
               ["Nombre", p.full_name],
-              ["Perfil", ROLE_LABEL[p.role] ?? p.role],
+              ["Perfil", p.role_label],
               ["Email", p.email ?? "—"],
               ["Teléfono", p.phone ?? "—"],
             ].map(([k, v]) => (
