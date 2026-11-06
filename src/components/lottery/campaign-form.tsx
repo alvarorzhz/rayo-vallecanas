@@ -50,7 +50,7 @@ export function CampaignForm({
             ))}
           </div>
           {hasSales && <input type="hidden" name="kind" value={kind} />}
-          {hasSales && <p className="mt-1 text-xs text-negro/50">No se puede cambiar con ventas registradas.</p>}
+          {hasSales && <p className="mt-1 text-xs text-negro/65">No se puede cambiar con ventas registradas.</p>}
         </fieldset>
         <div className="sm:col-span-2">
           <label className="label" htmlFor="name">Nombre de la campaña</label>
@@ -92,7 +92,7 @@ export function CampaignForm({
           <input id="price" name="price" required inputMode="decimal" className="input" defaultValue={eurosInput(campaign?.price_cents)}
             placeholder="5,00" disabled={hasSales} />
           {hasSales && <input type="hidden" name="price" value={eurosInput(campaign?.price_cents)} />}
-          {hasSales && <p className="mt-1 text-xs text-negro/50">No se puede cambiar con ventas registradas.</p>}
+          {hasSales && <p className="mt-1 text-xs text-negro/65">No se puede cambiar con ventas registradas.</p>}
         </div>
         {!raffle && (
           <>
@@ -109,7 +109,7 @@ export function CampaignForm({
         <div>
           <label className="label" htmlFor="total_shares">{raffle ? "Cantidad de números" : "Total de participaciones"}</label>
           <input id="total_shares" name="total_shares" type="number" min={1} required className="input" defaultValue={campaign?.total_shares ?? (raffle ? 100 : 500)} />
-          {raffle && <p className="mt-1 text-xs text-negro/50">Se crean los números del 1 al total.</p>}
+          {raffle && <p className="mt-1 text-xs text-negro/65">Se crean los números del 1 al total.</p>}
         </div>
         <div>
           <label className="label" htmlFor="numbering_mode">Numeración</label>
@@ -119,7 +119,7 @@ export function CampaignForm({
             <option value="booklet">Talonarios por vendedor</option>
             <option value="manual">El vendedor elige los números</option>
           </select>
-          <p className="mt-1 text-xs text-negro/50">
+          <p className="mt-1 text-xs text-negro/65">
             Automática: la app reparte los números en orden. Talonarios: cada vendedor tiene su bloque de números.
             El vendedor elige: al vender se tocan los números concretos (lo normal en una rifa).
           </p>
@@ -127,7 +127,7 @@ export function CampaignForm({
         <div>
           <label className="label" htmlFor="ref_prefix">Prefijo de referencia</label>
           <input id="ref_prefix" name="ref_prefix" className="input uppercase" maxLength={6} defaultValue={campaign?.ref_prefix ?? "RV"} />
-          <p className="mt-1 text-xs text-negro/50">Ej.: RV-{campaign?.year ?? year}-0001</p>
+          <p className="mt-1 text-xs text-negro/65">Ej.: RV-{campaign?.year ?? year}-0001</p>
         </div>
         <div className="sm:col-span-3">
           <label className="label" htmlFor="notes">Observaciones</label>

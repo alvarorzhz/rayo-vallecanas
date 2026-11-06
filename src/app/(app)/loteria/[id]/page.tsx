@@ -243,7 +243,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
                     <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${i === 0 ? "bg-dorado text-negro" : i < 3 ? "bg-negro text-white" : "bg-gris"}`}>{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-semibold">{r.full_name}</div>
-                      <div className="text-xs text-negro/50">{r.shares} {raffle ? "núm." : "part."} · pendiente {euros(r.pending_cents)}</div>
+                      <div className="text-xs text-negro/65">{r.shares} {raffle ? "núm." : "part."} · pendiente {euros(r.pending_cents)}</div>
                     </div>
                     <div className="text-sm font-bold tabular-nums">{euros(r.sold_cents)}</div>
                   </li>
@@ -274,7 +274,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
             <DeleteCampaignForm action={deleteCampaign.bind(null, id)} name={c.name} sales={summary.sales_count ?? 0} />
           </div>
           {!c.archived_at && c.status === "active" && (
-            <p className="text-xs text-negro/50">Al archivar, las ventas se cierran automáticamente.</p>
+            <p className="text-xs text-negro/65">Al archivar, las ventas se cierran automáticamente.</p>
           )}
         </section>
       )}

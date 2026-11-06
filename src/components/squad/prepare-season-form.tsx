@@ -33,7 +33,7 @@ export function PrepareSeasonForm({ action, from, to, candidates }: { action: (s
           return (
             <section key={g.key} className="card">
               <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-                <div><h2>{g.title}</h2><p className="text-xs text-negro/50">{g.hint}</p></div>
+                <div><h2>{g.title}</h2><p className="text-xs text-negro/65">{g.hint}</p></div>
                 <button type="button" className="text-sm font-bold text-rojo" onClick={() => setGroup(g.key, !all)}>{all ? "Quitar todos" : "Marcar todos"}</button>
               </div>
               <ul className="grid gap-2 sm:grid-cols-2">
@@ -51,7 +51,7 @@ export function PrepareSeasonForm({ action, from, to, candidates }: { action: (s
                         )}
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-semibold">{c.name}</span>
-                          <span className={`block truncate text-xs ${on ? "text-white/60" : "text-negro/50"}`}>{c.sub}</span>
+                          <span className={`block truncate text-xs ${on ? "text-white/60" : "text-negro/65"}`}>{c.sub}</span>
                         </span>
                         <span className={`sport shrink-0 rounded px-1.5 py-0.5 text-[11px] font-black ${LINE_TONE[lineOf(c.position)].chip}`}>{c.position}</span>
                       </label>
@@ -66,10 +66,10 @@ export function PrepareSeasonForm({ action, from, to, candidates }: { action: (s
       <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
         <section className="card space-y-3">
           <h2>Temporada {to}</h2>
-          <div className="sport text-5xl font-black leading-none"><span key={sel.size} className="anim-score inline-block">{sel.size}</span><span className="ml-2 text-base text-negro/50">jugadores</span></div>
+          <div className="sport text-5xl font-black leading-none"><span key={sel.size} className="anim-score inline-block">{sel.size}</span><span className="ml-2 text-base text-negro/65">jugadores</span></div>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="keep_numbers" defaultChecked className="mt-0.5 h-4 w-4 accent-rojo" /> Mantener los dorsales</label>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="keep_armbands" defaultChecked className="mt-0.5 h-4 w-4 accent-rojo" /> Mantener capitán y segundo capitán</label>
-          <p className="text-xs text-negro/50">Las estadísticas empiezan a cero. Después puedes cambiar dorsales, fichar nuevos y dar bajas.</p>
+          <p className="text-xs text-negro/65">Las estadísticas empiezan a cero. Después puedes cambiar dorsales, fichar nuevos y dar bajas.</p>
           <FormMessage state={state} />
           <SubmitButton disabled={!sel.size} className="btn-primary w-full py-3 text-lg" pendingText="Preparando…">Preparar temporada</SubmitButton>
         </section>

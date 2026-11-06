@@ -31,7 +31,7 @@ export default async function FinanceSettingsPage() {
         {(["income", "expense"] as const).map((k) => (
           <section key={k} className="card">
             <h2 className="sport mb-1 text-xl font-black">Categorías de {k === "income" ? "ingresos" : "gastos"}</h2>
-            <p className="mb-2 text-xs text-negro/50">Las categorías no se borran para no perder el histórico: si ya no la usáis, ocúltala.</p>
+            <p className="mb-2 text-xs text-negro/65">Las categorías no se borran para no perder el histórico: si ya no la usáis, ocúltala.</p>
             <ul className="divide-y divide-black/5">
               {cats?.filter((c) => c.kind === k).map((c) => (
                 <CategoryRow key={c.id} name={c.name} active={c.active}

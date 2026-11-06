@@ -49,7 +49,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader title="Auditoría" subtitle="Registro de operaciones importantes. No se puede modificar." />
       <form className="mb-4 flex gap-2">
-        <select name="t" defaultValue={sp.t ?? ""} className="input max-w-xs">
+        <select name="t" defaultValue={sp.t ?? ""} className="input max-w-xs" aria-label="Tabla">
           <option value="">Todo</option>
           {Object.entries(TABLE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
@@ -71,7 +71,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                       <span className="badge mr-2 bg-negro text-white">{ACTION_LABEL[r.action] ?? r.action}</span>
                       <b>{TABLE_LABEL[r.table_name] ?? r.table_name}</b> {what && <span className="text-negro/70">· {what}</span>}
                     </div>
-                    <div className="text-xs text-negro/50">{r.user_id ? names.get(r.user_id) ?? "—" : "Sistema"} · {fecha(r.created_at, true)}</div>
+                    <div className="text-xs text-negro/65">{r.user_id ? names.get(r.user_id) ?? "—" : "Sistema"} · {fecha(r.created_at, true)}</div>
                   </div>
                   {changes?.length ? (
                     <div className="mt-1 break-all font-mono text-[11px] text-negro/60">{changes.join(" · ")}</div>

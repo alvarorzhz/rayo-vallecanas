@@ -104,7 +104,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         <MonthlyBars data={months} />
         <details className="mt-3 text-sm">
           <summary className="cursor-pointer font-semibold text-negro/60">Ver en tabla</summary>
-          <div className="mt-2 overflow-x-auto">
+          <div className="mt-2 overflow-x-auto" tabIndex={0} role="region" aria-label="Tabla (desliza para ver más)">
             <table className="table">
               <thead><tr><th>Mes</th><th className="text-right">Ingresos</th><th className="text-right">Gastos</th><th className="text-right">Resultado</th><th className="text-right">Saldo a fin de mes</th></tr></thead>
               <tbody>
@@ -141,7 +141,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                     <li key={name}>
                       <div className="flex justify-between gap-2">
                         <span className="truncate">{name}</span>
-                        <span className="shrink-0 tabular-nums"><b>{euros(cents)}</b> <span className="text-negro/50">· {total ? Math.round((cents / total) * 100) : 0}%</span></span>
+                        <span className="shrink-0 tabular-nums"><b>{euros(cents)}</b> <span className="text-negro/65">· {total ? Math.round((cents / total) * 100) : 0}%</span></span>
                       </div>
                       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/10">
                         <div className={`h-full rounded-full ${k === "income" ? "bg-green-600" : "bg-rojo"}`} style={{ width: `${total ? (cents / total) * 100 : 0}%` }} />
@@ -149,7 +149,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-sm text-negro/50">Sin {k === "income" ? "ingresos" : "gastos"} en esta temporada.</p>}
+              ) : <p className="text-sm text-negro/65">Sin {k === "income" ? "ingresos" : "gastos"} en esta temporada.</p>}
             </section>
           );
         })}
@@ -157,7 +157,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
       <section className="card">
         <h2 className="sport mb-3 text-xl font-black">Balance por temporada</h2>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabla (desliza para ver más)">
           <table className="table">
             <thead><tr><th>Temporada</th><th className="text-right">Ingresos</th><th className="text-right">Gastos</th><th className="text-right">Resultado</th><th className="text-right">Saldo al cierre</th></tr></thead>
             <tbody>
@@ -173,7 +173,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-xs text-negro/50">El saldo se cuenta desde el saldo inicial; las temporadas anteriores a esa fecha muestran «—».</p>
+        <p className="mt-2 text-xs text-negro/65">El saldo se cuenta desde el saldo inicial; las temporadas anteriores a esa fecha muestran «—».</p>
       </section>
     </>
   );

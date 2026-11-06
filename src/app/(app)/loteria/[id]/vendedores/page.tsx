@@ -39,11 +39,11 @@ export default async function SellersPage({ params }: { params: Promise<{ id: st
                 <li key={m.id} className="flex items-center justify-between py-2">
                   <div>
                     <div className="font-semibold">{m.full_name}</div>
-                    <div className="text-xs text-negro/50">{ROLE_LABEL[m.role]}</div>
+                    <div className="text-xs text-negro/65">{ROLE_LABEL[m.role]}</div>
                   </div>
                   {canEdit && (
                     <form action={removeSeller.bind(null, id, m.id)}>
-                      <button aria-label={`Quitar a ${m.full_name}`} className="rounded-lg p-2 text-negro/40 hover:bg-rojo/10 hover:text-rojo"><X size={16} /></button>
+                      <button aria-label={`Quitar a ${m.full_name}`} className="rounded-lg p-2 text-negro/60 hover:bg-rojo/10 hover:text-rojo"><X size={16} /></button>
                     </form>
                   )}
                 </li>
@@ -63,14 +63,14 @@ export default async function SellersPage({ params }: { params: Promise<{ id: st
                     <label key={m.id} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-gris">
                       <input type="checkbox" name="user_id" value={m.id} className="h-4 w-4 accent-rojo" />
                       <span className="flex-1">{m.full_name}</span>
-                      <span className="text-xs text-negro/50">{ROLE_LABEL[m.role]}</span>
+                      <span className="text-xs text-negro/65">{ROLE_LABEL[m.role]}</span>
                     </label>
                   ))}
                 </div>
                 <button className="btn-primary w-full">Asignar seleccionados</button>
               </form>
             ) : (
-              <p className="text-sm text-negro/50">Todos los usuarios activos ya están asignados. Da de alta más en Usuarios.</p>
+              <p className="text-sm text-negro/65">Todos los usuarios activos ya están asignados. Da de alta más en Usuarios.</p>
             )}
           </section>
         )}
@@ -78,7 +78,7 @@ export default async function SellersPage({ params }: { params: Promise<{ id: st
 
       <section className="card mt-6">
         <h2 className="mb-1 font-bold">Talonarios</h2>
-        <p className="mb-4 text-sm text-negro/50">
+        <p className="mb-4 text-sm text-negro/65">
           {c.numbering_mode === "booklet"
             ? "Cada vendedor solo vende participaciones de sus talonarios."
             : "Esta campaña no usa talonarios (puedes cambiarlo en Editar). Aun así puedes registrar qué rangos físicos tiene cada vendedor."}

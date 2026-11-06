@@ -39,7 +39,7 @@ export function MonthlyBars({ data }: { data: MonthPoint[] }) {
         <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-green-600" /> Ingresos (hacia arriba)</span>
         <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-rojo" /> Gastos (hacia abajo)</span>
       </div>
-      <div className="-mx-1 overflow-x-auto px-1">
+      <div className="-mx-1 overflow-x-auto px-1" tabIndex={0} role="region" aria-label="Gráfico (desliza para ver más)">
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[600px]" role="img" aria-label="Ingresos y gastos por mes" onMouseLeave={() => setHover(null)}>
         {[-1, -0.5, 0.5, 1].map((t) => (
           <g key={t}>
@@ -86,7 +86,7 @@ export function BalanceLine({ data }: { data: MonthPoint[] }) {
   const pts = data.map((d, i) => ({ ...d, i })).filter((d) => d.balance !== null) as (MonthPoint & { i: number; balance: number })[];
   const W = 720, H = 180, L = 56, R = 8, T = 14, B = 28;
   const step = (W - L - R) / data.length;
-  if (!pts.length) return <p className="text-sm text-negro/50">El saldo empieza a contar desde la fecha del saldo inicial.</p>;
+  if (!pts.length) return <p className="text-sm text-negro/65">El saldo empieza a contar desde la fecha del saldo inicial.</p>;
   const vals = pts.map((p) => p.balance);
   const lo = Math.min(0, ...vals), hi = Math.max(...vals, 1);
   const top = niceMax(hi), bottom = lo < 0 ? -niceMax(-lo) : 0;
@@ -97,7 +97,7 @@ export function BalanceLine({ data }: { data: MonthPoint[] }) {
 
   return (
     <div className="relative">
-      <div className="-mx-1 overflow-x-auto px-1">
+      <div className="-mx-1 overflow-x-auto px-1" tabIndex={0} role="region" aria-label="Gráfico (desliza para ver más)">
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[600px]" role="img" aria-label="Saldo a final de cada mes" onMouseLeave={() => setHover(null)}>
         {[bottom, (bottom + top) / 2, top].map((v) => (
           <g key={v}>

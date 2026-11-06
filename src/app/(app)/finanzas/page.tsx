@@ -93,7 +93,7 @@ export default async function FinancesPage({ searchParams }: { searchParams: Pro
                   })}
                 </ul>
               ) : (
-                <p className="text-sm text-negro/50">Sin {k === "income" ? "ingresos" : "gastos"}.</p>
+                <p className="text-sm text-negro/65">Sin {k === "income" ? "ingresos" : "gastos"}.</p>
               )}
             </section>
           ))}

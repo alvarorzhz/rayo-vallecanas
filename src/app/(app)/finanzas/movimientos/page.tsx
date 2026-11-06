@@ -89,15 +89,15 @@ export default async function MovementsPage({ searchParams }: { searchParams: Pr
             <input type="checkbox" name="anulados" value="1" defaultChecked={f.voided} className="accent-rojo" /> Ver anulados
           </label>
           <button className="btn-dark flex-1">Filtrar</button>
-          <Link href="/finanzas/movimientos" className="text-sm font-semibold text-negro/50 hover:text-rojo">Limpiar</Link>
+          <Link href="/finanzas/movimientos" className="text-sm font-semibold text-negro/65 hover:text-rojo">Limpiar</Link>
         </div>
-        <p className="text-xs text-negro/50 sm:col-span-2 lg:col-span-6">Si pones fechas, se usan en lugar de la temporada.</p>
+        <p className="text-xs text-negro/65 sm:col-span-2 lg:col-span-6">Si pones fechas, se usan en lugar de la temporada.</p>
       </form>
 
       <div className="mb-4 grid grid-cols-3 gap-2 text-center text-sm">
-        <div className="rounded-xl bg-white p-3 ring-1 ring-black/5"><div className="text-xs text-negro/50">Ingresos</div><b className="tabular-nums text-green-700">{euros(inc)}</b></div>
-        <div className="rounded-xl bg-white p-3 ring-1 ring-black/5"><div className="text-xs text-negro/50">Gastos</div><b className="tabular-nums text-rojo">{euros(exp)}</b></div>
-        <div className="rounded-xl bg-white p-3 ring-1 ring-black/5"><div className="text-xs text-negro/50">Resultado</div><b className="tabular-nums">{euros(inc - exp)}</b></div>
+        <div className="rounded-xl bg-white p-3 ring-1 ring-black/5"><div className="text-xs text-negro/65">Ingresos</div><b className="tabular-nums text-green-700">{euros(inc)}</b></div>
+        <div className="rounded-xl bg-white p-3 ring-1 ring-black/5"><div className="text-xs text-negro/65">Gastos</div><b className="tabular-nums text-rojo">{euros(exp)}</b></div>
+        <div className="rounded-xl bg-white p-3 ring-1 ring-black/5"><div className="text-xs text-negro/65">Resultado</div><b className="tabular-nums">{euros(inc - exp)}</b></div>
       </div>
 
       <section className="card">

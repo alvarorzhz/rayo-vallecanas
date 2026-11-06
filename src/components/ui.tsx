@@ -15,7 +15,7 @@ export function PageHeader({
   return (
     <div className="mb-6">
       {back && (
-        <Link href={back.href} className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-negro/50 hover:text-rojo">
+        <Link href={back.href} className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-negro/65 hover:text-rojo">
           ← {back.label}
         </Link>
       )}
@@ -52,7 +52,7 @@ export function Stat({
     dark: "bg-gradient-to-br from-negro-2 to-negro text-white",
   };
   const accent = { default: "bg-negro/10", red: "bg-white/25", gold: "bg-dorado", dark: "bg-rojo" }[tone];
-  const muted = tone === "default" || tone === "gold" ? "text-negro/50" : "text-white/70";
+  const muted = tone === "default" || tone === "gold" ? "text-negro/65" : "text-white/70";
   return (
     <div className={`relative overflow-hidden rounded-2xl p-4 shadow-sm ${tones[tone]}`}>
       <span aria-hidden className={`absolute -right-3 top-0 h-full w-6 -skew-x-[20deg] ${accent}`} />
@@ -84,7 +84,7 @@ export function CampaignBadge({ status }: { status: string }) {
 }
 
 export function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl border-2 border-dashed border-black/10 p-8 text-center text-sm text-negro/50">{children}</div>;
+  return <div className="rounded-2xl border-2 border-dashed border-black/10 p-8 text-center text-sm text-negro/65">{children}</div>;
 }
 
 export function Progress({ value, total }: { value: number; total: number }) {

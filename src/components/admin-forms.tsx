@@ -77,7 +77,7 @@ export function InviteForm({ action, roles }: { action: A; roles: string[] }) {
       <input name="full_name" required className="input" placeholder="Nombre y apellidos" />
       <input name="email" type="email" required className="input" placeholder="Email" />
       <input name="phone" type="tel" className="input" placeholder="Teléfono (opcional)" />
-      <select name="role" className="input" defaultValue="player">
+      <select name="role" className="input" defaultValue="player" aria-label="Perfil">
         {roles.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
       </select>
       <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3">
@@ -132,12 +132,12 @@ export function UserEditForm({
 
       <fieldset disabled={!canEdit} className="card">
         <h2 className="mb-1 font-bold">Permisos</h2>
-        <p className="mb-4 text-sm text-negro/50">
+        <p className="mb-4 text-sm text-negro/65">
           Por defecto se aplican los del rol. Marca “Personalizar” para fijar permisos concretos en un módulo.{" "}
           <a href="/admin/perfiles" className="font-semibold text-rojo">¿Qué hace cada perfil?</a>
         </p>
         {role === "player" && (
-          <p className="mb-2 text-xs text-negro/50">Los jugadores no pueden acceder a Finanzas ni a los datos personales de otros en ningún caso.</p>
+          <p className="mb-2 text-xs text-negro/65">Los jugadores no pueden acceder a Finanzas ni a los datos personales de otros en ningún caso.</p>
         )}
         {role === "superadmin" ? (
           <p className="rounded-xl bg-gris p-3 text-sm">El superadministrador tiene acceso completo a todo.</p>
@@ -155,7 +155,7 @@ export function UserEditForm({
                     <tr key={m}>
                       <td className="font-medium">{MODULE_LABEL[m] ?? m}</td>
                       <td>
-                        <input type="checkbox" name={`${m}.custom`} checked={isCustom}
+                        <input type="checkbox" name={`${m}.custom`} checked={isCustom} aria-label={`${MODULE_LABEL[m] ?? m}: personalizar`}
                           onChange={(e) => setCustom((c) => ({ ...c, [m]: e.target.checked }))} className="h-4 w-4 accent-rojo" />
                       </td>
                       {ACTIONS.map(([a]) => (
@@ -164,6 +164,7 @@ export function UserEditForm({
                             key={`${m}.${a}.${isCustom}.${role}`}
                             type="checkbox"
                             name={`${m}.${a}`}
+                            aria-label={`${MODULE_LABEL[m] ?? m}: ${ACTIONS.find(([x]) => x === a)?.[1] ?? a}`}
                             defaultChecked={Boolean(src?.[`can_${a}` as keyof PermRow])}
                             disabled={!isCustom}
                             className="h-4 w-4 accent-rojo"

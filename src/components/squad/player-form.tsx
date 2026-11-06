@@ -44,7 +44,7 @@ export function PositionPicker({ value, onChange }: { value: string; onChange: (
         })}
       </div>
       <p className="mt-2 text-center text-sm font-semibold">
-        {value ? <>{POSITION_LABEL[value]} <span className="text-negro/50">· {{ GK: "portería", DEF: "defensa", MID: "centro del campo", FWD: "ataque" }[lineOf(value)]}</span></> : <span className="text-negro/50">Toca su posición en el campo</span>}
+        {value ? <>{POSITION_LABEL[value]} <span className="text-negro/65">· {{ GK: "portería", DEF: "defensa", MID: "centro del campo", FWD: "ataque" }[lineOf(value)]}</span></> : <span className="text-negro/65">Toca su posición en el campo</span>}
       </p>
     </div>
   );
@@ -125,7 +125,7 @@ export function PlayerForm({
           </div>
           {usedNumbers.length > 0 && (
             <div>
-              <p className="mb-1.5 text-xs font-semibold text-negro/50">Dorsales ocupados esta temporada</p>
+              <p className="mb-1.5 text-xs font-semibold text-negro/65">Dorsales ocupados esta temporada</p>
               <div className="flex flex-wrap gap-1">
                 {usedNumbers.map((u) => (
                   <span key={u.number} title={u.name} className="sport flex h-7 min-w-7 items-center justify-center rounded-md bg-negro px-1 text-sm font-black text-white">{u.number}</span>
@@ -137,12 +137,12 @@ export function PlayerForm({
 
         <section className="card space-y-4">
           <h2>Estadísticas {season}</h2>
-          <p className="text-xs text-negro/50">De momento se apuntan a mano. Cuando lleguen los partidos (fase 4) se calcularán solas con cada acta.</p>
+          <p className="text-xs text-negro/65">De momento se apuntan a mano. Cuando lleguen los partidos (fase 4) se calcularán solas con cada acta.</p>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
             {STAT_KEYS.filter((k) => (lineOf(position || "DC") === "GK" ? true : k !== "conceded" && k !== "clean_sheets")).map((k) => (
               <div key={k}>
                 <label className="label truncate" htmlFor={`st-${k}`} title={STAT_LABEL[k].long}>
-                  <span className="sport mr-1 font-black">{STAT_LABEL[k].short}</span><span className="text-xs font-normal text-negro/50">{STAT_LABEL[k].long}</span>
+                  <span className="sport mr-1 font-black">{STAT_LABEL[k].short}</span><span className="text-xs font-normal text-negro/65">{STAT_LABEL[k].long}</span>
                 </label>
                 <input id={`st-${k}`} name={k} type="number" min={0} max={999} inputMode="numeric" defaultValue={member?.[k] ?? 0} className="input sport text-xl font-black" />
               </div>
@@ -153,7 +153,7 @@ export function PlayerForm({
         {canPrivate && <>
         <section className="card space-y-4">
           <h2>Contacto</h2>
-          <p className="text-xs text-negro/50">Solo lo ven los gestores con permiso de datos personales y el propio jugador.</p>
+          <p className="text-xs text-negro/65">Solo lo ven los gestores con permiso de datos personales y el propio jugador.</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div><label className="label" htmlFor="phone">Teléfono</label><input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={priv?.phone ?? ""} className="input" /></div>
             <div><label className="label" htmlFor="email">Email</label><input id="email" name="email" type="email" defaultValue={priv?.email ?? ""} className="input" /></div>
@@ -164,7 +164,7 @@ export function PlayerForm({
 
         <section className="card space-y-4">
           <h2>Observaciones</h2>
-          <p className="text-xs text-negro/50">Solo para gestores: el jugador no las ve.</p>
+          <p className="text-xs text-negro/65">Solo para gestores: el jugador no las ve.</p>
           <div><label className="label" htmlFor="sport_notes">Deportivas</label><textarea id="sport_notes" name="sport_notes" rows={3} maxLength={2000} defaultValue={priv?.sport_notes ?? ""} placeholder="Puntos fuertes, lesiones anteriores, preferencias…" className="input" /></div>
           <div><label className="label" htmlFor="internal_notes">Internas</label><textarea id="internal_notes" name="internal_notes" rows={3} maxLength={2000} defaultValue={priv?.internal_notes ?? ""} className="input" /></div>
         </section>
@@ -189,7 +189,7 @@ export function PlayerForm({
 
         <div className="space-y-2 lg:sticky lg:top-6">
           <FormMessage state={state} />
-          {!position && <p className="text-center text-xs text-negro/50">Elige su posición en el campo para poder guardar.</p>}
+          {!position && <p className="text-center text-xs text-negro/65">Elige su posición en el campo para poder guardar.</p>}
           <button type="submit" disabled={pending || !position || Boolean(taken)} className="btn-primary w-full py-3 text-lg">{pending ? "Guardando…" : isNew ? "Fichar jugador" : "Guardar cambios"}</button>
           {isNew && canCreate && (
             <button type="submit" name="again" value="1" disabled={pending || !position || Boolean(taken)} className="btn-ghost w-full">Guardar y fichar otro</button>

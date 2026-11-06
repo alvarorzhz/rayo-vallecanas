@@ -22,7 +22,7 @@ export function PushSettings({ isManager, notifySales }: { isManager: boolean; n
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 font-semibold">
-          {state === "on" ? <Bell size={18} className="text-green-700" /> : <BellOff size={18} className="text-negro/40" />}
+          {state === "on" ? <Bell size={18} className="text-green-700" /> : <BellOff size={18} className="text-negro/60" />}
           {state === "on" ? "Avisos activados en este dispositivo" : state === "loading" ? "Comprobando…" : "Avisos desactivados en este dispositivo"}
         </div>
         {state === "off" && (
@@ -45,10 +45,10 @@ export function PushSettings({ isManager, notifySales }: { isManager: boolean; n
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" defaultChecked={notifySales} className="mt-1 accent-rojo"
             onChange={(e) => start(() => setNotifySales(e.target.checked))} />
-          <span>Avisarme de cada venta nueva <span className="text-negro/50">(si hay muchas ventas, puedes quitarlo)</span></span>
+          <span>Avisarme de cada venta nueva <span className="text-negro/65">(si hay muchas ventas, puedes quitarlo)</span></span>
         </label>
       )}
-      <p className="text-xs text-negro/50">Cada dispositivo (móvil, ordenador…) se activa por separado.</p>
+      <p className="text-xs text-negro/65">Cada dispositivo (móvil, ordenador…) se activa por separado.</p>
       <FormMessage state={msg} />
     </div>
   );

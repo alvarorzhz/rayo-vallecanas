@@ -55,7 +55,7 @@ export default async function ProfilesGuide() {
               <p className="mt-2 text-sm font-medium">{info.summary}</p>
 
               <div className="mt-4">
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-negro/50">Ve en el menú</h3>
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-negro/65">Ve en el menú</h3>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="badge bg-gris">Inicio</span>
                   {menuUnique.map((l) => <span key={l} className="badge bg-gris">{l}</span>)}
@@ -70,7 +70,7 @@ export default async function ProfilesGuide() {
                     <ul className="space-y-1.5 text-sm">
                       {ACTS.filter((a) => g.acts[a] && can(role, m, a)).map((a) => (
                         <li key={a} className="flex gap-2">
-                          {a === "read" ? <Eye size={16} className="mt-0.5 shrink-0 text-negro/50" /> : <Wrench size={16} className="mt-0.5 shrink-0 text-rojo" />}
+                          {a === "read" ? <Eye size={16} className="mt-0.5 shrink-0 text-negro/65" /> : <Wrench size={16} className="mt-0.5 shrink-0 text-rojo" />}
                           <span>{g.acts[a]}</span>
                         </li>
                       ))}
@@ -88,10 +88,10 @@ export default async function ProfilesGuide() {
                   </div>
                 )}
                 {soon.length > 0 && (
-                  <p className="text-xs text-negro/50">Cuando lleguen: {soon.map(([, g]) => g.title).join(", ")}.</p>
+                  <p className="text-xs text-negro/65">Cuando lleguen: {soon.map(([, g]) => g.title).join(", ")}.</p>
                 )}
                 {role !== "superadmin" && (
-                  <p className="flex items-start gap-1.5 text-xs text-negro/50">
+                  <p className="flex items-start gap-1.5 text-xs text-negro/65">
                     <Lock size={14} className="mt-0.5 shrink-0" />
                     {role === "admin"
                       ? "No puede archivar ni eliminar campañas ni tocar a los superadministradores."
@@ -106,7 +106,7 @@ export default async function ProfilesGuide() {
 
       <section className="card mt-6 min-w-0">
         <h2 className="mb-3">Tabla resumen</h2>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tabla de permisos (desliza para ver más)">
           <table className="table">
             <thead>
               <tr><th>Sección</th>{ROLES.map((r) => <th key={r} className="text-center">{ROLE_LABEL[r]}</th>)}</tr>
@@ -125,7 +125,7 @@ export default async function ProfilesGuide() {
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-xs text-negro/50">
+        <p className="mt-3 text-xs text-negro/65">
           Para cambiar lo que puede hacer una persona concreta, ve a <Link href="/admin/usuarios" className="font-semibold text-rojo">Usuarios</Link>, pulsa en ella y personaliza sus permisos.
         </p>
       </section>

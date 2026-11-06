@@ -25,7 +25,7 @@ export function Sidebar({ items, name, role, version, avatar }: { items: NavItem
           <div className="sport text-sm font-bold tracking-[0.2em] text-dorado">Vallecañas</div>
         </div>
       </Link>
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+      <nav aria-label="Menú principal" className="flex-1 space-y-1 overflow-y-auto p-3">
         {items.map((it) => {
           const Icon = ICONS[it.icon];
           if (it.soon)
@@ -38,6 +38,7 @@ export function Sidebar({ items, name, role, version, avatar }: { items: NavItem
           const active = isActive(path, it.href);
           return (
             <Link
+              aria-current={active ? "page" : undefined}
               key={it.href}
               href={it.href}
               prefetch
@@ -65,7 +66,7 @@ export function Sidebar({ items, name, role, version, avatar }: { items: NavItem
               <LogOut size={14} /> Cerrar sesión
             </button>
           </form>
-          {version && <Link href="/novedades" className="text-xs text-white/40 hover:text-dorado">v{version}</Link>}
+          {version && <Link href="/novedades" className="text-xs text-white/60 hover:text-dorado">v{version}</Link>}
         </div>
       </div>
     </aside>
@@ -77,6 +78,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
   const visible = items.filter((i) => !i.soon && i.mobile !== false).slice(0, 6);
   return (
     <nav
+      aria-label="Menú principal"
       className="fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-negro/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       style={{ gridTemplateColumns: `repeat(${visible.length}, minmax(0, 1fr))` }}
     >
@@ -88,6 +90,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
             key={it.href}
             href={it.href}
             prefetch
+            aria-current={active ? "page" : undefined}
             className={`relative flex min-w-0 flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] font-semibold transition ${active ? "text-white" : "text-white/50"}`}
           >
             {active && <span aria-hidden className="absolute inset-x-4 top-0 h-[3px] -skew-x-[25deg] rounded-b bg-rojo" />}

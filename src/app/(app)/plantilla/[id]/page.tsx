@@ -80,7 +80,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
 
   return (
     <>
-      <Link href={back} className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-negro/50 hover:text-rojo">← Plantilla</Link>
+      <Link href={back} className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-negro/65 hover:text-rojo">← Plantilla</Link>
       {sp.ok && (
         <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">{sp.ok === "1" ? "¡Jugador fichado!" : "Cambios guardados."}</p>
       )}
@@ -158,9 +158,9 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
             ).map(([k, v, hint], i) => (
               <div key={String(k)} style={{ animationDelay: `${i * 90}ms` }} className={`anim-score relative col-span-1 overflow-hidden rounded-2xl p-4 shadow-sm sm:col-span-1 lg:col-span-2 ${i === 1 ? "bg-gradient-to-br from-rojo to-rojo-oscuro text-white" : i === 0 ? "bg-gradient-to-br from-negro-2 to-negro text-white" : "bg-white ring-1 ring-black/5"}`}>
                 <span aria-hidden className={`absolute -right-3 top-0 h-full w-6 -skew-x-[20deg] ${i === 1 ? "bg-white/25" : i === 0 ? "bg-rojo" : "bg-dorado"}`} />
-                <div className={`relative text-[11px] font-bold uppercase tracking-wider ${i < 2 ? "text-white/70" : "text-negro/50"}`}>{k}</div>
+                <div className={`relative text-[11px] font-bold uppercase tracking-wider ${i < 2 ? "text-white/70" : "text-negro/65"}`}>{k}</div>
                 <div className="sport relative mt-1 text-4xl leading-none font-black sm:text-5xl"><CountUp value={Number(v)} /></div>
-                {hint && <div className={`relative mt-1 text-xs ${i < 2 ? "text-white/70" : "text-negro/50"}`}>{hint}</div>}
+                {hint && <div className={`relative mt-1 text-xs ${i < 2 ? "text-white/70" : "text-negro/65"}`}>{hint}</div>}
               </div>
             ))}
           </div>
@@ -195,7 +195,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                           <Link href={`/plantilla/${id}?temporada=${seasonSlug(m.season)}`} className="sport text-base font-black hover:text-rojo">{m.season}</Link>
                           {m.status !== "active" && <span className={`badge ml-2 ${STATUS_TONE[m.status]}`}>{STATUS_LABEL[m.status]}</span>}
                           {m.armband && <Armband kind={m.armband} className="ml-1 h-5 min-w-5 text-[10px]" />}
-                          {m.status === "left" && m.left_on && <span className="block text-[11px] text-negro/50">Baja el {fecha(m.left_on)}</span>}
+                          {m.status === "left" && m.left_on && <span className="block text-[11px] text-negro/65">Baja el {fecha(m.left_on)}</span>}
                         </td>
                         <td className="text-center"><span className="sport font-black">{m.number ?? "–"}</span></td>
                         <td><PositionChip code={m.position} /></td>
@@ -218,9 +218,9 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-negro/50">Aún no está en ninguna plantilla.</p>
+              <p className="text-sm text-negro/65">Aún no está en ninguna plantilla.</p>
             )}
-            <p className="mt-3 text-xs text-negro/50">PJ partidos · TIT titular · {line === "GK" ? "P0 porterías a cero · GC goles encajados" : "GOL goles · ASI asistencias"} · MVP mejor del partido · TA/TR tarjetas. Con los partidos (fase 4) se calcularán solas.</p>
+            <p className="mt-3 text-xs text-negro/65">PJ partidos · TIT titular · {line === "GK" ? "P0 porterías a cero · GC goles encajados" : "GOL goles · ASI asistencias"} · MVP mejor del partido · TA/TR tarjetas. Con los partidos (fase 4) se calcularán solas.</p>
             {isManager && !seasons.some((m) => m.season === seasonOf()) && (
               <Link href={`/plantilla/${id}/editar?temporada=${seasonSlug(seasonOf())}`} className="btn-ghost mt-4">Añadir a la temporada {seasonOf()}</Link>
             )}
@@ -230,18 +230,18 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
           {contact && (canPrivate || isMe) && (
             <section className="card">
               <h2 className="mb-1">{isMe && !canPrivate ? "Mis datos" : "Contacto"}</h2>
-              <p className="mb-4 text-xs text-negro/50">Solo lo ven los gestores con permiso de datos personales{isMe ? " y tú" : " y el propio jugador"}.</p>
+              <p className="mb-4 text-xs text-negro/65">Solo lo ven los gestores con permiso de datos personales{isMe ? " y tú" : " y el propio jugador"}.</p>
               {isMe && !canPrivate ? (
                 <MyContactForm action={updateMyContact} data={contact} />
               ) : (
-                <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div className="grid gap-3 text-sm sm:grid-cols-2">
                   <Field label="Teléfono" value={contact.phone} actions={contact.phone && <PhoneLinks phone={contact.phone} />} />
                   <Field label="Email" value={contact.email} actions={contact.email && <a href={`mailto:${contact.email}`} className="btn-ghost px-2.5 py-1.5" aria-label="Enviar email"><Mail size={15} /></a>} />
                   <Field label="Fecha de nacimiento" value={contact.birth_date ? `${fecha(contact.birth_date)}${age != null ? ` (${age} años)` : ""}` : null} />
                   <Field label="Emergencia" icon={<ShieldAlert size={14} className="text-rojo" />}
                     value={contact.emergency_name || contact.emergency_phone ? [contact.emergency_name, contact.emergency_phone].filter(Boolean).join(" · ") : null}
                     actions={contact.emergency_phone && <a href={`tel:${contact.emergency_phone}`} className="btn-ghost px-2.5 py-1.5" aria-label="Llamar"><Phone size={15} /></a>} />
-                </dl>
+                </div>
               )}
             </section>
           )}
@@ -249,7 +249,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
           {showDocs && (
             <section className="card">
               <h2 className="mb-1 flex items-center gap-2"><FolderLock size={20} className="text-rojo" /> {isMe && !canPrivate ? "Mis documentos" : "Documentos"}</h2>
-              <p className="mb-3 text-xs text-negro/50">Privados: solo los ven los gestores con permiso de datos personales{isMe ? " y tú" : " y el propio jugador"}.</p>
+              <p className="mb-3 text-xs text-negro/65">Privados: solo los ven los gestores con permiso de datos personales{isMe ? " y tú" : " y el propio jugador"}.</p>
               <PlayerDocs playerId={id} docs={docs ?? []} canUpload={s.can("squad_private", "create") || isMe} deletable={deletable}
                 save={savePlayerDoc.bind(null, id)} remove={deletePlayerDoc} />
             </section>
@@ -258,9 +258,9 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
           {canPrivate && priv && (priv.sport_notes || priv.internal_notes) && (
             <section className="card">
               <h2 className="mb-1">Observaciones</h2>
-              <p className="mb-3 text-xs text-negro/50">Solo para gestores.</p>
-              {priv.sport_notes && <><h3 className="text-xs font-bold uppercase tracking-wide text-negro/50">Deportivas</h3><p className="mb-3 whitespace-pre-line text-sm">{priv.sport_notes}</p></>}
-              {priv.internal_notes && <><h3 className="text-xs font-bold uppercase tracking-wide text-negro/50">Internas</h3><p className="whitespace-pre-line text-sm">{priv.internal_notes}</p></>}
+              <p className="mb-3 text-xs text-negro/65">Solo para gestores.</p>
+              {priv.sport_notes && <><h3 className="text-xs font-bold uppercase tracking-wide text-negro/65">Deportivas</h3><p className="mb-3 whitespace-pre-line text-sm">{priv.sport_notes}</p></>}
+              {priv.internal_notes && <><h3 className="text-xs font-bold uppercase tracking-wide text-negro/65">Internas</h3><p className="whitespace-pre-line text-sm">{priv.internal_notes}</p></>}
             </section>
           )}
         </div>
@@ -299,7 +299,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                   <div className="mt-2"><FeeOverrideForm action={saveFeeOverride.bind(null, season, id)} current={fees.overrides.get(id) ?? null} general={fees.plan?.amount_cents ?? null} /></div>
                 </details>
               )}
-              <p className="mt-3 text-xs text-negro/50">Los pagos se apuntan como ingresos en Finanzas. El jugador no ve esta información.</p>
+              <p className="mt-3 text-xs text-negro/65">Los pagos se apuntan como ingresos en Finanzas. El jugador no ve esta información.</p>
             </section>
           )}
 
@@ -340,11 +340,11 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                     <Avatar name={linked.full_name} url={linked.avatar_url} size={40} />
                     <span className="min-w-0">
                       <span className="flex items-center gap-1.5 font-semibold"><UserCheck size={15} className="text-green-700" /> {linked.full_name}</span>
-                      <span className="block truncate text-xs text-negro/50">{linked.email}{linked.active ? "" : " · acceso deshabilitado"}</span>
+                      <span className="block truncate text-xs text-negro/65">{linked.email}{linked.active ? "" : " · acceso deshabilitado"}</span>
                     </span>
                   </Link>
                   <form action={unlinkUser.bind(null, id)}>
-                    <button className="flex items-center gap-1.5 text-xs font-semibold text-negro/50 hover:text-rojo"><Unlink size={13} /> Desvincular (no borra el usuario)</button>
+                    <button className="flex items-center gap-1.5 text-xs font-semibold text-negro/65 hover:text-rojo"><Unlink size={13} /> Desvincular (no borra el usuario)</button>
                   </form>
                 </>
               ) : (
@@ -376,8 +376,8 @@ function Field({ label, value, icon, actions }: { label: string; value: string |
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl bg-gris p-3">
       <div className="min-w-0">
-        <dt className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-negro/50">{icon}{label}</dt>
-        <dd className="mt-0.5 font-semibold">{value || <span className="font-normal text-negro/40">Sin indicar</span>}</dd>
+        <div className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-negro/65">{icon}{label}</div>
+        <div className="mt-0.5 font-semibold">{value || <span className="font-normal text-negro/60">Sin indicar</span>}</div>
       </div>
       {actions && <div className="flex shrink-0 gap-1">{actions}</div>}
     </div>

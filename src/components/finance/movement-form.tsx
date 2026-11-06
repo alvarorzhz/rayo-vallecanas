@@ -90,20 +90,20 @@ export function MovementForm({
           </select>
         </div>
         <div>
-          <label className="label" htmlFor="counterparty">{income ? "Persona o entidad" : "Proveedor o destinatario"} <span className="font-normal text-negro/40">(opcional)</span></label>
+          <label className="label" htmlFor="counterparty">{income ? "Persona o entidad" : "Proveedor o destinatario"} <span className="font-normal text-negro/60">(opcional)</span></label>
           <input id="counterparty" name="counterparty" className="input" defaultValue={movement?.counterparty ?? ""} />
         </div>
         <div className="sm:col-span-2">
-          <label className="label" htmlFor="notes">Observaciones <span className="font-normal text-negro/40">(opcional)</span></label>
+          <label className="label" htmlFor="notes">Observaciones <span className="font-normal text-negro/60">(opcional)</span></label>
           <textarea id="notes" name="notes" rows={2} className="input" defaultValue={movement?.notes ?? ""} />
         </div>
         <div className="sm:col-span-2">
-          <span className="label">{income ? "Justificante" : "Factura o justificante"} <span className="font-normal text-negro/40">(opcional, foto o PDF)</span></span>
+          <span className="label">{income ? "Justificante" : "Factura o justificante"} <span className="font-normal text-negro/60">(opcional, foto o PDF)</span></span>
           {file ? (
             <div className="flex items-center gap-2 rounded-xl bg-gris px-3 py-2 text-sm">
-              <Paperclip size={16} className="shrink-0 text-negro/50" />
+              <Paperclip size={16} className="shrink-0 text-negro/65" />
               <span className="min-w-0 flex-1 truncate">{file.name}</span>
-              <button type="button" onClick={() => setFile(null)} className="rounded p-1 text-negro/50 hover:text-rojo" aria-label="Quitar justificante">
+              <button type="button" onClick={() => setFile(null)} className="rounded p-1 text-negro/65 hover:text-rojo" aria-label="Quitar justificante">
                 <X size={16} />
               </button>
             </div>

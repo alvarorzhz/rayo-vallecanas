@@ -45,7 +45,7 @@ export default async function UserPage({ params }: { params: Promise<{ uid: stri
             </button>
           </form>
         )}
-        {uid === s.user.id && <p className="text-xs text-negro/50">Es tu propio usuario: no puedes deshabilitarlo.</p>}
+        {uid === s.user.id && <p className="text-xs text-negro/65">Es tu propio usuario: no puedes deshabilitarlo.</p>}
         {canEdit && uid !== s.user.id && profile.active && (
           <div className="basis-full border-t border-black/5 pt-3">
             <p className="mb-2 text-sm text-negro/60">¿Ha olvidado su contraseña? Crea una provisional y mándasela por WhatsApp.</p>

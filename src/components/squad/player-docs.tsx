@@ -86,7 +86,7 @@ export function PlayerDocs({
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold group-hover:text-rojo">{d.title || DOC_KIND_LABEL[d.kind]}</span>
-                    <span className="block truncate text-xs text-negro/50">
+                    <span className="block truncate text-xs text-negro/65">
                       {d.title ? `${DOC_KIND_LABEL[d.kind]} · ` : ""}{fileSize(d.size_bytes)} · {fecha(d.created_at)}
                       {d.expires_on && ` · caduca el ${fecha(d.expires_on)}`}
                     </span>
@@ -94,7 +94,7 @@ export function PlayerDocs({
                 </a>
                 {exp && exp !== "ok" && <span className={`badge shrink-0 ${EXPIRY[exp].tone}`}>{EXPIRY[exp].label}</span>}
                 {deletable.includes(d.id) && (
-                  <button type="button" aria-label="Borrar documento" className="shrink-0 rounded-lg p-1.5 text-negro/40 hover:bg-rojo/10 hover:text-rojo"
+                  <button type="button" aria-label="Borrar documento" className="shrink-0 rounded-lg p-1.5 text-negro/60 hover:bg-rojo/10 hover:text-rojo"
                     onClick={() => { if (confirm("¿Borrar este documento? No se puede deshacer.")) start(async () => { const r = await remove(d.id); if (r?.error) setError(r.error); }); }}>
                     <Trash2 size={16} />
                   </button>
@@ -104,7 +104,7 @@ export function PlayerDocs({
           })}
         </ul>
       ) : (
-        <p className="text-sm text-negro/50">Aún no hay documentos.</p>
+        <p className="text-sm text-negro/65">Aún no hay documentos.</p>
       )}
 
       {canUpload && (

@@ -100,7 +100,7 @@ export default function PrivacyPage() {
             corresponde y las operaciones importantes quedan registradas.</p>
         </S>
 
-        <p className="text-xs text-negro/50">Última actualización: {CLUB.updated}.</p>
+        <p className="text-xs text-negro/65">Última actualización: {CLUB.updated}.</p>
         <Link href="/" className="btn-ghost">Volver a la app</Link>
       </article>
     </main>

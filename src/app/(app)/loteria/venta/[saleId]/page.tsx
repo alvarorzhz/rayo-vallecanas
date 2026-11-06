@@ -126,7 +126,7 @@ export default async function SalePage({
                   {notifications!.map((n) => (
                     <li key={n.id} className="flex justify-between gap-2">
                       <span>{n.channel === "email" ? "Email" : "WhatsApp"} · {fecha(n.created_at, true)}</span>
-                      <span className={n.status === "sent" ? "text-green-700" : n.status === "failed" ? "text-rojo" : "text-negro/50"} title={n.error ?? ""}>
+                      <span className={n.status === "sent" ? "text-green-700" : n.status === "failed" ? "text-rojo" : "text-negro/65"} title={n.error ?? ""}>
                         {n.status === "sent" ? (n.provider_id?.startsWith("manual") ? "Abierto" : "Enviado") : n.status === "failed" ? "Error" : "Pendiente"}
                       </span>
                     </li>
@@ -148,7 +148,7 @@ export default async function SalePage({
                 ))}
               </ul>
             ) : (
-              <p className="mb-4 text-sm text-negro/50">Sin cobros registrados.</p>
+              <p className="mb-4 text-sm text-negro/65">Sin cobros registrados.</p>
             )}
             {canPay && (pending > 0 || s.can("lottery_admin", "update")) && (
               <PaymentForm action={addPayment.bind(null, saleId)} pendingCents={pending} canRefund={s.can("lottery_admin", "update")} />
@@ -158,7 +158,7 @@ export default async function SalePage({
           {!cancelled && s.can("lottery_admin", "delete") && (
             <section className="card">
               <h2 className="mb-1 font-bold">Anulación controlada</h2>
-              <p className="mb-3 text-xs text-negro/50">La venta no se borra: queda marcada como anulada y registrada en auditoría. Si ya se cobró algo, registra la devolución antes.</p>
+              <p className="mb-3 text-xs text-negro/65">La venta no se borra: queda marcada como anulada y registrada en auditoría. Si ya se cobró algo, registra la devolución antes.</p>
               <CancelForm action={cancelSale.bind(null, saleId)} />
             </section>
           )}

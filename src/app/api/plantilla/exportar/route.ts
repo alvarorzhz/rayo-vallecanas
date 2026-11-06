@@ -44,7 +44,7 @@ export async function GET(req: Request) {
     const { data } = await supabase.from("player_private").select("*").in("player_id", roster.map((r) => r.player_id)).returns<PlayerPrivate[]>();
     for (const p of data ?? []) priv.set(p.player_id, p);
   }
-  await supabase.rpc("log_action", { p_action: "EXPORT", p_table: "squad_members", p_record: format, p_data: { season, rows: roster.length, personal: withPrivate } });
+  await supabase.rpc("log_export", { p_table: "squad_members", p_record: format, p_data: { season, rows: roster.length, personal: withPrivate } });
   const name = `rayo-vallecanas-plantilla-${season.replace("/", "-")}${withPrivate ? "-datos" : ""}`;
   const total = sumStats(roster);
 

@@ -8,11 +8,11 @@ export function FeeBar({ due, paid }: { due: number | null; paid: number }) {
     <div>
       <div className="flex items-end justify-between gap-2">
         <div>
-          <div className="text-[11px] font-bold uppercase tracking-wider text-negro/50">Pagado</div>
+          <div className="text-[11px] font-bold uppercase tracking-wider text-negro/65">Pagado</div>
           <div className="sport text-3xl font-black leading-none text-green-700">{euros(paid)}</div>
         </div>
         <div className="text-right">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-negro/50">{due == null ? "Cuota" : due > paid ? "Falta" : "Cuota"}</div>
+          <div className="text-[11px] font-bold uppercase tracking-wider text-negro/65">{due == null ? "Cuota" : due > paid ? "Falta" : "Cuota"}</div>
           <div className={`sport text-3xl font-black leading-none ${due != null && due > paid ? "text-rojo" : ""}`}>
             {due == null ? "–" : euros(due > paid ? due - paid : due)}
           </div>
@@ -26,7 +26,7 @@ export function FeeBar({ due, paid }: { due: number | null; paid: number }) {
           </span>
         )}
       </div>
-      {due != null && <div className="mt-1 text-right text-xs font-semibold text-negro/50">{pct}% de {euros(due)}</div>}
+      {due != null && <div className="mt-1 text-right text-xs font-semibold text-negro/65">{pct}% de {euros(due)}</div>}
     </div>
   );
 }

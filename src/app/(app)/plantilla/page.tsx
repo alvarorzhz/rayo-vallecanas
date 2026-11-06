@@ -71,7 +71,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
           {s.can("squad", "update") && roster.length > 0 && (
             <details className="relative">
               <summary className="btn-ghost cursor-pointer list-none [&::-webkit-details-marker]:hidden"><Download size={18} /> Exportar</summary>
-              <div className="anim-rise absolute left-0 z-20 mt-2 w-64 sm:left-auto sm:right-0 space-y-1 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-black/10">
+              <div className="anim-rise fixed inset-x-4 bottom-24 z-40 space-y-1 rounded-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:mt-2 sm:w-64 space-y-1 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-black/10">
                 <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=xlsx`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileSpreadsheet size={16} className="text-green-700" /> Excel de la plantilla</a>
                 <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=pdf`} target="_blank" rel="noopener" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileText size={16} className="text-rojo" /> PDF de la plantilla</a>
                 {canPrivate && (
@@ -156,7 +156,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         <form action="/plantilla" className="relative ml-auto w-full sm:w-56">
           <input type="hidden" name="temporada" value={seasonSlug(season)} />
           {view !== "cromos" && <input type="hidden" name="vista" value={view} />}
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-negro/40" />
+          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-negro/60" />
           <input name="q" defaultValue={sp.q} placeholder="Buscar nombre o dorsal" className="input pl-9" />
         </form>
       </div>
@@ -191,7 +191,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
       ) : view === "campo" ? (
         <>
           <Pitch roster={inSquad} hrefFor={hrefFor} />
-          <p className="mt-2 text-center text-xs text-negro/50">Cada jugador aparece en su línea. Los lesionados y las bajas temporales salen atenuados.</p>
+          <p className="mt-2 text-center text-xs text-negro/65">Cada jugador aparece en su línea. Los lesionados y las bajas temporales salen atenuados.</p>
         </>
       ) : shown.length === 0 ? (
         <Empty>Ningún jugador cumple esos filtros.</Empty>
@@ -215,7 +215,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
                       )}
                       <span className="min-w-0">
                         <span className="block truncate">{fullName(r.player)}</span>
-                        <span className="block truncate text-xs font-normal text-negro/50">
+                        <span className="block truncate text-xs font-normal text-negro/65">
                           {shirtName(r.player)}
                           {r.status !== "active" && <span className={`badge ml-1 sm:hidden ${STATUS_TONE[r.status]}`}>{STATUS_LABEL[r.status]}</span>}
                         </span>
@@ -241,7 +241,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
       )}
 
       {!canPrivate && (
-        <p className="mt-6 text-center text-xs text-negro/50">Los teléfonos y demás datos personales solo los ven los gestores.</p>
+        <p className="mt-6 text-center text-xs text-negro/65">Los teléfonos y demás datos personales solo los ven los gestores.</p>
       )}
     </>
   );
@@ -283,7 +283,7 @@ function Leaders({ roster, hrefFor }: { roster: RosterEntry[]; hrefFor: (id: str
               <span className="shrink-0"><Jersey number={r.number} goalkeeper={lineOf(r.position) === "GK"} size={46} /></span>
             )}
             <span className="relative min-w-0">
-              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-negro/50">{i === 0 && <Trophy size={12} className="anim-trophy text-dorado" />}{label}</span>
+              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-negro/65">{i === 0 && <Trophy size={12} className="anim-trophy text-dorado" />}{label}</span>
               <span className="sport block truncate text-lg font-black leading-tight">{shirtName(r.player)}</span>
               <span className="block text-xs text-negro/60"><b className="sport text-base text-rojo">{r[key]}</b> {unit}</span>
             </span>
