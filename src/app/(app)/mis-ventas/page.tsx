@@ -29,6 +29,7 @@ export default async function MySalesPage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="Mis ventas"
         subtitle="Solo ves las ventas que has registrado tú"
+        back={{ href: "/loteria", label: "Sorteos" }}
         actions={campaigns.map((c) => (
           <Link key={c.id} href={`/loteria/${c.id}/vender`} className="btn-primary">
             <ShoppingCart size={16} /> Vender · {c.name}

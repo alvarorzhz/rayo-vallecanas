@@ -7,6 +7,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.0.1",
+    date: "2026-11-06",
+    title: "«Mis ventas» dentro de Sorteos",
+    changes: [
+      "«Mis ventas» deja la barra de abajo y pasa a ser un botón dentro de Sorteos, para que la barra no vaya tan cargada.",
+      "Vuelve a verse «Gestión» en la barra del móvil (se había quedado fuera al llegar «Partidos»).",
+    ],
+  },
+  {
     version: "3.0.0",
     date: "2026-11-06",
     title: "Partidos: calendario y resultados",
