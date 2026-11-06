@@ -15,6 +15,7 @@ import { APP_VERSION } from "@/lib/changelog";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
   const items: NavItem[] = [{ href: "/", label: "Inicio", icon: "Home" }];
+  if (s.can("matches")) items.push({ href: "/partidos", label: "Partidos", icon: "CalendarDays" });
   if (s.can("squad")) items.push({ href: "/plantilla", label: "Plantilla", icon: "Shirt" });
   if (s.can("lottery_admin") || s.can("lottery_sell")) items.push({ href: "/loteria", label: "Sorteos", icon: "Ticket" });
   if (s.can("lottery_sell", "create")) items.push({ href: "/mis-ventas", label: "Mis ventas", icon: "ShoppingBag" });
@@ -22,7 +23,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Panel de gestión: usuarios, perfiles, avisos, auditoría y copias de seguridad
   if (s.can("users") || s.can("lottery_admin", "update") || s.profile.role === "superadmin")
     items.push({ href: "/admin", label: "Gestión", icon: "Settings" });
-  items.push({ href: "/partidos", label: "Partidos", icon: "CalendarDays", soon: true });
 
   return (
     <div className="flex min-h-dvh">
