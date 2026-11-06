@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Minus, Plus, Settings2, List } from "lucide-react";
+import { BarChart3, Minus, Plus, Settings2, List } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha } from "@/lib/format";
@@ -97,6 +97,7 @@ export default async function FinancesPage({ searchParams }: { searchParams: Pro
               )}
             </section>
           ))}
+          <Link href={`/finanzas/informes?t=${encodeURIComponent(season)}`} prefetch className="btn-dark w-full"><BarChart3 size={16} /> Informes y exportar</Link>
           {s.can("finances", "update") && (
             <Link href="/finanzas/ajustes" prefetch className="btn-ghost w-full"><Settings2 size={16} /> Saldo inicial y categorías</Link>
           )}
