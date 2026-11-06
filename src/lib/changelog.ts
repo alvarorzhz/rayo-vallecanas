@@ -7,6 +7,23 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "2.0.0",
+    date: "2026-11-06",
+    title: "Plantilla: las fichas de todo el equipo",
+    changes: [
+      "Nuevo apartado «Plantilla» en el menú, para todo el equipo: los jugadores de cada temporada con su dorsal, posición y estado.",
+      "Cromos de cada jugador al estilo de los juegos de fútbol: foto, dorsal y posición, y seis estadísticas de la temporada. Dorados si está disponible, plateados si está lesionado o de baja.",
+      "Vista del campo de fútbol 7 con cada jugador en su línea, y vista de lista. Filtros por línea, estado y búsqueda por nombre o dorsal.",
+      "Marcador de la plantilla (jugadores, disponibles, lesionados, edad media y reparto por líneas) y líderes de la temporada: pichichi, asistente, más partidos y MVP.",
+      "Estadísticas por temporada: partidos, titularidades, goles, asistencias, MVP, tarjetas y, en los porteros, goles encajados y porterías a cero. De momento las apuntan los gestores; con los partidos (fase 4) se calcularán solas.",
+      "Ficha de cada jugador con su cromo, perfil (pierna, altura, edad, años en el club), estadísticas de la temporada y trayectoria con los totales en el club.",
+      "Los gestores fichan jugadores eligiendo la posición en un campo de fútbol 7, ven qué dorsales están libres y no se puede repetir dorsal ni capitán en una temporada.",
+      "Datos personales (teléfono, email, nacimiento y contacto de emergencia) y observaciones: solo los ven los gestores. Botones para llamar o escribir por WhatsApp.",
+      "Un jugador no necesita usuario para estar en la plantilla. Desde su ficha se vincula con su usuario o se le crea el acceso con contraseña provisional.",
+      "Cada jugador ve «Tu ficha» en el inicio y puede corregir sus datos de contacto. La foto de su perfil pasa a su ficha.",
+    ],
+  },
+  {
     version: "1.8.0",
     date: "2026-11-06",
     title: "Informes de Finanzas y exportación a Excel y PDF",

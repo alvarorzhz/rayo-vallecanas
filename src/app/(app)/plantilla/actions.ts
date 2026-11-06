@@ -1,0 +1,260 @@
+"use server";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { tempPassword } from "@/lib/password";
+import { POSITIONS, STAT_KEYS, STAT_LABEL, seasonSlug } from "@/lib/squad";
+import type { AvatarState } from "@/app/(app)/perfil/actions";
+
+export type ActionState = { error?: string; ok?: string; password?: string; name?: string; phone?: string | null; email?: string } | undefined;
+
+const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
+const opt = (f: FormData, k: string) => str(f, k) || null;
+const errMsg = (e: unknown) => {
+  const m = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: string }).message) : String(e);
+  if (/squad_members_number_uniq/.test(m)) return "Ese dorsal ya lo tiene otro jugador esta temporada";
+  if (/squad_members_armband_uniq/.test(m)) return "Ya hay otro jugador con ese brazalete esta temporada";
+  if (/players_user_id_key/.test(m)) return "Ese usuario ya está vinculado a otra ficha";
+  if (/row-level security|42501/.test(m)) return "No tienes permiso para hacer esto";
+  return m;
+};
+
+function refresh(id?: string) {
+  revalidatePath("/plantilla", "layout");
+  revalidatePath("/");
+  if (id) revalidatePath(`/plantilla/${id}`);
+}
+
+const date = (f: FormData, k: string) => {
+  const v = str(f, k);
+  if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new Error("Fecha no válida");
+  return v || null;
+};
+
+function playerFromForm(f: FormData) {
+  const first_name = str(f, "first_name");
+  if (!first_name) throw new Error("Indica el nombre");
+  const height = str(f, "height_cm");
+  const height_cm = height ? Number(height) : null;
+  if (height_cm != null && (!Number.isInteger(height_cm) || height_cm < 120 || height_cm > 230)) throw new Error("Altura no válida (en cm)");
+  const foot = ["right", "left", "both"].includes(str(f, "foot")) ? str(f, "foot") : null;
+  return {
+    first_name: first_name.slice(0, 60),
+    last_name: str(f, "last_name").slice(0, 80),
+    nickname: opt(f, "nickname")?.slice(0, 24) ?? null,
+    foot,
+    height_cm,
+    joined_club_on: date(f, "joined_club_on"),
+  };
+}
+
+function privateFromForm(f: FormData) {
+  return {
+    birth_date: date(f, "birth_date"),
+    phone: opt(f, "phone"),
+    email: opt(f, "email")?.toLowerCase() ?? null,
+    emergency_name: opt(f, "emergency_name"),
+    emergency_phone: opt(f, "emergency_phone"),
+    sport_notes: opt(f, "sport_notes"),
+    internal_notes: opt(f, "internal_notes"),
+  };
+}
+
+function memberFromForm(f: FormData, prevStatus?: string) {
+  const season = str(f, "season");
+  if (!/^\d{4}\/\d{2}$/.test(season)) throw new Error("Temporada no válida");
+  const position = str(f, "position");
+  if (!POSITIONS.some((p) => p.code === position)) throw new Error("Elige la posición");
+  const num = str(f, "number");
+  const number = num ? Number(num) : null;
+  if (number != null && (!Number.isInteger(number) || number < 1 || number > 99)) throw new Error("El dorsal tiene que ser del 1 al 99");
+  const status = ["active", "injured", "away", "left"].includes(str(f, "status")) ? str(f, "status") : "active";
+  const armband = ["captain", "vice"].includes(str(f, "armband")) ? str(f, "armband") : null;
+  const today = new Date().toISOString().slice(0, 10);
+  const stats: Record<string, number> = {};
+  for (const k of STAT_KEYS) {
+    if (!f.has(k)) continue;
+    const n = Number(str(f, k) || 0);
+    if (!Number.isInteger(n) || n < 0 || n > 999) throw new Error(`${STAT_LABEL[k].long}: número no válido`);
+    stats[k] = n;
+  }
+  if (stats.starts != null && stats.apps != null && stats.starts > stats.apps) throw new Error("No puede tener más partidos de titular que jugados");
+  return {
+    ...stats,
+    season,
+    number,
+    position,
+    status,
+    armband: status === "left" ? null : armband,
+    ...(status === "left" && prevStatus !== "left" ? { left_on: today } : {}),
+    ...(status !== "left" && prevStatus === "left" ? { left_on: null } : {}),
+  };
+}
+
+export async function createPlayer(_: ActionState, f: FormData): Promise<ActionState> {
+  let id: string;
+  const supabase = await createClient();
+  try {
+    const member = memberFromForm(f);
+    const { data, error } = await supabase.from("players").insert(playerFromForm(f)).select("id").single();
+    if (error) throw error;
+    id = data.id;
+    const steps = await Promise.all([
+      supabase.from("player_private").update(privateFromForm(f)).eq("player_id", id),
+      supabase.from("squad_members").insert({ ...member, player_id: id, joined_on: new Date().toISOString().slice(0, 10) }),
+    ]);
+    const failed = steps.find((r) => r.error)?.error;
+    if (failed) {
+      // Sin dorsal válido no se queda una ficha a medias
+      await supabase.from("players").delete().eq("id", id);
+      throw failed;
+    }
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+  refresh();
+  redirect(f.get("again") === "1" ? `/plantilla/nuevo?temporada=${seasonSlug(str(f, "season"))}&ok=1` : `/plantilla/${id}?temporada=${seasonSlug(str(f, "season"))}&ok=1`);
+}
+
+export async function updatePlayer(id: string, _: ActionState, f: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  try {
+    const season = str(f, "season");
+    const { data: prev } = await supabase.from("squad_members").select("id, status").eq("player_id", id).eq("season", season).maybeSingle();
+    const member = memberFromForm(f, prev?.status);
+    const { error } = await supabase.from("players").update(playerFromForm(f)).eq("id", id);
+    if (error) throw error;
+    const { error: e2 } = await supabase.from("player_private").update(privateFromForm(f)).eq("player_id", id);
+    if (e2) throw e2;
+    const { error: e3 } = prev
+      ? await supabase.from("squad_members").update(member).eq("id", prev.id)
+      : await supabase.from("squad_members").insert({ ...member, player_id: id, joined_on: new Date().toISOString().slice(0, 10) });
+    if (e3) throw e3;
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+  refresh(id);
+  redirect(`/plantilla/${id}?temporada=${seasonSlug(str(f, "season"))}&ok=2`);
+}
+
+export async function deletePlayer(id: string) {
+  const supabase = await createClient();
+  const { data: p } = await supabase.from("players").select("photo_url").eq("id", id).single();
+  const { data: gone, error } = await supabase.from("players").delete().eq("id", id).select("id");
+  if (error || !gone?.length) throw new Error(error ? errMsg(error) : "No tienes permiso para eliminar fichas");
+  if (p?.photo_url) await removePhotos(supabase, id);
+  refresh();
+  redirect("/plantilla?ok=eliminado");
+}
+
+// ------------------------------------------------------------------ Foto
+
+const TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+export async function uploadPlayerPhoto(id: string, _: AvatarState, form: FormData): Promise<AvatarState> {
+  const file = form.get("avatar");
+  if (!(file instanceof File) || file.size === 0) return { error: "Elige una foto" };
+  const ext = TYPES[file.type];
+  if (!ext) return { error: "La foto debe ser JPG, PNG o WEBP" };
+  if (file.size > 1024 * 1024) return { error: "La foto es demasiado grande (máximo 1 MB)" };
+  const supabase = await createClient();
+  const path = `${id}/foto-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("player-photos").upload(path, file, { contentType: file.type, upsert: true });
+  if (error) return { error: "No se pudo subir la foto: " + errMsg(error) };
+  const url = supabase.storage.from("player-photos").getPublicUrl(path).data.publicUrl;
+  const { error: e2 } = await supabase.from("players").update({ photo_url: url }).eq("id", id);
+  if (e2) return { error: "No se pudo guardar la foto: " + errMsg(e2) };
+  await removePhotos(supabase, id, path);
+  refresh(id);
+  return { ok: "¡Foto actualizada!" };
+}
+
+export async function removePlayerPhoto(id: string): Promise<AvatarState> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("players").update({ photo_url: null }).eq("id", id);
+  if (error) return { error: errMsg(error) };
+  await removePhotos(supabase, id);
+  refresh(id);
+  return { ok: "Foto quitada" };
+}
+
+async function removePhotos(supabase: Awaited<ReturnType<typeof createClient>>, id: string, keep?: string) {
+  const { data } = await supabase.storage.from("player-photos").list(id);
+  const old = (data ?? []).map((f) => `${id}/${f.name}`).filter((p) => p !== keep);
+  if (old.length) await supabase.storage.from("player-photos").remove(old);
+}
+
+// ------------------------------------------------------------------ Usuario de la app
+
+export async function linkUser(id: string, _: ActionState, f: FormData): Promise<ActionState> {
+  const uid = str(f, "user_id");
+  if (!uid) return { error: "Elige un usuario" };
+  const supabase = await createClient();
+  const { error } = await supabase.from("players").update({ user_id: uid }).eq("id", id);
+  if (error) return { error: errMsg(error) };
+  refresh(id);
+  return { ok: "Ficha vinculada con su usuario" };
+}
+
+export async function unlinkUser(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("players").update({ user_id: null }).eq("id", id);
+  if (error) throw new Error(errMsg(error));
+  refresh(id);
+}
+
+/** Crea el usuario de la app con contraseña provisional y lo vincula con la ficha. */
+export async function createAccess(id: string, _: ActionState, f: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const [{ data: canUsers }, { data: canSquad }] = await Promise.all([
+    supabase.rpc("has_perm", { p_module: "users", p_action: "create" }),
+    supabase.rpc("has_perm", { p_module: "squad", p_action: "update" }),
+  ]);
+  if (!canUsers || !canSquad) return { error: "No tienes permiso para dar de alta usuarios" };
+  const email = str(f, "email").toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "Indica un email válido: será su usuario para entrar" };
+
+  const [{ data: p }, { data: priv }] = await Promise.all([
+    supabase.from("players").select("first_name, last_name, user_id").eq("id", id).single(),
+    supabase.from("player_private").select("phone").eq("player_id", id).single(),
+  ]);
+  if (!p) return { error: "Ficha no encontrada" };
+  if (p.user_id) return { error: "Esta ficha ya tiene usuario" };
+  const full_name = `${p.first_name} ${p.last_name}`.trim();
+  const phone = priv?.phone ?? null;
+
+  const password = tempPassword();
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name, phone } });
+  if (error) return { error: /already|registered|exists/i.test(error.message) ? "Ya existe un usuario con ese email: vincúlalo con la opción de arriba" : error.message };
+  await admin.from("profiles").update({ must_change_password: true }).eq("id", data.user.id);
+  const { error: e2 } = await supabase.from("players").update({ user_id: data.user.id }).eq("id", id);
+  if (e2) return { error: `Usuario creado, pero no se pudo vincular: ${errMsg(e2)}` };
+  await supabase.from("player_private").update({ email }).eq("player_id", id).is("email", null);
+  // Sin revalidar: si la ficha se recargase ahora, se perdería la contraseña que hay que enseñar.
+  // El botón «Cerrar» del resultado recarga la página.
+  return { ok: `Acceso creado para ${full_name}`, password, name: full_name, phone, email };
+}
+
+// ------------------------------------------------------------------ El propio jugador
+
+export async function updateMyContact(_: ActionState, f: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  let birth: string | null;
+  try {
+    birth = date(f, "birth_date");
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+  const { error } = await supabase.rpc("squad_update_my_contact", {
+    p_phone: str(f, "phone"),
+    p_email: str(f, "email"),
+    p_emergency_name: str(f, "emergency_name"),
+    p_emergency_phone: str(f, "emergency_phone"),
+    p_birth_date: birth,
+  });
+  if (error) return { error: errMsg(error) };
+  refresh();
+  return { ok: "¡Datos guardados!" };
+}

@@ -21,6 +21,9 @@ const TABLES: [string, string][] = [
   ["finance_settings", "Finanzas · saldo inicial"],
   ["finance_categories", "Finanzas · categorías"],
   ["finance_movements", "Finanzas · movimientos"],
+  ["players", "Plantilla · jugadores"],
+  ["player_private", "Plantilla · datos personales"],
+  ["squad_members", "Plantilla · temporadas"],
   ["audit_log", "Auditoría"],
 ];
 

@@ -3,6 +3,9 @@ import { ROLE_LABEL } from "@/lib/format";
 import { PageHeader } from "@/components/ui";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { PushSettings } from "@/components/push-settings";
+import Link from "next/link";
+import { Shirt } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 import { removeAvatar, uploadAvatar } from "./actions";
 
 export const metadata = { title: "Mi perfil" };
@@ -10,13 +13,25 @@ export const metadata = { title: "Mi perfil" };
 export default async function ProfilePage() {
   const s = await getSession();
   const p = s.profile;
+  const supabase = await createClient();
+  const { data: player } = s.can("squad") ? await supabase.from("players").select("id").eq("user_id", s.user.id).maybeSingle() : { data: null };
   return (
     <>
-      <PageHeader title="Mi perfil" subtitle="Tu foto aparece en el menú y en la lista de usuarios." />
+      <PageHeader title="Mi perfil" subtitle="Tu foto aparece en el menú, en la lista de usuarios y en tu ficha de jugador." />
       <div className="mx-auto max-w-md space-y-6">
         <section className="card">
           <AvatarUpload name={p.full_name} url={p.avatar_url} upload={uploadAvatar} remove={removeAvatar} />
         </section>
+        {player && (
+          <Link href={`/plantilla/${player.id}`} prefetch className="card flex items-center gap-3 hover:ring-rojo">
+            <Shirt size={22} className="text-rojo" />
+            <span className="flex-1">
+              <span className="block font-bold">Mi ficha de jugador</span>
+              <span className="block text-xs text-negro/50">Tu dorsal, tu posición y tus datos de contacto</span>
+            </span>
+            <span className="text-rojo">→</span>
+          </Link>
+        )}
         <section className="card">
           <h2 className="mb-3 font-bold">Avisos (notificaciones)</h2>
           <PushSettings isManager={s.can("lottery_admin", "update")} notifySales={p.notify_sales} />

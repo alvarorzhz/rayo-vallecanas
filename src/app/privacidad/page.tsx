@@ -46,6 +46,10 @@ export default function PrivacyPage() {
           <p><b>Si eres jugador o miembro del club y usas la app:</b> nombre, email, teléfono, tu foto de perfil si la subes, tu perfil
             y permisos, las ventas que registras y un registro de las operaciones importantes que haces (auditoría). Los usamos para
             darte acceso, organizar el equipo y llevar unas cuentas claras.</p>
+          <p><b>Si estás en la plantilla:</b> nombre y apellidos, foto, dorsal, posición, estado (activo, lesionado o de baja),
+            pierna y altura, y las temporadas en el club. Además, solo para los gestores y para ti: fecha de nacimiento, teléfono,
+            email, un contacto de emergencia y observaciones deportivas o internas. Los usamos para organizar el equipo y poder
+            avisar a alguien si te pasa algo en un partido o entrenamiento. No guardamos tu dirección.</p>
           <p><b>Notificaciones:</b> si activas los avisos en tu dispositivo, guardamos el identificador técnico que da tu navegador
             para poder enviártelos. Puedes desactivarlos cuando quieras.</p>
         </S>
@@ -62,7 +66,8 @@ export default function PrivacyPage() {
 
         <S title="4. Quién puede ver tus datos">
           <p>Dentro del club, solo quien lo necesita: los gestores ven todas las ventas; cada vendedor ve solo las suyas; los jugadores
-            no ven los datos de los compradores. Los permisos los controla la propia base de datos.</p>
+            no ven los datos de los compradores. De la plantilla, los compañeros solo ven tu nombre, foto, dorsal, posición y estado;
+            tus datos personales solo los ven los gestores. Los permisos los controla la propia base de datos.</p>
           <p>Usamos estos proveedores, que tratan los datos por cuenta del club:</p>
           <ul className="list-disc space-y-1 pl-5">
             <li><b>Supabase</b> (base de datos y archivos), con los datos alojados en Frankfurt (Unión Europea).</li>

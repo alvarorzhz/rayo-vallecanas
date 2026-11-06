@@ -17,7 +17,7 @@ function accessMessage(s: NonNullable<ActionState>, url: string) {
 }
 
 /** Datos de acceso recién creados, con botón para mandarlos por WhatsApp. */
-function AccessResult({ state, again }: { state: NonNullable<ActionState>; again: string }) {
+export function AccessResult({ state, again }: { state: NonNullable<ActionState>; again: string }) {
   const [copied, setCopied] = useState(false);
   const text = accessMessage(state, window.location.origin);
   const phone = phoneE164(state.phone);
