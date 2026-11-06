@@ -82,7 +82,7 @@ export default async function DocsPage({ searchParams }: { searchParams: Promise
                 <span className="shrink-0 transition group-hover:-rotate-6"><Jersey number={r.number} goalkeeper={lineOf(r.position) === "GK"} size={38} /></span>
                 <span className="min-w-0 flex-1">
                   <span className="sport block truncate text-lg font-black leading-tight group-hover:text-rojo">{shirtName(r.player)}</span>
-                  <span className="block truncate text-xs text-negro/50">{fullName(r.player)} · {list.length} {list.length === 1 ? "documento" : "documentos"}</span>
+                  <span className="block truncate text-xs text-negro/65">{fullName(r.player)} · {list.length} {list.length === 1 ? "documento" : "documentos"}</span>
                 </span>
                 {missing.length === 0 && warn.length === 0 ? <CheckCircle2 size={22} className="shrink-0 text-green-600" /> : <AlertTriangle size={20} className="shrink-0 text-amber-500" />}
               </Link>
@@ -98,7 +98,7 @@ export default async function DocsPage({ searchParams }: { searchParams: Promise
                       {exp === "expired" && " · caducado"}{exp === "soon" && ` · ${fecha(d.expires_on)}`}
                     </a>
                   ) : (
-                    <span key={k.key} className="rounded-lg border border-dashed border-rojo/40 px-2 py-1 text-xs font-bold text-rojo/80">Falta {k.short}</span>
+                    <span key={k.key} className="rounded-lg border border-dashed border-rojo/40 px-2 py-1 text-xs font-bold text-rojo">Falta {k.short}</span>
                   );
                 })}
               </div>
@@ -106,7 +106,7 @@ export default async function DocsPage({ searchParams }: { searchParams: Promise
           ))}
         </ul>
       )}
-      <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-negro/50"><FolderLock size={14} /> Cada jugador también puede subir sus documentos desde su ficha.</p>
+      <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-negro/65"><FolderLock size={14} /> Cada jugador también puede subir sus documentos desde su ficha.</p>
     </>
   );
 }

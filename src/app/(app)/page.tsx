@@ -217,7 +217,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <Icon size={22} className="text-negro/30" />
               <div>
                 <div className="font-semibold text-negro/60">{t}</div>
-                <div className="text-xs text-negro/40">{d}</div>
+                <div className="text-xs text-negro/60">{d}</div>
               </div>
             </div>
           ))}

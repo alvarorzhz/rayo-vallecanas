@@ -5,7 +5,7 @@ import type { MovementRow } from "@/lib/finance";
 
 export function Amount({ kind, cents, voided }: { kind: string; cents: number; voided?: boolean }) {
   return (
-    <span className={`font-bold tabular-nums ${voided ? "text-negro/40 line-through" : kind === "income" ? "text-green-700" : "text-rojo"}`}>
+    <span className={`font-bold tabular-nums ${voided ? "text-negro/60 line-through" : kind === "income" ? "text-green-700" : "text-rojo"}`}>
       {kind === "income" ? "+" : "−"}{euros(cents)}
     </span>
   );
@@ -21,8 +21,8 @@ export function MovementsTable({ rows }: { rows: MovementRow[] }) {
             <Link href={`/finanzas/${m.id}`} prefetch={false} className="flex items-center gap-3 py-3">
               <span className={`h-9 w-1.5 shrink-0 -skew-x-[15deg] rounded ${m.kind === "income" ? "bg-green-600" : "bg-rojo"}`} />
               <span className="min-w-0 flex-1">
-                <span className={`block truncate font-semibold ${m.voided_at ? "text-negro/40 line-through" : ""}`}>{m.concept}</span>
-                <span className="block truncate text-xs text-negro/50">
+                <span className={`block truncate font-semibold ${m.voided_at ? "text-negro/60 line-through" : ""}`}>{m.concept}</span>
+                <span className="block truncate text-xs text-negro/65">
                   {fecha(m.op_date)} · {m.category?.name}{m.voided_at ? " · Anulado" : ""}
                 </span>
               </span>
@@ -42,7 +42,7 @@ export function MovementsTable({ rows }: { rows: MovementRow[] }) {
               <tr key={m.id} className="hover:bg-gris/60">
                 <td className="whitespace-nowrap text-negro/60">{fecha(m.op_date)}</td>
                 <td className="max-w-[22rem]">
-                  <Link href={`/finanzas/${m.id}`} prefetch={false} className={`flex items-center gap-1.5 font-semibold hover:text-rojo ${m.voided_at ? "text-negro/40 line-through" : ""}`}>
+                  <Link href={`/finanzas/${m.id}`} prefetch={false} className={`flex items-center gap-1.5 font-semibold hover:text-rojo ${m.voided_at ? "text-negro/60 line-through" : ""}`}>
                     <span className="truncate">{m.concept}</span>
                     {m.attachment_path && <Paperclip size={13} className="shrink-0 text-negro/30" />}
                   </Link>

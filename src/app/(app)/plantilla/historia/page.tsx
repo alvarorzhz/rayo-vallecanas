@@ -117,7 +117,7 @@ export default async function HistoryPage() {
                           ["Tarjetas", totals.yellows + totals.reds],
                         ].map(([k, v]) => (
                           <div key={k} className="anim-score rounded-xl bg-gris p-2.5">
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-negro/50">{k}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-negro/65">{k}</div>
                             <div className="sport text-2xl font-black leading-none">{v}</div>
                           </div>
                         ))}
@@ -134,16 +134,16 @@ export default async function HistoryPage() {
                               <h3 className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-green-700"><ArrowUpRight size={14} /> Fichajes</h3>
                               {signings.length ? (
                                 <ul className="space-y-0.5 text-sm">{signings.map((r) => <li key={r.id}><Link href={href(r)} className="hover:text-rojo">{fullName(r.player)}</Link></li>)}</ul>
-                              ) : <p className="text-sm text-negro/40">Ninguno</p>}
+                              ) : <p className="text-sm text-negro/60">Ninguno</p>}
                             </div>
                             <div>
                               <h3 className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-rojo"><ArrowDownRight size={14} /> Bajas</h3>
                               {left.length + notContinued.length ? (
                                 <ul className="space-y-0.5 text-sm">
-                                  {left.map((r) => <li key={r.id}><Link href={href(r)} className="hover:text-rojo">{fullName(r.player)}</Link>{r.left_on && <span className="text-negro/50"> · {new Date(r.left_on).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>}</li>)}
-                                  {notContinued.map((r) => <li key={r.id}><Link href={href(r)} className="hover:text-rojo">{fullName(r.player)}</Link><span className="text-negro/50"> · no siguió</span></li>)}
+                                  {left.map((r) => <li key={r.id}><Link href={href(r)} className="hover:text-rojo">{fullName(r.player)}</Link>{r.left_on && <span className="text-negro/65"> · {new Date(r.left_on).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>}</li>)}
+                                  {notContinued.map((r) => <li key={r.id}><Link href={href(r)} className="hover:text-rojo">{fullName(r.player)}</Link><span className="text-negro/65"> · no siguió</span></li>)}
                                 </ul>
-                              ) : <p className="text-sm text-negro/40">Ninguna</p>}
+                              ) : <p className="text-sm text-negro/60">Ninguna</p>}
                             </div>
                           </div>
                         </details>
@@ -166,7 +166,7 @@ export default async function HistoryPage() {
                   <ul className="min-w-0 space-y-0.5 text-xs">
                     {list.map((r) => (
                       <li key={r.id} className="truncate">
-                        <span className="sport mr-1 font-black text-negro/50">{r.season.slice(2)}</span>
+                        <span className="sport mr-1 font-black text-negro/65">{r.season.slice(2)}</span>
                         <Link href={href(r)} className="font-semibold hover:text-rojo">{shirtName(r.player)}</Link>
                       </li>
                     ))}

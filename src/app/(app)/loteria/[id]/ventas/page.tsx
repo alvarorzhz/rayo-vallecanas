@@ -49,14 +49,14 @@ export default async function SalesPage({
       />
       <form className="card mb-4 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
         <input name="q" defaultValue={sp.q} className="input" placeholder="Buscar por comprador o referencia" />
-        <select name="estado" defaultValue={sp.estado ?? ""} className="input">
+        <select name="estado" defaultValue={sp.estado ?? ""} className="input" aria-label="Estado del cobro">
           <option value="">Todos los pagos</option>
           <option value="pending">Pendiente</option>
           <option value="partial">Parcial</option>
           <option value="paid">Pagado</option>
           <option value="cancelled">Anuladas</option>
         </select>
-        <select name="vendedor" defaultValue={sp.vendedor ?? ""} className="input">
+        <select name="vendedor" defaultValue={sp.vendedor ?? ""} className="input" aria-label="Vendedor">
           <option value="">Todos los vendedores</option>
           {(people ?? []).map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
         </select>

@@ -14,7 +14,7 @@ const TONE: Record<string, string> = {
   available: "bg-white ring-1 ring-black/10 text-negro/70",
   reserved: "bg-dorado/30 text-negro",
   sold: "bg-rojo text-white",
-  voided: "bg-black/20 text-negro/40 line-through",
+  voided: "bg-black/20 text-negro/60 line-through",
 };
 
 export default async function SharesPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ b?: string; v?: string; q?: string }> }) {
@@ -50,7 +50,7 @@ export default async function SharesPage({ params, searchParams }: { params: Pro
       {s.can("lottery_admin", "update") && (
         <div className="card mb-4">
           <h2 className="mb-1 font-bold">Cambiar estado</h2>
-          <p className="mb-3 text-xs text-negro/50">{raffle ? "Los vendidos" : "Las vendidas"} solo cambian anulando su venta.</p>
+          <p className="mb-3 text-xs text-negro/65">{raffle ? "Los vendidos" : "Las vendidas"} solo cambian anulando su venta.</p>
           <ShareStatusForm action={setShareStatus.bind(null, id)} />
         </div>
       )}
@@ -101,7 +101,7 @@ export default async function SharesPage({ params, searchParams }: { params: Pro
                 ))}
               </tbody>
             </table>
-            {!shares.length && <p className="py-6 text-center text-sm text-negro/50">Sin resultados.</p>}
+            {!shares.length && <p className="py-6 text-center text-sm text-negro/65">Sin resultados.</p>}
           </div>
         ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1.5">

@@ -31,7 +31,7 @@ export function MyContactForm({ action, data }: {
 /** Vincular la ficha con un usuario que ya existe. */
 export function LinkUserForm({ action, users }: { action: A; users: { id: string; full_name: string; email: string | null }[] }) {
   const [state, formAction] = useActionState(action, undefined);
-  if (!users.length) return <p className="text-sm text-negro/50">No hay usuarios sin ficha para vincular.</p>;
+  if (!users.length) return <p className="text-sm text-negro/65">No hay usuarios sin ficha para vincular.</p>;
   return (
     <form action={formAction} className="space-y-2">
       <label className="label" htmlFor="user_id">Ya tiene usuario en la app</label>
@@ -58,7 +58,7 @@ export function CreateAccessForm({ action, email }: { action: A; email: string |
         <input id="access-email" name="email" type="email" required defaultValue={email ?? ""} placeholder="Su email (será su usuario)" className="input flex-1" />
         <SubmitButton className="btn-primary" pendingText="Creando…">Crear acceso</SubmitButton>
       </div>
-      <p className="text-xs text-negro/50">Se crea con una contraseña provisional que le mandas por WhatsApp. Entrará con perfil Jugador.</p>
+      <p className="text-xs text-negro/65">Se crea con una contraseña provisional que le mandas por WhatsApp. Entrará con perfil Jugador.</p>
       <FormMessage state={state} />
     </form>
   );
@@ -89,7 +89,7 @@ export function RetireForm({ retire, rejoin, left, today }: { retire: A; rejoin:
       onSubmit={(e) => { if (!confirm("¿Dar de baja definitiva a este jugador? Su historia y estadísticas se conservan.")) e.preventDefault(); }}>
       <label className="label" htmlFor="left_on">Dar de baja definitiva</label>
       <div className="flex flex-wrap gap-2">
-        <input id="left_on" name="left_on" type="date" defaultValue={today} className="input w-auto flex-1" />
+        <input id="left_on" name="left_on" type="date" defaultValue={today} className="input min-w-0 flex-1 basis-40" />
         <SubmitButton className="btn-dark" pendingText="Guardando…">Dar de baja</SubmitButton>
       </div>
       <FormMessage state={state} />

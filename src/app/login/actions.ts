@@ -1,5 +1,6 @@
 "use server";
 import { redirect } from "next/navigation";
+import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 import { siteUrl } from "@/lib/receipt";
 
@@ -15,7 +16,7 @@ export async function signIn(_: FormState, formData: FormData): Promise<FormStat
     if (error.code === "user_banned") return { error: "Tu acceso a la app está deshabilitado. Habla con la directiva." };
     return { error: "Email o contraseña incorrectos" };
   }
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");
+  redirect(safeNext(next));
 }
 
 export async function signOut() {

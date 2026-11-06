@@ -38,7 +38,7 @@ export function WhatsNew() {
             </div>
             <h2 id="whats-new-title" className="text-xl font-black">Versión {r.version} · {r.title}</h2>
           </div>
-          <button onClick={close} aria-label="Cerrar" className="rounded-lg p-1 text-negro/50 hover:text-negro"><X size={20} /></button>
+          <button onClick={close} aria-label="Cerrar" className="rounded-lg p-1 text-negro/65 hover:text-negro"><X size={20} /></button>
         </div>
         <ul className="mb-4 list-disc space-y-1 pl-5 text-sm text-negro/80">
           {r.changes.map((c) => <li key={c}>{c}</li>)}

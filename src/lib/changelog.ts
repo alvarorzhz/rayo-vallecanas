@@ -7,6 +7,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "2.2.1",
+    date: "2026-11-06",
+    title: "Revisión de seguridad y accesibilidad",
+    changes: [
+      "Arreglados los cuadros de fecha que se salían de la pantalla en el iPhone, y el menú «Exportar» de la plantilla en el móvil.",
+      "Más seguridad: la base de datos no deja hacer nada sin haber iniciado sesión, la auditoría no se puede falsear y el navegador bloquea contenido de otras webs y que alguien meta la app dentro de otra página.",
+      "Los enlaces de inicio de sesión ya no pueden llevar a otra web.",
+      "Más fácil de leer: los textos grises y algunas etiquetas tienen más contraste.",
+      "Mejor para lectores de pantalla y teclado: todos los campos y desplegables tienen nombre, el menú indica en qué página estás, hay un enlace para saltar al contenido y el foco se ve siempre.",
+    ],
+  },
+  {
     version: "2.2.0",
     date: "2026-11-06",
     title: "Documentos, cuotas y exportar la plantilla",

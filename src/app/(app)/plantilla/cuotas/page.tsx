@@ -100,7 +100,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
       {canEdit && (
         <section className="card mb-6">
           <h2 className="mb-1">Cuota general de {season}</h2>
-          <p className="mb-3 text-xs text-negro/50">La pagan todos, salvo a quien le pongas una cuota especial (descuento o exento) desde su fila.</p>
+          <p className="mb-3 text-xs text-negro/65">La pagan todos, salvo a quien le pongas una cuota especial (descuento o exento) desde su fila.</p>
           <FeePlanForm action={saveFeePlan.bind(null, season)} plan={fees.plan} />
           {fees.plan?.notes && <p className="mt-2 text-sm text-negro/60">{fees.plan.notes}</p>}
         </section>
@@ -135,13 +135,13 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
                       <span className="shrink-0 transition group-hover:-rotate-6"><Jersey number={r.number} goalkeeper={lineOf(r.position) === "GK"} size={42} /></span>
                     )}
                     <span className="min-w-0">
-                      <span className="sport block truncate text-lg font-black leading-tight group-hover:text-rojo">{r.number != null && <span className="mr-1 text-negro/40">{r.number}</span>}{shirtName(r.player)}</span>
-                      <span className="block truncate text-xs text-negro/50">{fullName(r.player)}{override ? ` · cuota especial${override.reason ? `: ${override.reason}` : ""}` : ""}{r.status === "left" ? " · se fue" : ""}</span>
+                      <span className="sport block truncate text-lg font-black leading-tight group-hover:text-rojo">{r.number != null && <span className="mr-1 text-negro/60">{r.number}</span>}{shirtName(r.player)}</span>
+                      <span className="block truncate text-xs text-negro/65">{fullName(r.player)}{override ? ` · cuota especial${override.reason ? `: ${override.reason}` : ""}` : ""}{r.status === "left" ? " · se fue" : ""}</span>
                     </span>
                   </Link>
                   <span className="text-right">
                     <span className={`badge ${FEE_STATUS_TONE[status]}`}>{FEE_STATUS_LABEL[status]}</span>
-                    <span className="mt-1 block text-sm font-bold tabular-nums">{euros(paid)}<span className="font-normal text-negro/40"> / {due != null ? euros(due) : "–"}</span></span>
+                    <span className="mt-1 block text-sm font-bold tabular-nums">{euros(paid)}<span className="font-normal text-negro/60"> / {due != null ? euros(due) : "–"}</span></span>
                   </span>
                 </div>
                 {due != null && due > 0 && (
@@ -159,7 +159,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
                     )}
                     {canEdit && (
                       <details className="w-full">
-                        <summary className="cursor-pointer text-xs font-bold text-negro/50">Cuota especial</summary>
+                        <summary className="cursor-pointer text-xs font-bold text-negro/65">Cuota especial</summary>
                         <div className="mt-2"><FeeOverrideForm action={saveFeeOverride.bind(null, season, r.player_id)} current={override} general={fees.plan?.amount_cents ?? null} /></div>
                       </details>
                     )}
@@ -170,7 +170,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
           })}
         </ul>
       )}
-      <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-negro/50"><Wallet size={14} /> Los jugadores no ven las cuotas: solo quien tiene acceso a Finanzas.</p>
+      <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-negro/65"><Wallet size={14} /> Los jugadores no ven las cuotas: solo quien tiene acceso a Finanzas.</p>
     </>
   );
 }

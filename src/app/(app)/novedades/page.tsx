@@ -16,7 +16,7 @@ export default function NovedadesPage() {
                 <span className={`badge font-mono ${i === 0 ? "bg-rojo text-white" : "bg-negro text-white"}`}>v{r.version}</span>
                 {r.title}
               </h2>
-              <span className="text-xs text-negro/50">{fecha(r.date)}{i === 0 ? " · versión actual" : ""}</span>
+              <span className="text-xs text-negro/65">{fecha(r.date)}{i === 0 ? " · versión actual" : ""}</span>
             </div>
             <ul className="list-disc space-y-1 pl-5 text-sm text-negro/80">
               {r.changes.map((c) => <li key={c}>{c}</li>)}

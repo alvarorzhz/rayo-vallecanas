@@ -92,7 +92,7 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
             <input id="buyer_email" name="buyer_email" type="email" autoComplete="off" className="input" required={channel === "email"} />
           </div>
         </div>
-        <p className="text-xs text-negro/50">Necesitamos al menos un teléfono o un email para enviar el justificante.</p>
+        <p className="text-xs text-negro/65">Necesitamos al menos un teléfono o un email para enviar el justificante.</p>
         <p className="rounded-xl bg-gris p-3 text-xs text-negro/60">
           🔒 Díselo al comprador: sus datos solo se usan para gestionar su compra y enviarle el justificante.
           Más información en <a href="/privacidad" target="_blank" className="font-semibold text-rojo underline">Protección de datos</a>.
@@ -128,7 +128,7 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
             <label className="label" htmlFor="share_numbers">{raffle ? "Números que vendes" : "Números de participación que entregas"}</label>
             <input id="share_numbers" name="share_numbers" value={manual} onChange={(e) => setManual(e.target.value)} required
               className="input font-mono" placeholder="Ej.: 12, 13, 40-42" inputMode="numeric" />
-            <p className={`mt-1 text-xs ${manualError ? "text-rojo" : "text-negro/50"}`}>
+            <p className={`mt-1 text-xs ${manualError ? "text-rojo" : "text-negro/65"}`}>
               {manualError || `${manualCount} ${raffle ? "seleccionados" : "seleccionadas"}. ${availableNumbers?.length ? "" : availableHint ?? ""}`}
             </p>
           </div>
@@ -207,9 +207,9 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
             );
           })}
         </div>
-        {!emailEnabled && <p className="text-xs text-negro/50">El envío por email estará disponible más adelante.</p>}
+        {!emailEnabled && <p className="text-xs text-negro/65">El envío por email estará disponible más adelante.</p>}
         {channel === "whatsapp" && !whatsappApi && (
-          <p className="text-xs text-negro/50">
+          <p className="text-xs text-negro/65">
             Después de registrar la venta verás el botón <b>Abrir en WhatsApp</b>: se abrirá WhatsApp con el mensaje ya escrito y solo tendrás que pulsar enviar.
           </p>
         )}
@@ -233,7 +233,7 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
 
       <section className="card">
         <label className="label" htmlFor="notes">Observaciones (opcional)</label>
-        <p className="mb-2 text-xs text-negro/50">Cualquier detalle útil, por ejemplo «paga el viernes» o «es el padre de Javi».</p>
+        <p className="mb-2 text-xs text-negro/65">Cualquier detalle útil, por ejemplo «paga el viernes» o «es el padre de Javi».</p>
         <textarea id="notes" name="notes" rows={2} className="input" />
       </section>
 

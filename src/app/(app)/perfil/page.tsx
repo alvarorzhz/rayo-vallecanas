@@ -27,7 +27,7 @@ export default async function ProfilePage() {
             <Shirt size={22} className="text-rojo" />
             <span className="flex-1">
               <span className="block font-bold">Mi ficha de jugador</span>
-              <span className="block text-xs text-negro/50">Tu dorsal, tu posición y tus datos de contacto</span>
+              <span className="block text-xs text-negro/65">Tu dorsal, tu posición y tus datos de contacto</span>
             </span>
             <span className="text-rojo">→</span>
           </Link>
@@ -47,7 +47,7 @@ export default async function ProfilePage() {
               <div key={k} className="flex justify-between gap-4 py-2"><dt className="text-negro/60">{k}</dt><dd className="text-right font-semibold">{v}</dd></div>
             ))}
           </dl>
-          <p className="mt-3 text-xs text-negro/50">Para cambiar tu nombre o teléfono, pídeselo a un gestor.</p>
+          <p className="mt-3 text-xs text-negro/65">Para cambiar tu nombre o teléfono, pídeselo a un gestor.</p>
         </section>
       </div>
     </>

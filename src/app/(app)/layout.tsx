@@ -26,6 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-dvh">
+      <a href="#contenido" className="sr-only z-50 rounded-xl bg-rojo px-4 py-2 font-bold text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Saltar al contenido</a>
       <Sidebar items={items} name={s.profile.full_name} role={ROLE_LABEL[s.profile.role] ?? s.profile.role} version={APP_VERSION} avatar={s.profile.avatar_url} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="franja sticky top-0 z-20 flex items-center justify-between bg-negro px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] text-white shadow-lg lg:hidden">
@@ -47,9 +48,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </form>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-8">
+        <main id="contenido" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 outline-none px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-8">
           <div className="page-enter">{children}</div>
-          <footer className="mt-10 text-center text-xs text-negro/40">
+          <footer className="mt-10 text-center text-xs text-negro/60">
             <Link href="/novedades" className="hover:text-rojo lg:hidden">Rayo Vallecañas · v{APP_VERSION} · Novedades · </Link>
             <Link href="/privacidad" className="hover:text-rojo">Protección de datos</Link>
           </footer>

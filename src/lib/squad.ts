@@ -105,8 +105,8 @@ export const lineFromSlug = (s?: string | null) => LINES.find((l) => l.slug === 
 /** Color de cada línea (el código de color habitual en las apps de fútbol). */
 export const LINE_TONE: Record<Line, { chip: string; dot: string; hex: string }> = {
   GK: { chip: "bg-amber-400 text-negro", dot: "bg-amber-400", hex: "#F59E0B" },
-  DEF: { chip: "bg-sky-600 text-white", dot: "bg-sky-600", hex: "#0284C7" },
-  MID: { chip: "bg-emerald-600 text-white", dot: "bg-emerald-600", hex: "#059669" },
+  DEF: { chip: "bg-sky-700 text-white", dot: "bg-sky-600", hex: "#0284C7" },
+  MID: { chip: "bg-emerald-700 text-white", dot: "bg-emerald-600", hex: "#059669" },
   FWD: { chip: "bg-rojo text-white", dot: "bg-rojo", hex: "#D20D17" },
 };
 

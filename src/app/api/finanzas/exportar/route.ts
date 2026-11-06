@@ -59,7 +59,7 @@ export async function GET(req: Request) {
   const extra = [f.kind ? `solo ${f.kind === "income" ? "ingresos" : "gastos"}` : "", f.cat ? `categoría: ${rows[0]?.category?.name ?? ""}` : "", f.q ? `búsqueda: «${f.q}»` : ""]
     .filter(Boolean).join(" · ");
 
-  await supabase.rpc("log_action", { p_action: "EXPORT", p_table: "finance_movements", p_record: format, p_data: { period, filters: f, rows: rows.length } });
+  await supabase.rpc("log_export", { p_table: "finance_movements", p_record: format, p_data: { period, filters: f, rows: rows.length } });
 
   const slug = period.toLowerCase().normalize("NFD").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
   const name = `rayo-vallecanas-finanzas-${slug}`;

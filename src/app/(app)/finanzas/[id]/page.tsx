@@ -53,7 +53,7 @@ export default async function MovementPage({ params, searchParams }: { params: P
           <div className="mb-4 text-4xl [font-family:var(--font-display)] italic"><Amount kind={m.kind} cents={m.amount_cents} voided={!!m.voided_at} /></div>
           <dl className="divide-y divide-black/5 text-sm">
             {rows.map(([k, v]) => (
-              <div key={k} className="grid grid-cols-[9rem_1fr] gap-3 py-2.5"><dt className="text-negro/50">{k}</dt><dd className="min-w-0 break-words">{v}</dd></div>
+              <div key={k} className="grid grid-cols-[9rem_1fr] gap-3 py-2.5"><dt className="text-negro/65">{k}</dt><dd className="min-w-0 break-words">{v}</dd></div>
             ))}
           </dl>
         </section>

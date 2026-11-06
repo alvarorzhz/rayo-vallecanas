@@ -73,7 +73,7 @@ export function AvatarUpload({
           </button>
         )}
       </div>
-      <p className="text-xs text-negro/50">Puedes hacer una foto con el móvil o elegir una de la galería. Se recorta en cuadrado.</p>
+      <p className="text-xs text-negro/65">Puedes hacer una foto con el móvil o elegir una de la galería. Se recorta en cuadrado.</p>
       <FormMessage state={state} />
     </div>
   );
