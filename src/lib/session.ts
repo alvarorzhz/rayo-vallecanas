@@ -3,7 +3,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export type Module = "lottery_admin" | "lottery_sell" | "users" | "audit" | "finances" | "squad" | "matches";
+export type Module = "lottery_admin" | "lottery_sell" | "users" | "audit" | "finances" | "squad" | "squad_private" | "matches";
 export type Action = "read" | "create" | "update" | "delete";
 export type Perms = Record<Module, Record<Action, boolean>>;
 

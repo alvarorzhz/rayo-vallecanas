@@ -137,7 +137,7 @@ export function UserEditForm({
           <a href="/admin/perfiles" className="font-semibold text-rojo">¿Qué hace cada perfil?</a>
         </p>
         {role === "player" && (
-          <p className="mb-2 text-xs text-negro/50">Los jugadores no pueden acceder a Finanzas en ningún caso.</p>
+          <p className="mb-2 text-xs text-negro/50">Los jugadores no pueden acceder a Finanzas ni a los datos personales de otros en ningún caso.</p>
         )}
         {role === "superadmin" ? (
           <p className="rounded-xl bg-gris p-3 text-sm">El superadministrador tiene acceso completo a todo.</p>
@@ -148,7 +148,7 @@ export function UserEditForm({
                 <tr><th>Módulo</th><th>Personalizar</th>{ACTIONS.map(([, l]) => <th key={l} className="text-center">{l}</th>)}</tr>
               </thead>
               <tbody>
-                {modules.filter((m) => !(m === "finances" && role === "player")).map((m) => {
+                {modules.filter((m) => !((m === "finances" || m === "squad_private") && role === "player")).map((m) => {
                   const isCustom = Boolean(custom[m]);
                   const src = isCustom ? userPerms.find((p) => p.module === m) : base(m);
                   return (

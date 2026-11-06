@@ -2,6 +2,7 @@
 import { useActionState, useRef, useState } from "react";
 import { Paperclip, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { shrinkImage as shrink } from "@/lib/shrink-image";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { PAYMENT_METHOD_LABEL } from "@/lib/format";
@@ -9,23 +10,6 @@ import { KIND_SLUG, type Category, type FinanceKind, type Movement } from "@/lib
 import type { ActionState } from "@/app/(app)/finanzas/actions";
 
 const eurosInput = (c?: number | null) => (c ? (c / 100).toFixed(2).replace(".", ",") : "");
-
-/** Reduce las fotos del móvil (varios MB) a 1600 px antes de subirlas; los PDF se suben tal cual. */
-async function shrink(file: File): Promise<File> {
-  if (!file.type.startsWith("image/") || file.size < 600_000) return file;
-  try {
-    const bmp = await createImageBitmap(file);
-    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bmp.width * scale);
-    canvas.height = Math.round(bmp.height * scale);
-    canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", 0.82));
-    return blob ? new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }) : file;
-  } catch {
-    return file;
-  }
-}
 
 export function MovementForm({
   kind,

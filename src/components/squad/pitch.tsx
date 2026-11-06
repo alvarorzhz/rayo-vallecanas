@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Jersey } from "@/components/squad/jersey";
+import { Ball } from "@/components/squad/ball";
 import { LINES, lineOf, shirtName, type Line, type RosterEntry } from "@/lib/squad";
 
 /**
@@ -12,13 +13,15 @@ export function Pitch({ roster, hrefFor }: { roster: RosterEntry[]; hrefFor: (id
   return (
     <div className="relative mx-auto max-w-2xl overflow-hidden rounded-3xl bg-[#1f7a3a] shadow-xl ring-4 ring-negro">
       {/* Césped a franjas */}
-      <div aria-hidden className="absolute inset-0 bg-[repeating-linear-gradient(180deg,rgba(255,255,255,0.06)_0_56px,transparent_56px_112px)]" />
+      <div aria-hidden className="anim-grass absolute inset-0 bg-[repeating-linear-gradient(180deg,rgba(255,255,255,0.06)_0_56px,transparent_56px_112px)]" />
       {/* Líneas de un campo de fútbol 7 (unos 60 × 40 m): áreas de 12 m, punto de penalti a 9 m y porterías de 6 m */}
       <div aria-hidden className="absolute inset-3 sm:inset-4">
         <div className="absolute inset-0 rounded-md border-2 border-white/60" />
         <div className="absolute inset-x-0 top-1/2 border-t-2 border-white/60" />
         <div className="absolute left-1/2 top-1/2 aspect-square w-[30%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/60" />
         <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70" />
+        {/* Balón en el centro del campo */}
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[130%]"><Ball size={22} className="anim-bounce-ball drop-shadow-[0_6px_4px_rgba(0,0,0,0.45)]" /></span>
         {(["top", "bottom"] as const).map((side) => (
           <div key={side}>
             <div className={`absolute left-1/2 h-[17%] w-[65%] -translate-x-1/2 border-2 border-white/60 ${side === "top" ? "top-0 border-t-0" : "bottom-0 border-b-0"}`} />
@@ -30,7 +33,7 @@ export function Pitch({ roster, hrefFor }: { roster: RosterEntry[]; hrefFor: (id
       </div>
 
       <div className="relative flex min-h-[36rem] flex-col justify-between gap-4 px-3 py-8 sm:min-h-[44rem]  sm:px-8">
-        {rows.map((l) => {
+        {rows.map((l, li) => {
           const players = byLine(l.key);
           return (
             <div key={l.key} className="flex flex-col items-center gap-1.5">
@@ -39,11 +42,11 @@ export function Pitch({ roster, hrefFor }: { roster: RosterEntry[]; hrefFor: (id
               </span>
               <div className="flex flex-wrap justify-center gap-x-1 gap-y-2 sm:gap-x-3">
                 {players.length === 0 && <span className="py-3 text-xs text-white/60">Sin jugadores</span>}
-                {players.map((r) => {
+                {players.map((r, pi) => {
                   const dim = r.status !== "active";
                   return (
-                    <Link key={r.id} href={hrefFor(r.player_id)} prefetch
-                      className="group flex w-[4.4rem] flex-col items-center text-center transition hover:-translate-y-0.5 sm:w-20">
+                    <Link key={r.id} href={hrefFor(r.player_id)} prefetch style={{ animationDelay: `${(rows.length - 1 - li) * 160 + pi * 70}ms` }}
+                      className="anim-walkout group flex w-[4.4rem] flex-col items-center text-center transition hover:-translate-y-0.5 sm:w-20">
                       <span className="relative drop-shadow-[0_6px_6px_rgba(0,0,0,0.45)] transition group-hover:scale-110">
                         <Jersey number={r.number} goalkeeper={l.key === "GK"} size={50} dim={dim} />
                         {r.armband && (

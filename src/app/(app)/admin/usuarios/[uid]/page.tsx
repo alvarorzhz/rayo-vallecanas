@@ -7,7 +7,7 @@ import { resetPassword, setUserAccess, updateUser } from "../actions";
 import { Lock, LockOpen } from "lucide-react";
 
 export const metadata = { title: "Usuario" };
-const MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "matches"];
+const MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "squad_private", "matches"];
 
 export default async function UserPage({ params }: { params: Promise<{ uid: string }> }) {
   const { uid } = await params;

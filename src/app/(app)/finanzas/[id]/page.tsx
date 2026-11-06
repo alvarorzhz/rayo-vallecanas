@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Paperclip, Pencil, Ticket } from "lucide-react";
+import { Paperclip, Pencil, Shirt, Ticket } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fecha, PAYMENT_METHOD_LABEL } from "@/lib/format";
@@ -18,9 +18,10 @@ export default async function MovementPage({ params, searchParams }: { params: P
   const supabase = await createClient();
   const { data: m } = await supabase.from("finance_movements").select(MOVEMENT_SELECT).eq("id", id).single<MovementRow>();
   if (!m) notFound();
-  const [{ data: voider }, { data: campaign }] = await Promise.all([
+  const [{ data: voider }, { data: campaign }, { data: player }] = await Promise.all([
     m.voided_by ? supabase.from("member_directory").select("full_name").eq("id", m.voided_by).single() : Promise.resolve({ data: null }),
     m.campaign_id ? supabase.from("lottery_campaigns").select("id, name").eq("id", m.campaign_id).single() : Promise.resolve({ data: null }),
+    m.player_id ? supabase.from("players").select("id, first_name, last_name").eq("id", m.player_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   const income = m.kind === "income";
 
@@ -61,6 +62,11 @@ export default async function MovementPage({ params, searchParams }: { params: P
             <a href={`/api/finanzas/justificante/${m.id}`} target="_blank" rel="noopener" className="btn-ghost w-full">
               <Paperclip size={16} /> Ver justificante
             </a>
+          )}
+          {player && (
+            <Link href={`/plantilla/${player.id}${m.fee_season ? `?temporada=${m.fee_season.replace("/", "-")}` : ""}`} className="btn-ghost w-full">
+              <Shirt size={16} /> {m.fee_season ? `Cuota ${m.fee_season} · ` : ""}{`${player.first_name} ${player.last_name}`.trim()}
+            </Link>
           )}
           {campaign && (
             <Link href={`/loteria/${campaign.id}`} className="btn-ghost w-full"><Ticket size={16} /> {campaign.name}</Link>

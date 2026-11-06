@@ -16,6 +16,8 @@ export type Movement = {
   attachment_path: string | null;
   attachment_name: string | null;
   campaign_id: string | null;
+  player_id?: string | null;
+  fee_season?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

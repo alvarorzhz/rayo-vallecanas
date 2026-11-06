@@ -1,21 +1,27 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Camera, Cross, Mail, Pencil, Phone, Plane, ShieldAlert, Unlink, UserCheck } from "lucide-react";
+import { Camera, Cross, FolderLock, Mail, Pencil, Phone, Plane, ShieldAlert, Unlink, UserCheck, Wallet } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
-import { fecha, phoneE164 } from "@/lib/format";
+import { euros, fecha, phoneE164, PAYMENT_METHOD_LABEL } from "@/lib/format";
+import { fetchFees } from "@/lib/squad-queries";
 import {
-  ARMBAND_LABEL, FOOT_LABEL, LINE_LABEL, STATUS_LABEL, STATUS_TONE,
-  ageOf, fullName, lineOf, ratio, seasonFromSlug, seasonSlug, shirtName, sumStats,
-  type Membership, type Player, type PlayerPrivate,
+  ARMBAND_LABEL, FEE_STATUS_LABEL, FEE_STATUS_TONE, FOOT_LABEL, LINE_LABEL, STATUS_LABEL, STATUS_TONE,
+  ageOf, feeOf, feeStatus, fullName, lineOf, ratio, seasonFromSlug, seasonSlug, shirtName, sumStats,
+  type Membership, type Player, type PlayerDocument, type PlayerPrivate,
 } from "@/lib/squad";
 import { Avatar } from "@/components/avatar";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { Jersey } from "@/components/squad/jersey";
 import { Armband, FutCard, PositionChip } from "@/components/squad/player-card";
 import { CreateAccessForm, DeletePlayerForm, LinkUserForm, MyContactForm, RetireForm } from "@/components/squad/squad-forms";
-import { createAccess, deletePlayer, linkUser, rejoinPlayer, removePlayerPhoto, retirePlayer, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
+import { PlayerDocs } from "@/components/squad/player-docs";
+import { FeeBar } from "@/components/squad/fee-bar";
+import { FeeOverrideForm, FeePaymentForm } from "@/components/squad/fee-forms";
+import { CountUp } from "@/components/squad/count-up";
+import { createAccess, deletePlayer, deletePlayerDoc, linkUser, rejoinPlayer, removePlayerPhoto, retirePlayer, savePlayerDoc, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
+import { registerFeePayment, saveFeeOverride } from "../cuotas/actions";
 
 export const metadata = { title: "Ficha del jugador" };
 
@@ -26,14 +32,21 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
   const s = await requirePerm("squad", "read");
   const supabase = await createClient();
   const isManager = s.can("squad", "update");
+  const canPrivate = s.can("squad_private", "read");
+  const canFees = s.can("finances", "read");
 
   const [{ data: player }, { data: history }, { data: priv }] = await Promise.all([
     supabase.from("players").select("*").eq("id", id).maybeSingle<Player>(),
     supabase.from("squad_members").select("*").eq("player_id", id).order("season", { ascending: false }).returns<Membership[]>(),
-    isManager ? supabase.from("player_private").select("*").eq("player_id", id).maybeSingle<PlayerPrivate>() : Promise.resolve({ data: null }),
+    canPrivate ? supabase.from("player_private").select("*").eq("player_id", id).maybeSingle<PlayerPrivate>() : Promise.resolve({ data: null }),
   ]);
   if (!player) notFound();
   const isMe = player.user_id === s.user.id;
+  const showDocs = canPrivate || isMe;
+  const { data: docs } = showDocs
+    ? await supabase.from("player_documents").select("*").eq("player_id", id).order("created_at", { ascending: false }).returns<PlayerDocument[]>()
+    : { data: [] as PlayerDocument[] };
+  const deletable = (docs ?? []).filter((d) => s.can("squad_private", "delete") || (isMe && d.uploaded_by === s.user.id)).map((d) => d.id);
   const own = isMe ? ((await supabase.rpc("squad_my_private")).data as Own | null) : null;
   const contact: Own | null = priv ?? own;
 
@@ -45,6 +58,10 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
   const age = ageOf(contact?.birth_date);
   const back = `/plantilla?temporada=${seasonSlug(season)}`;
   const total = sumStats(seasons);
+  const today = new Date().toISOString().slice(0, 10);
+  const fees = canFees && member ? await fetchFees(supabase, season, id) : null;
+  const feeDue = fees ? feeOf(fees.plan, fees.overrides.get(id)) : null;
+  const feePaid = fees?.paid.get(id) ?? 0;
 
   // Usuario vinculado y usuarios libres para vincular (solo gestores con acceso a Usuarios)
   const canUsers = s.can("users", "read") && isManager;
@@ -71,14 +88,14 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
       {/* Cabecera de la ficha */}
       <section className="relative mb-6 overflow-hidden rounded-3xl bg-negro text-white shadow-2xl">
         <div aria-hidden className={`absolute inset-0 ${line === "GK" ? "bg-[linear-gradient(150deg,#3a2f0b_0%,#080808_60%)]" : "bg-[linear-gradient(150deg,#3b0609_0%,#080808_60%)]"}`} />
-        <div aria-hidden className="absolute inset-0 bg-[linear-gradient(115deg,transparent_0_60%,var(--color-rojo)_60%_73%,var(--color-dorado)_73%_75%,transparent_75%)] opacity-80" />
+        <div aria-hidden className="anim-sweep absolute inset-0 bg-[linear-gradient(115deg,transparent_0_60%,var(--color-rojo)_60%_73%,var(--color-dorado)_73%_75%,transparent_75%)] opacity-80" />
         {member?.number != null && (
-          <span aria-hidden className="sport pointer-events-none absolute -bottom-10 right-2 select-none text-[13rem] font-black leading-none text-white/[0.07] sm:right-8 sm:text-[17rem]">
+          <span aria-hidden className="anim-number-in sport pointer-events-none absolute -bottom-10 right-2 select-none text-[13rem] font-black leading-none text-white/[0.07] sm:right-8 sm:text-[17rem]">
             {member.number}
           </span>
         )}
         <div className="relative flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-center sm:p-8">
-          <div className="w-52 shrink-0 drop-shadow-[0_18px_24px_rgba(0,0,0,0.6)] sm:w-60">
+          <div className="anim-deal group w-52 shrink-0 drop-shadow-[0_18px_24px_rgba(0,0,0,0.6)] sm:w-60" style={{ animationDelay: "120ms" }}>
             {member ? (
               <FutCard entry={{ ...member, player }} size="lg" />
             ) : player.photo_url ? (
@@ -100,7 +117,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
               )}
               {member?.armband && <span className="badge bg-rojo text-white">{ARMBAND_LABEL[member.armband]}</span>}
             </div>
-            <h1 className="sport mt-2 text-5xl leading-[0.85] font-black sm:text-6xl">
+            <h1 className="anim-rise sport mt-2 text-5xl leading-[0.85] font-black sm:text-6xl">
               {member?.number != null && <span className="mr-2 text-dorado">{member.number}</span>}
               {shirtName(player)}
             </h1>
@@ -114,8 +131,8 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                 ["Edad", age != null ? `${age} años` : "–"],
                 ["En el club", player.joined_club_on ? `desde ${player.joined_club_on.slice(0, 4)}` : "–"],
                 ["Temporadas", seasons.length || "–"],
-              ].map(([k, v]) => (
-                <div key={k} className="border-l-2 border-dorado/70 pl-2">
+              ].map(([k, v], i) => (
+                <div key={k} className="anim-rise border-l-2 border-dorado/70 pl-2" style={{ animationDelay: `${250 + i * 60}ms` }}>
                   <dt className="text-[10px] font-bold uppercase tracking-wider text-white/50">{k}</dt>
                   <dd className="sport truncate text-lg font-black leading-tight">{v}</dd>
                 </div>
@@ -139,17 +156,17 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
               ? [["Partidos", member.apps, `${member.starts} de titular`], ["Porterías a cero", member.clean_sheets, null], ["Encajados", member.conceded, `${ratio(member.conceded, member.apps)} por partido`], ["MVP", member.mvps, "mejor del partido"]]
               : [["Partidos", member.apps, `${member.starts} de titular`], ["Goles", member.goals, `${ratio(member.goals, member.apps)} por partido`], ["Asistencias", member.assists, null], ["MVP", member.mvps, "mejor del partido"]]
             ).map(([k, v, hint], i) => (
-              <div key={String(k)} className={`relative col-span-1 overflow-hidden rounded-2xl p-4 shadow-sm sm:col-span-1 lg:col-span-2 ${i === 1 ? "bg-gradient-to-br from-rojo to-rojo-oscuro text-white" : i === 0 ? "bg-gradient-to-br from-negro-2 to-negro text-white" : "bg-white ring-1 ring-black/5"}`}>
+              <div key={String(k)} style={{ animationDelay: `${i * 90}ms` }} className={`anim-score relative col-span-1 overflow-hidden rounded-2xl p-4 shadow-sm sm:col-span-1 lg:col-span-2 ${i === 1 ? "bg-gradient-to-br from-rojo to-rojo-oscuro text-white" : i === 0 ? "bg-gradient-to-br from-negro-2 to-negro text-white" : "bg-white ring-1 ring-black/5"}`}>
                 <span aria-hidden className={`absolute -right-3 top-0 h-full w-6 -skew-x-[20deg] ${i === 1 ? "bg-white/25" : i === 0 ? "bg-rojo" : "bg-dorado"}`} />
                 <div className={`relative text-[11px] font-bold uppercase tracking-wider ${i < 2 ? "text-white/70" : "text-negro/50"}`}>{k}</div>
-                <div className="sport relative mt-1 text-4xl leading-none font-black sm:text-5xl">{v}</div>
+                <div className="sport relative mt-1 text-4xl leading-none font-black sm:text-5xl"><CountUp value={Number(v)} /></div>
                 {hint && <div className={`relative mt-1 text-xs ${i < 2 ? "text-white/70" : "text-negro/50"}`}>{hint}</div>}
               </div>
             ))}
           </div>
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
-            <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5"><span className="inline-block h-3.5 w-2.5 rounded-sm bg-amber-400" /> {member.yellows} {member.yellows === 1 ? "amarilla" : "amarillas"}</span>
-            <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5"><span className="inline-block h-3.5 w-2.5 rounded-sm bg-rojo" /> {member.reds} {member.reds === 1 ? "roja" : "rojas"}</span>
+            <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5"><span className="anim-card-show inline-block h-3.5 w-2.5 rounded-sm bg-amber-400" /> {member.yellows} {member.yellows === 1 ? "amarilla" : "amarillas"}</span>
+            <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5"><span className="anim-card-show inline-block h-3.5 w-2.5 rounded-sm bg-rojo" style={{ animationDelay: "150ms" }} /> {member.reds} {member.reds === 1 ? "roja" : "rojas"}</span>
             {line !== "GK" && member.apps > 0 && <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5">{member.goals + member.assists} goles + asistencias</span>}
             {member.apps > 0 && <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5">Titular en el {Math.round((member.starts / member.apps) * 100)}%</span>}
           </div>
@@ -210,11 +227,11 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
           </section>
 
           {/* Contacto: gestores y el propio jugador */}
-          {contact && (isManager || isMe) && (
+          {contact && (canPrivate || isMe) && (
             <section className="card">
-              <h2 className="mb-1">{isMe && !isManager ? "Mis datos" : "Contacto"}</h2>
-              <p className="mb-4 text-xs text-negro/50">Solo lo ven los gestores{isMe ? " y tú" : " y el propio jugador"}.</p>
-              {isMe && !isManager ? (
+              <h2 className="mb-1">{isMe && !canPrivate ? "Mis datos" : "Contacto"}</h2>
+              <p className="mb-4 text-xs text-negro/50">Solo lo ven los gestores con permiso de datos personales{isMe ? " y tú" : " y el propio jugador"}.</p>
+              {isMe && !canPrivate ? (
                 <MyContactForm action={updateMyContact} data={contact} />
               ) : (
                 <dl className="grid gap-3 text-sm sm:grid-cols-2">
@@ -229,7 +246,16 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
             </section>
           )}
 
-          {isManager && priv && (priv.sport_notes || priv.internal_notes) && (
+          {showDocs && (
+            <section className="card">
+              <h2 className="mb-1 flex items-center gap-2"><FolderLock size={20} className="text-rojo" /> {isMe && !canPrivate ? "Mis documentos" : "Documentos"}</h2>
+              <p className="mb-3 text-xs text-negro/50">Privados: solo los ven los gestores con permiso de datos personales{isMe ? " y tú" : " y el propio jugador"}.</p>
+              <PlayerDocs playerId={id} docs={docs ?? []} canUpload={s.can("squad_private", "create") || isMe} deletable={deletable}
+                save={savePlayerDoc.bind(null, id)} remove={deletePlayerDoc} />
+            </section>
+          )}
+
+          {canPrivate && priv && (priv.sport_notes || priv.internal_notes) && (
             <section className="card">
               <h2 className="mb-1">Observaciones</h2>
               <p className="mb-3 text-xs text-negro/50">Solo para gestores.</p>
@@ -240,6 +266,43 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
         </div>
 
         <div className="space-y-6">
+          {fees && (
+            <section className="card">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="flex items-center gap-2"><Wallet size={20} className="text-rojo" /> Cuota {season}</h2>
+                <span className={`badge ${FEE_STATUS_TONE[feeStatus(feeDue, feePaid)]}`}>{FEE_STATUS_LABEL[feeStatus(feeDue, feePaid)]}</span>
+              </div>
+              <FeeBar due={feeDue} paid={feePaid} />
+              {fees.overrides.get(id) && <p className="mt-2 text-xs text-negro/60">Cuota especial{fees.overrides.get(id)!.reason ? `: ${fees.overrides.get(id)!.reason}` : ""}.</p>}
+              {!fees.plan && !fees.overrides.get(id) && <p className="mt-2 text-xs text-negro/60">Aún no hay cuota para {season}. <Link href={`/plantilla/cuotas?temporada=${seasonSlug(season)}`} className="font-semibold text-rojo">Ponerla</Link></p>}
+              {fees.payments.length > 0 && (
+                <ul className="mt-3 space-y-1 text-sm">
+                  {fees.payments.map((p) => (
+                    <li key={p.id}>
+                      <Link href={`/finanzas/${p.id}`} className="flex justify-between gap-2 rounded-lg bg-gris px-2.5 py-1.5 hover:ring-1 hover:ring-rojo">
+                        <span>{fecha(p.op_date)} · {PAYMENT_METHOD_LABEL[p.method] ?? p.method}</span>
+                        <b className="tabular-nums text-green-700">+{euros(p.amount_cents)}</b>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {s.can("finances", "create") && feeStatus(feeDue, feePaid) !== "paid" && feeStatus(feeDue, feePaid) !== "exempt" && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-sm font-bold text-rojo">Apuntar pago</summary>
+                  <div className="mt-2"><FeePaymentForm action={registerFeePayment.bind(null, season, id)} suggested={feeDue != null ? Math.max(0, feeDue - feePaid) : null} today={today} /></div>
+                </details>
+              )}
+              {s.can("finances", "update") && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-sm font-bold text-negro/60">Cuota especial</summary>
+                  <div className="mt-2"><FeeOverrideForm action={saveFeeOverride.bind(null, season, id)} current={fees.overrides.get(id) ?? null} general={fees.plan?.amount_cents ?? null} /></div>
+                </details>
+              )}
+              <p className="mt-3 text-xs text-negro/50">Los pagos se apuntan como ingresos en Finanzas. El jugador no ve esta información.</p>
+            </section>
+          )}
+
           {isMe && (
             <section className="card">
               <h2 className="mb-2">Tu foto</h2>
@@ -257,7 +320,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                   : "Si deja el equipo, dale de baja: deja libre su dorsal y su historia se conserva."}
               </p>
               <RetireForm retire={retirePlayer.bind(null, id, member.season)} rejoin={rejoinPlayer.bind(null, id, member.season)}
-                left={member.status === "left"} today={new Date().toISOString().slice(0, 10)} />
+                left={member.status === "left"} today={today} />
             </section>
           )}
 

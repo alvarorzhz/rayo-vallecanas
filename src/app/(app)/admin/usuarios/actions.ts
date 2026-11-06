@@ -7,7 +7,7 @@ import { tempPassword } from "@/lib/password";
 
 export type ActionState = { error?: string; ok?: string; password?: string; name?: string; phone?: string | null; email?: string } | undefined;
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
-const MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "matches"] as const;
+const MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "squad_private", "matches"] as const;
 
 export async function inviteUser(_: ActionState, f: FormData): Promise<ActionState> {
   const supabase = await createClient();
