@@ -12,7 +12,7 @@ export const ROLE_INFO: Record<string, { summary: string; who: string }> = {
   },
   player: {
     who: "Jugadores del equipo.",
-    summary: "Vende lotería y rifas en las campañas en las que está asignado y ve solo sus propias ventas. No puede ver Finanzas.",
+    summary: "Vende lotería y rifas en las campañas en las que está asignado y ve solo sus propias ventas. Ve la plantilla y corrige sus propios datos y documentos. No puede ver Finanzas ni los datos personales de otros.",
   },
 };
 
@@ -60,8 +60,17 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
     acts: {
       read: "Ver la plantilla de cada temporada (cromos, campo y lista) y las fichas: dorsal, posición, estado y trayectoria.",
       create: "Fichar jugadores nuevos.",
-      update: "Editar fichas, fotos y dorsales, ver los datos personales (teléfono, emergencia, nacimiento) y las observaciones, y vincular fichas con usuarios.",
+      update: "Editar fichas, fotos, dorsales y estadísticas, preparar temporadas, dar de baja y vincular fichas con usuarios.",
       delete: "Eliminar fichas creadas por error.",
+    },
+  },
+  squad_private: {
+    title: "Plantilla · datos personales (nunca para jugadores)",
+    acts: {
+      read: "Ver el teléfono, el email, el contacto de emergencia, la fecha de nacimiento, las observaciones y los documentos de cada jugador.",
+      create: "Subir documentos a la ficha de los jugadores (DNI, ficha federativa, certificado médico…).",
+      update: "Corregir los datos personales y las observaciones.",
+      delete: "Borrar documentos.",
     },
   },
   matches: { title: "Partidos", soon: true, acts: { read: "Ver el calendario y las convocatorias.", create: "Crear partidos.", update: "Editar partidos y convocatorias." } },

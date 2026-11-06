@@ -37,11 +37,11 @@ export function PrepareSeasonForm({ action, from, to, candidates }: { action: (s
                 <button type="button" className="text-sm font-bold text-rojo" onClick={() => setGroup(g.key, !all)}>{all ? "Quitar todos" : "Marcar todos"}</button>
               </div>
               <ul className="grid gap-2 sm:grid-cols-2">
-                {list.map((c) => {
+                {list.map((c, i) => {
                   const on = sel.has(c.id);
                   return (
-                    <li key={c.id}>
-                      <label className={`flex cursor-pointer items-center gap-3 rounded-xl p-2.5 ring-1 transition ${on ? "bg-negro text-white ring-negro" : "bg-white ring-black/10 hover:ring-negro/30"}`}>
+                    <li key={c.id} className="anim-rise" style={{ animationDelay: `${Math.min(i, 20) * 25}ms` }}>
+                      <label className={`kick flex cursor-pointer items-center gap-3 rounded-xl p-2.5 ring-1 transition duration-200 ${on ? "translate-x-1 bg-negro text-white ring-negro" : "bg-white ring-black/10 hover:ring-negro/30"}`}>
                         <input type="checkbox" name="player" value={c.id} checked={on} onChange={() => toggle(c.id)} className="h-5 w-5 accent-rojo" />
                         {c.photo ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -66,7 +66,7 @@ export function PrepareSeasonForm({ action, from, to, candidates }: { action: (s
       <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
         <section className="card space-y-3">
           <h2>Temporada {to}</h2>
-          <div className="sport text-5xl font-black leading-none">{sel.size}<span className="ml-2 text-base text-negro/50">jugadores</span></div>
+          <div className="sport text-5xl font-black leading-none"><span key={sel.size} className="anim-score inline-block">{sel.size}</span><span className="ml-2 text-base text-negro/50">jugadores</span></div>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="keep_numbers" defaultChecked className="mt-0.5 h-4 w-4 accent-rojo" /> Mantener los dorsales</label>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="keep_armbands" defaultChecked className="mt-0.5 h-4 w-4 accent-rojo" /> Mantener capitán y segundo capitán</label>
           <p className="text-xs text-negro/50">Las estadísticas empiezan a cero. Después puedes cambiar dorsales, fichar nuevos y dar bajas.</p>

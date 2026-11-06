@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarPlus, History, LayoutGrid, List, Plus, Search, Shirt } from "lucide-react";
+import { AlertTriangle, CalendarPlus, Download, FileSpreadsheet, FileText, FolderLock, History, LayoutGrid, List, Plus, Search, Shirt, Trophy, Wallet } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
@@ -13,6 +13,8 @@ import { Empty, PageHeader } from "@/components/ui";
 import { Armband, PlayerCard, PositionChip } from "@/components/squad/player-card";
 import { Pitch } from "@/components/squad/pitch";
 import { Jersey } from "@/components/squad/jersey";
+import { Ball } from "@/components/squad/ball";
+import { CountUp } from "@/components/squad/count-up";
 
 export const metadata = { title: "Plantilla" };
 
@@ -28,10 +30,15 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
   const status = sp.estado === "todos" ? "all" : statusFromSlug(sp.estado);
   const q = (sp.q ?? "").trim().toLowerCase();
 
-  const [roster, seasons, stats] = await Promise.all([
+  const canPrivate = s.can("squad_private", "read");
+  const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+  const [roster, seasons, stats, docAlerts] = await Promise.all([
     fetchRoster(supabase, season),
     fetchSeasons(supabase),
     supabase.rpc("squad_season_stats", { p_season: season }).then((r) => r.data as { avg_age: number | null; with_birth: number } | null),
+    canPrivate
+      ? supabase.from("player_documents").select("id", { count: "exact", head: true }).lte("expires_on", in30).then((r) => r.count ?? 0)
+      : Promise.resolve(0),
   ]);
 
   const inSquad = roster.filter((r) => r.status !== "left");
@@ -59,6 +66,20 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         subtitle={<>Temporada <b>{season}</b>{current ? " · actual" : ""}</>}
         actions={<>
           <Link href="/plantilla/historia" prefetch className="btn-ghost"><History size={18} /> Historia</Link>
+          {s.can("finances", "read") && <Link href={`/plantilla/cuotas?temporada=${seasonSlug(season)}`} prefetch className="btn-ghost"><Wallet size={18} /> Cuotas</Link>}
+          {canPrivate && <Link href="/plantilla/documentos" prefetch className="btn-ghost"><FolderLock size={18} /> Documentos</Link>}
+          {s.can("squad", "update") && roster.length > 0 && (
+            <details className="relative">
+              <summary className="btn-ghost cursor-pointer list-none [&::-webkit-details-marker]:hidden"><Download size={18} /> Exportar</summary>
+              <div className="anim-rise absolute left-0 z-20 mt-2 w-64 sm:left-auto sm:right-0 space-y-1 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-black/10">
+                <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=xlsx`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileSpreadsheet size={16} className="text-green-700" /> Excel de la plantilla</a>
+                <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=pdf`} target="_blank" rel="noopener" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileText size={16} className="text-rojo" /> PDF de la plantilla</a>
+                {canPrivate && (
+                  <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=xlsx&datos=1`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FolderLock size={16} /> Excel con datos personales</a>
+                )}
+              </div>
+            </details>
+          )}
           {canCreate && !seasons.includes(nextSeason(season)) && roster.length > 0 && (
             <Link href={`/plantilla/nueva-temporada?desde=${seasonSlug(season)}`} prefetch className="btn-dark"><CalendarPlus size={18} /> Preparar {nextSeason(season)}</Link>
           )}
@@ -71,25 +92,32 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         </p>
       )}
 
+      {docAlerts > 0 && (
+        <Link href="/plantilla/documentos?filtro=caducan" className="anim-rise mb-4 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900 ring-1 ring-amber-200 hover:ring-amber-400">
+          <AlertTriangle size={16} /> {docAlerts === 1 ? "Hay 1 documento caducado o que caduca" : `Hay ${docAlerts} documentos caducados o que caducan`} en los próximos 30 días. Revisar →
+        </Link>
+      )}
+
       {/* Marcador de la plantilla */}
       <section className="franja relative mb-6 overflow-hidden rounded-3xl bg-negro p-5 text-white shadow-xl sm:p-6">
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.10),transparent_55%)]" />
+        <span aria-hidden className="absolute right-5 top-7 hidden sm:block"><Ball size={34} className="anim-bounce-ball drop-shadow-[0_8px_6px_rgba(0,0,0,0.5)]" /></span>
         <div className="relative grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             ["Jugadores", inSquad.length],
             ["Disponibles", inSquad.filter((r) => r.status === "active").length],
             ["Lesionados", inSquad.filter((r) => r.status === "injured").length],
             ["Edad media", stats?.avg_age != null ? String(stats.avg_age).replace(".", ",") : "–"],
-          ].map(([k, v]) => (
-            <div key={k}>
+          ].map(([k, v], i) => (
+            <div key={k} className="anim-score" style={{ animationDelay: `${i * 90}ms` }}>
               <div className="text-[11px] font-bold uppercase tracking-wider text-white/60">{k}</div>
-              <div className="sport text-4xl font-black leading-none sm:text-5xl">{v}</div>
+              <div className="sport text-4xl font-black leading-none sm:text-5xl">{typeof v === "number" ? <CountUp value={v} /> : v}</div>
             </div>
           ))}
         </div>
         {inSquad.length > 0 && (
           <div className="relative mt-5">
-            <div className="flex h-3 overflow-hidden rounded-full bg-white/10">
+            <div className="anim-fill flex h-3 overflow-hidden rounded-full bg-white/10" style={{ animationDelay: "250ms" }}>
               {LINES.map((l) => counts[l.key] > 0 && (
                 <span key={l.key} className={LINE_TONE[l.key].dot} style={{ width: `${(counts[l.key] / inSquad.length) * 100}%` }} title={`${l.plural}: ${counts[l.key]}`} />
               ))}
@@ -145,6 +173,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
 
       {roster.length === 0 ? (
         <Empty>
+          <span aria-hidden className="mb-3 block h-8 overflow-hidden"><span className="inline-block [--roll:90px]"><Ball size={30} className="anim-roll" /></span></span>
           {canCreate ? (
             <>
               Aún no hay jugadores en la temporada {season}.{" "}
@@ -173,8 +202,8 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
               <tr><th className="w-10 text-center">#</th><th>Jugador</th><th>Posición</th><th className="hidden text-center md:table-cell" title="Partidos jugados">PJ</th><th className="hidden text-center md:table-cell" title="Goles">GOL</th><th className="hidden text-center md:table-cell" title="Asistencias">ASI</th><th className="hidden lg:table-cell">Pierna</th><th className="hidden sm:table-cell">Estado</th></tr>
             </thead>
             <tbody>
-              {shown.map((r) => (
-                <tr key={r.id} className="hover:bg-gris/60">
+              {shown.map((r, i) => (
+                <tr key={r.id} className="anim-rise hover:bg-gris/60" style={{ animationDelay: `${Math.min(i, 20) * 30}ms` }}>
                   <td className="text-center"><span className="sport text-xl font-black">{r.number ?? "–"}</span></td>
                   <td>
                     <Link href={hrefFor(r.player_id)} prefetch className="flex items-center gap-3 font-semibold hover:text-rojo">
@@ -207,11 +236,11 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-6 md:grid-cols-4 xl:grid-cols-5">
-          {shown.map((r) => <PlayerCard key={r.id} entry={r} href={hrefFor(r.player_id)} />)}
+          {shown.map((r, i) => <PlayerCard key={r.id} entry={r} href={hrefFor(r.player_id)} index={i} />)}
         </div>
       )}
 
-      {!s.can("squad", "update") && (
+      {!canPrivate && (
         <p className="mt-6 text-center text-xs text-negro/50">Los teléfonos y demás datos personales solo los ven los gestores.</p>
       )}
     </>
@@ -243,9 +272,9 @@ function Leaders({ roster, hrefFor }: { roster: RosterEntry[]; hrefFor: (id: str
     <section className="mb-6">
       <h2 className="sport mb-3 text-2xl font-black">Líderes de la temporada</h2>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {top.map(({ key, label, unit, r }) => (
-          <Link key={key} href={hrefFor(r.player_id)} prefetch
-            className="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-dorado">
+        {top.map(({ key, label, unit, r }, i) => (
+          <Link key={key} href={hrefFor(r.player_id)} prefetch style={{ animationDelay: `${i * 80}ms` }}
+            className="anim-rise group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-dorado">
             <span aria-hidden className="absolute -right-3 top-0 h-full w-5 -skew-x-[20deg] bg-dorado" />
             {r.player.photo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -254,7 +283,7 @@ function Leaders({ roster, hrefFor }: { roster: RosterEntry[]; hrefFor: (id: str
               <span className="shrink-0"><Jersey number={r.number} goalkeeper={lineOf(r.position) === "GK"} size={46} /></span>
             )}
             <span className="relative min-w-0">
-              <span className="block text-[11px] font-bold uppercase tracking-wider text-negro/50">{label}</span>
+              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-negro/50">{i === 0 && <Trophy size={12} className="anim-trophy text-dorado" />}{label}</span>
               <span className="sport block truncate text-lg font-black leading-tight">{shirtName(r.player)}</span>
               <span className="block text-xs text-negro/60"><b className="sport text-base text-rojo">{r[key]}</b> {unit}</span>
             </span>

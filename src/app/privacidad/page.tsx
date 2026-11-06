@@ -48,8 +48,10 @@ export default function PrivacyPage() {
             darte acceso, organizar el equipo y llevar unas cuentas claras.</p>
           <p><b>Si estás en la plantilla:</b> nombre y apellidos, foto, dorsal, posición, estado (activo, lesionado o de baja),
             pierna y altura, y las temporadas en el club. Además, solo para los gestores y para ti: fecha de nacimiento, teléfono,
-            email, un contacto de emergencia y observaciones deportivas o internas. Los usamos para organizar el equipo y poder
-            avisar a alguien si te pasa algo en un partido o entrenamiento. No guardamos tu dirección.</p>
+            email, un contacto de emergencia, observaciones deportivas o internas y los documentos que se suban a tu ficha (DNI,
+            ficha federativa, certificado médico, autorizaciones o seguro), que se guardan en un almacén privado. Los usamos para
+            organizar el equipo, tramitar las fichas y poder avisar a alguien si te pasa algo en un partido o entrenamiento. Si pagas
+            una cuota, el pago queda apuntado en las cuentas del club con tu nombre. No guardamos tu dirección.</p>
           <p><b>Notificaciones:</b> si activas los avisos en tu dispositivo, guardamos el identificador técnico que da tu navegador
             para poder enviártelos. Puedes desactivarlos cuando quieras.</p>
         </S>
@@ -67,7 +69,8 @@ export default function PrivacyPage() {
         <S title="4. Quién puede ver tus datos">
           <p>Dentro del club, solo quien lo necesita: los gestores ven todas las ventas; cada vendedor ve solo las suyas; los jugadores
             no ven los datos de los compradores. De la plantilla, los compañeros solo ven tu nombre, foto, dorsal, posición y estado;
-            tus datos personales solo los ven los gestores. Los permisos los controla la propia base de datos.</p>
+            tus datos personales y documentos solo los ven los gestores con permiso para ello, y tus cuotas solo quien lleva las
+            cuentas. Los permisos los controla la propia base de datos.</p>
           <p>Usamos estos proveedores, que tratan los datos por cuenta del club:</p>
           <ul className="list-disc space-y-1 pl-5">
             <li><b>Supabase</b> (base de datos y archivos), con los datos alojados en Frankfurt (Unión Europea).</li>

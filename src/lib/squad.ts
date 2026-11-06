@@ -169,3 +169,68 @@ export const prevSeason = (s: string) => {
 };
 /** Primer día de la temporada: "2026/27" -> "2026-09-01" */
 export const seasonStart = (s: string) => `${s.slice(0, 4)}-09-01`;
+
+// ---------------------------------------------------------------- Documentos
+export type DocKind = "dni" | "federation" | "medical" | "authorization" | "insurance" | "other";
+export type PlayerDocument = {
+  id: string;
+  player_id: string;
+  kind: DocKind;
+  title: string | null;
+  file_path: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  expires_on: string | null;
+  uploaded_by: string;
+  created_at: string;
+};
+export const DOC_KINDS: { key: DocKind; label: string; short: string }[] = [
+  { key: "dni", label: "DNI o pasaporte", short: "DNI" },
+  { key: "federation", label: "Ficha federativa", short: "Ficha" },
+  { key: "medical", label: "Certificado médico", short: "Médico" },
+  { key: "authorization", label: "Autorización (imagen, menores…)", short: "Autoriz." },
+  { key: "insurance", label: "Seguro deportivo", short: "Seguro" },
+  { key: "other", label: "Otro documento", short: "Otro" },
+];
+export const DOC_KIND_LABEL = Object.fromEntries(DOC_KINDS.map((d) => [d.key, d.label])) as Record<DocKind, string>;
+/** Documentos que conviene que tenga cada jugador (para avisar de los que faltan). */
+export const DOC_REQUIRED: DocKind[] = ["dni", "federation", "medical"];
+export const DOC_MAX_BYTES = 5 * 1024 * 1024;
+export const DOC_MIME = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+
+/** Estado de caducidad: vencido, vence en 30 días o en regla. */
+export function docExpiry(expires: string | null, today = new Date().toISOString().slice(0, 10)): "expired" | "soon" | "ok" | null {
+  if (!expires) return null;
+  if (expires < today) return "expired";
+  const soon = new Date(`${today}T12:00:00Z`);
+  soon.setUTCDate(soon.getUTCDate() + 30);
+  return expires <= soon.toISOString().slice(0, 10) ? "soon" : "ok";
+}
+export const fileSize = (b: number) => (b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1).replace(".", ",")} MB`);
+
+// ---------------------------------------------------------------- Cuotas
+export type FeePlan = { season: string; amount_cents: number; due_on: string | null; notes: string | null };
+export type FeeOverride = { season: string; player_id: string; amount_cents: number; reason: string | null };
+export type FeePayment = { id: string; player_id: string; fee_season: string; amount_cents: number; op_date: string; method: string; voided_at: string | null };
+export type FeeStatus = "paid" | "partial" | "pending" | "exempt" | "none";
+
+/** Cuota de un jugador en una temporada: la suya propia o la general. */
+export function feeOf(plan: FeePlan | null, override: FeeOverride | null | undefined) {
+  const due = override ? override.amount_cents : plan ? plan.amount_cents : null;
+  return due;
+}
+export function feeStatus(due: number | null, paid: number): FeeStatus {
+  if (due == null) return paid > 0 ? "paid" : "none";
+  if (due === 0) return "exempt";
+  if (paid >= due) return "paid";
+  return paid > 0 ? "partial" : "pending";
+}
+export const FEE_STATUS_LABEL: Record<FeeStatus, string> = { paid: "Pagada", partial: "A medias", pending: "Pendiente", exempt: "Exento", none: "Sin cuota" };
+export const FEE_STATUS_TONE: Record<FeeStatus, string> = {
+  paid: "bg-green-100 text-green-800",
+  partial: "bg-amber-100 text-amber-800",
+  pending: "bg-red-100 text-rojo",
+  exempt: "bg-sky-100 text-sky-800",
+  none: "bg-gris text-negro/60",
+};

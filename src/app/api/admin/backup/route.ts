@@ -24,6 +24,9 @@ const TABLES: [string, string][] = [
   ["players", "Plantilla · jugadores"],
   ["player_private", "Plantilla · datos personales"],
   ["squad_members", "Plantilla · temporadas"],
+  ["player_documents", "Plantilla · documentos"],
+  ["squad_fee_plans", "Plantilla · cuotas"],
+  ["squad_fee_overrides", "Plantilla · cuotas especiales"],
   ["audit_log", "Auditoría"],
 ];
 

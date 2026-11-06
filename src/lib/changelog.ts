@@ -7,6 +7,20 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "2.2.0",
+    date: "2026-11-06",
+    title: "Documentos, cuotas y exportar la plantilla",
+    changes: [
+      "Documentos privados en la ficha de cada jugador: DNI, ficha federativa, certificado médico, autorizaciones y seguro, con fecha de caducidad. El propio jugador también puede subir los suyos.",
+      "Nueva página «Documentos» en Plantilla: qué le falta a cada jugador y qué caduca en los próximos 30 días. Aviso en la plantilla cuando algo caduca.",
+      "Nuevo permiso «Plantilla · datos personales»: decide qué gestores ven teléfonos, emergencias, nacimientos, observaciones y documentos. Los jugadores nunca lo tienen.",
+      "Cuotas de los jugadores: cuota general por temporada, cuotas especiales (descuentos o exentos) y quién debe cuánto. Cada pago se apunta como ingreso en Finanzas, enlazado al jugador.",
+      "En la ficha del jugador, quien lleva las cuentas ve su cuota, lo pagado y lo que falta, y puede apuntar el pago al momento.",
+      "Exportar la plantilla de la temporada a Excel o a PDF, con dorsales, posiciones y estadísticas. Con permiso, también en Excel con los datos personales.",
+      "Más animaciones futboleras: cromos que se reparten girando y brillan, jugadores que saltan al campo, balones que botan y ruedan, marcadores que cuentan y tarjetas que saca el árbitro.",
+    ],
+  },
+  {
     version: "2.1.0",
     date: "2026-11-06",
     title: "Temporadas e historia de la plantilla",

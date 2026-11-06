@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useState, useTransition } from "react";
 import { FormMessage } from "@/components/form-message";
+import { Ball } from "@/components/squad/ball";
 import { LINE_TONE, POSITIONS, POSITION_LABEL, STATUSES, STAT_KEYS, STAT_LABEL, lineOf, type Membership, type Player, type PlayerPrivate } from "@/lib/squad";
 import type { ActionState } from "@/app/(app)/plantilla/actions";
 
@@ -21,6 +22,13 @@ export function PositionPicker({ value, onChange }: { value: string; onChange: (
         <div aria-hidden className="absolute left-1/2 top-1/2 aspect-square w-[28%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/50" />
         <div aria-hidden className="absolute bottom-2 left-1/2 h-[16%] w-[62%] -translate-x-1/2 border-2 border-b-0 border-white/50" />
         <div aria-hidden className="absolute left-1/2 top-2 h-[16%] w-[62%] -translate-x-1/2 border-2 border-t-0 border-white/50" />
+        {/* El balón viaja hasta la posición elegida */}
+        {value && SPOTS[value] && (
+          <span aria-hidden className="pointer-events-none absolute z-10 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            style={{ left: `calc(${SPOTS[value][0]}% + 14px)`, top: `calc(${SPOTS[value][1]}% - 26px)` }}>
+            <Ball size={18} className="anim-bounce-ball drop-shadow-[0_4px_3px_rgba(0,0,0,0.5)]" />
+          </span>
+        )}
         {POSITIONS.map((p) => {
           const [x, y] = SPOTS[p.code];
           const on = value === p.code;
@@ -50,6 +58,7 @@ export function PlayerForm({
   priv,
   usedNumbers,
   canCreate = false,
+  canPrivate = true,
 }: {
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
   season: string;
@@ -58,6 +67,7 @@ export function PlayerForm({
   priv?: PlayerPrivate | null;
   usedNumbers: { number: number; name: string }[];
   canCreate?: boolean;
+  canPrivate?: boolean;
 }) {
   const [state, formAction] = useActionState(action, undefined);
   const [pending, start] = useTransition();
@@ -86,7 +96,7 @@ export function PlayerForm({
               <label className="label" htmlFor="nickname">Nombre en la camiseta</label>
               <input id="nickname" name="nickname" maxLength={24} defaultValue={player?.nickname ?? ""} placeholder="Si no, el primer apellido" className="input" />
             </div>
-            <div><label className="label" htmlFor="birth_date">Fecha de nacimiento</label><input id="birth_date" name="birth_date" type="date" defaultValue={priv?.birth_date ?? ""} className="input" /></div>
+            {canPrivate && <div><label className="label" htmlFor="birth_date">Fecha de nacimiento</label><input id="birth_date" name="birth_date" type="date" defaultValue={priv?.birth_date ?? ""} className="input" /></div>}
           </div>
         </section>
 
@@ -140,9 +150,10 @@ export function PlayerForm({
           </div>
         </section>
 
+        {canPrivate && <>
         <section className="card space-y-4">
           <h2>Contacto</h2>
-          <p className="text-xs text-negro/50">Solo lo ven los gestores y el propio jugador.</p>
+          <p className="text-xs text-negro/50">Solo lo ven los gestores con permiso de datos personales y el propio jugador.</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div><label className="label" htmlFor="phone">Teléfono</label><input id="phone" name="phone" type="tel" inputMode="tel" defaultValue={priv?.phone ?? ""} className="input" /></div>
             <div><label className="label" htmlFor="email">Email</label><input id="email" name="email" type="email" defaultValue={priv?.email ?? ""} className="input" /></div>
@@ -157,6 +168,7 @@ export function PlayerForm({
           <div><label className="label" htmlFor="sport_notes">Deportivas</label><textarea id="sport_notes" name="sport_notes" rows={3} maxLength={2000} defaultValue={priv?.sport_notes ?? ""} placeholder="Puntos fuertes, lesiones anteriores, preferencias…" className="input" /></div>
           <div><label className="label" htmlFor="internal_notes">Internas</label><textarea id="internal_notes" name="internal_notes" rows={3} maxLength={2000} defaultValue={priv?.internal_notes ?? ""} className="input" /></div>
         </section>
+        </>}
       </div>
 
       <div className="space-y-6">

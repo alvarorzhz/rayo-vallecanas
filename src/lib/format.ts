@@ -104,5 +104,6 @@ export const MODULE_LABEL: Record<string, string> = {
   audit: "Auditoría",
   finances: "Finanzas",
   squad: "Plantilla",
+  squad_private: "Plantilla · datos personales",
   matches: "Partidos",
 };

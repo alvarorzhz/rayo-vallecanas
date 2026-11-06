@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/loteria/venta/[saleId]/pdf": ["./public/escudo.png"],
     "/api/finanzas/exportar": ["./public/escudo.png"],
+    "/api/plantilla/exportar": ["./public/escudo.png"],
   },
   experimental: {
     // Las pantallas ya visitadas o precargadas se muestran al instante desde memoria;

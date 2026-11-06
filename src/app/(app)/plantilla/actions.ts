@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { tempPassword } from "@/lib/password";
-import { POSITIONS, STAT_KEYS, STAT_LABEL, seasonSlug } from "@/lib/squad";
+import { DOC_KINDS, DOC_MAX_BYTES, DOC_MIME, POSITIONS, STAT_KEYS, STAT_LABEL, seasonSlug } from "@/lib/squad";
 import type { AvatarState } from "@/app/(app)/perfil/actions";
 
 export type ActionState = { error?: string; ok?: string; password?: string; name?: string; phone?: string | null; email?: string } | undefined;
@@ -17,6 +17,7 @@ const errMsg = (e: unknown) => {
   if (/squad_members_armband_uniq/.test(m)) return "Ya hay otro jugador con ese brazalete esta temporada";
   if (/players_user_id_key/.test(m)) return "Ese usuario ya está vinculado a otra ficha";
   if (/row-level security|42501/.test(m)) return "No tienes permiso para hacer esto";
+  if (/finance_movements_player_id_fkey/.test(m)) return "Tiene cuotas cobradas en Finanzas: márcalo como baja definitiva en vez de eliminarlo";
   return m;
 };
 
@@ -49,7 +50,9 @@ function playerFromForm(f: FormData) {
   };
 }
 
+/** Datos personales del formulario (solo si el formulario los trae: sin permiso no se muestran ni se tocan). */
 function privateFromForm(f: FormData) {
+  if (!f.has("phone")) return null;
   return {
     birth_date: date(f, "birth_date"),
     phone: opt(f, "phone"),
@@ -100,8 +103,9 @@ export async function createPlayer(_: ActionState, f: FormData): Promise<ActionS
     const { data, error } = await supabase.from("players").insert(playerFromForm(f)).select("id").single();
     if (error) throw error;
     id = data.id;
+    const priv = privateFromForm(f);
     const steps = await Promise.all([
-      supabase.from("player_private").update(privateFromForm(f)).eq("player_id", id),
+      priv ? supabase.from("player_private").update(priv).eq("player_id", id) : Promise.resolve({ error: null }),
       supabase.from("squad_members").insert({ ...member, player_id: id, joined_on: new Date().toISOString().slice(0, 10) }),
     ]);
     const failed = steps.find((r) => r.error)?.error;
@@ -125,8 +129,11 @@ export async function updatePlayer(id: string, _: ActionState, f: FormData): Pro
     const member = memberFromForm(f, prev?.status);
     const { error } = await supabase.from("players").update(playerFromForm(f)).eq("id", id);
     if (error) throw error;
-    const { error: e2 } = await supabase.from("player_private").update(privateFromForm(f)).eq("player_id", id);
-    if (e2) throw e2;
+    const priv = privateFromForm(f);
+    if (priv) {
+      const { error: e2 } = await supabase.from("player_private").update(priv).eq("player_id", id);
+      if (e2) throw e2;
+    }
     const { error: e3 } = prev
       ? await supabase.from("squad_members").update(member).eq("id", prev.id)
       : await supabase.from("squad_members").insert({ ...member, player_id: id, joined_on: new Date().toISOString().slice(0, 10) });
@@ -333,4 +340,55 @@ export async function rejoinPlayer(id: string, season: string): Promise<ActionSt
   if (!data?.length) return { error: "No tienes permiso para hacer esto" };
   refresh(id);
   return { ok: "¡Vuelve al equipo!" };
+}
+
+// ------------------------------------------------------------------ Documentos
+
+/**
+ * Guarda un documento en la ficha. El archivo lo sube antes el navegador directamente al bucket
+ * privado (así no pasa por el servidor, que tiene límite de tamaño); aquí se apuntan sus datos.
+ * Pueden hacerlo los gestores con permiso de datos personales o el propio jugador (lo comprueba RLS).
+ */
+export async function savePlayerDoc(playerId: string, _: ActionState, f: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const path = str(f, "file_path");
+  if (!new RegExp(`^${playerId}/[0-9a-f-]{36}\\.(pdf|jpg|png|webp)$`).test(path)) return { error: "Sube primero el archivo" };
+  const mime = str(f, "mime_type");
+  const size = Number(str(f, "size_bytes"));
+  if (!DOC_MIME.includes(mime) || !(size > 0 && size <= DOC_MAX_BYTES)) return { error: "Archivo no válido" };
+  const kind = DOC_KINDS.some((d) => d.key === str(f, "kind")) ? str(f, "kind") : "other";
+  try {
+    const { data: auth } = await supabase.auth.getClaims();
+    const { error } = await supabase.from("player_documents").insert({
+      player_id: playerId,
+      kind,
+      title: opt(f, "title")?.slice(0, 80) ?? null,
+      file_path: path,
+      file_name: (str(f, "file_name") || path.split("/")[1]).slice(0, 120),
+      mime_type: mime,
+      size_bytes: size,
+      expires_on: date(f, "expires_on"),
+      uploaded_by: auth?.claims?.sub,
+    });
+    if (error) throw error;
+  } catch (e) {
+    await supabase.storage.from("player-docs").remove([path]);
+    return { error: errMsg(e) };
+  }
+  revalidatePath(`/plantilla/${playerId}`);
+  revalidatePath("/plantilla/documentos");
+  return { ok: "Documento guardado" };
+}
+
+export async function deletePlayerDoc(docId: string): Promise<ActionState> {
+  const supabase = await createClient();
+  const { data: doc } = await supabase.from("player_documents").select("player_id, file_path").eq("id", docId).maybeSingle();
+  if (!doc) return { error: "Ese documento ya no existe" };
+  const { data: gone, error } = await supabase.from("player_documents").delete().eq("id", docId).select("id");
+  if (error) return { error: errMsg(error) };
+  if (!gone?.length) return { error: "No tienes permiso para borrar este documento" };
+  await supabase.storage.from("player-docs").remove([doc.file_path]);
+  revalidatePath(`/plantilla/${doc.player_id}`);
+  revalidatePath("/plantilla/documentos");
+  return { ok: "Documento borrado" };
 }

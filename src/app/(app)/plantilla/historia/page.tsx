@@ -6,6 +6,7 @@ import { seasonOf } from "@/lib/finance";
 import { fullName, lineOf, prevSeason, seasonSlug, shirtName, sumStats, type Membership, type Player } from "@/lib/squad";
 import { Empty, PageHeader } from "@/components/ui";
 import { Jersey } from "@/components/squad/jersey";
+import { CountUp } from "@/components/squad/count-up";
 
 export const metadata = { title: "Historia de la plantilla" };
 
@@ -61,10 +62,10 @@ export default async function HistoryPage() {
         <>
           {/* Récords */}
           <section className="mb-8">
-            <h2 className="sport mb-3 flex items-center gap-2 text-2xl font-black"><Trophy size={22} className="text-dorado" /> Récords del club</h2>
+            <h2 className="sport mb-3 flex items-center gap-2 text-2xl font-black"><Trophy size={22} className="anim-trophy text-dorado" /> Récords del club</h2>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {records.map(({ label, c, n, unit }) => (
-                <Link key={label} href={href(c.last)} prefetch className="franja relative overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:-translate-y-0.5">
+              {records.map(({ label, c, n, unit }, i) => (
+                <Link key={label} href={href(c.last)} prefetch style={{ animationDelay: `${i * 100}ms` }} className="anim-deal franja relative overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:-translate-y-0.5">
                   <div className="relative flex items-center gap-3">
                     {c.player.photo_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -75,7 +76,7 @@ export default async function HistoryPage() {
                     <span className="min-w-0">
                       <span className="block text-[11px] font-bold uppercase tracking-wider text-dorado">{label}</span>
                       <span className="sport block truncate text-xl font-black leading-tight">{shirtName(c.player)}</span>
-                      <span className="block text-xs text-white/70"><b className="sport text-base text-white">{n(c)}</b> {unit}</span>
+                      <span className="block text-xs text-white/70"><b className="sport text-base text-white"><CountUp value={n(c)} /></b> {unit}</span>
                     </span>
                   </div>
                 </Link>
@@ -87,7 +88,7 @@ export default async function HistoryPage() {
           <section className="mb-8">
             <h2 className="sport mb-3 text-2xl font-black">Temporada a temporada</h2>
             <ol className="relative space-y-4 border-l-4 border-negro/10 pl-5 sm:pl-7">
-              {seasons.map((s) => {
+              {seasons.map((s, si) => {
                 const list = bySeason.get(s)!;
                 const prev = new Set((bySeason.get(prevSeason(s)) ?? []).map((r) => r.player_id));
                 const prevKept = (bySeason.get(prevSeason(s)) ?? []).filter((r) => r.status !== "left");
@@ -99,8 +100,8 @@ export default async function HistoryPage() {
                 const scorer = [...list].sort((a, b) => b.goals - a.goals)[0];
                 const captain = list.find((r) => r.armband === "captain");
                 return (
-                  <li key={s} className="relative">
-                    <span aria-hidden className={`absolute -left-[1.95rem] top-5 h-5 w-5 -skew-x-[15deg] rounded-sm ring-4 ring-gris sm:-left-[2.45rem] ${s === current ? "bg-rojo" : "bg-negro"}`} />
+                  <li key={s} className="anim-rise relative" style={{ animationDelay: `${Math.min(si, 8) * 90}ms` }}>
+                    <span aria-hidden className={`${s === current ? "animate-pulse" : ""} absolute -left-[1.95rem] top-5 h-5 w-5 -skew-x-[15deg] rounded-sm ring-4 ring-gris sm:-left-[2.45rem] ${s === current ? "bg-rojo" : "bg-negro"}`} />
                     <div className="card">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <Link href={`/plantilla?temporada=${seasonSlug(s)}`} className="sport text-3xl font-black hover:text-rojo">{s}</Link>
@@ -115,7 +116,7 @@ export default async function HistoryPage() {
                           ["Asistencias", totals.assists],
                           ["Tarjetas", totals.yellows + totals.reds],
                         ].map(([k, v]) => (
-                          <div key={k} className="rounded-xl bg-gris p-2.5">
+                          <div key={k} className="anim-score rounded-xl bg-gris p-2.5">
                             <div className="text-[10px] font-bold uppercase tracking-wider text-negro/50">{k}</div>
                             <div className="sport text-2xl font-black leading-none">{v}</div>
                           </div>
@@ -159,9 +160,9 @@ export default async function HistoryPage() {
             <h2 className="sport mb-1 text-2xl font-black">Dorsales del Rayo</h2>
             <p className="mb-3 text-sm text-negro/60">Quién ha llevado cada número, de la temporada más reciente a la más antigua.</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {numberList.map(([n, list]) => (
-                <div key={n} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5">
-                  <span className="shrink-0"><Jersey number={n} goalkeeper={list.some((r) => lineOf(r.position) === "GK") && list.every((r) => lineOf(r.position) === "GK")} size={48} /></span>
+              {numberList.map(([n, list], i) => (
+                <div key={n} style={{ animationDelay: `${Math.min(i, 16) * 40}ms` }} className="anim-rise group flex gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5">
+                  <span className="shrink-0 transition duration-300 group-hover:-rotate-6 group-hover:scale-110"><Jersey number={n} goalkeeper={list.some((r) => lineOf(r.position) === "GK") && list.every((r) => lineOf(r.position) === "GK")} size={48} /></span>
                   <ul className="min-w-0 space-y-0.5 text-xs">
                     {list.map((r) => (
                       <li key={r.id} className="truncate">

@@ -12,12 +12,13 @@ export const metadata = { title: "Editar jugador" };
 
 export default async function EditPlayerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ temporada?: string }> }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
-  await requirePerm("squad", "update");
+  const s = await requirePerm("squad", "update");
+  const canPrivate = s.can("squad_private", "update");
   const season = seasonFromSlug(sp.temporada) ?? seasonOf();
   const supabase = await createClient();
   const [{ data: player }, { data: priv }, { data: member }, roster] = await Promise.all([
     supabase.from("players").select("*").eq("id", id).maybeSingle<Player>(),
-    supabase.from("player_private").select("*").eq("player_id", id).maybeSingle<PlayerPrivate>(),
+    canPrivate ? supabase.from("player_private").select("*").eq("player_id", id).maybeSingle<PlayerPrivate>() : Promise.resolve({ data: null }),
     supabase.from("squad_members").select("*").eq("player_id", id).eq("season", season).maybeSingle<Membership>(),
     fetchRoster(supabase, season),
   ]);
@@ -37,7 +38,7 @@ export default async function EditPlayerPage({ params, searchParams }: { params:
       <PageHeader title={`Editar · ${fullName(player)}`}
         subtitle={member ? `Datos de la temporada ${season}` : `No estaba en la plantilla ${season}: al guardar se añade`}
         back={{ href: `/plantilla/${id}?temporada=${seasonSlug(season)}`, label: "Ficha" }} />
-      <PlayerForm action={updatePlayer.bind(null, id)} season={season} player={player} member={base} priv={priv} usedNumbers={used} />
+      <PlayerForm action={updatePlayer.bind(null, id)} season={season} player={player} member={base} priv={priv} usedNumbers={used} canPrivate={canPrivate} />
     </>
   );
 }

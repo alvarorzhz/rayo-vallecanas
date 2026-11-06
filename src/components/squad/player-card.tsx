@@ -45,7 +45,7 @@ export function FutCard({ entry, size = "sm" }: { entry: RosterEntry; size?: "sm
     <div className={`relative w-full ${entry.status === "left" ? "grayscale" : ""}`} style={{ aspectRatio: "0.72" }}>
       {/* Borde exterior oscuro y cara metálica */}
       <div className="absolute inset-0 bg-negro" style={{ clipPath: SHAPE }} />
-      <div className={`absolute inset-[3px] ${face}`} style={{ clipPath: SHAPE }}>
+      <div className={`absolute inset-[3px] ${face} ${silver ? "" : "cromo-shine"}`} style={{ clipPath: SHAPE }}>
         {/* Brillo y franja del Rayo */}
         <span aria-hidden className="absolute inset-0 bg-[linear-gradient(115deg,rgba(255,255,255,0.55)_0_18%,transparent_18%_100%)] opacity-40" />
         <span aria-hidden className="absolute inset-0 bg-[linear-gradient(115deg,transparent_0_70%,rgba(210,13,23,0.9)_70%_78%,rgba(8,8,8,0.85)_78%_80%,transparent_80%)] [mask-image:linear-gradient(to_bottom,black_0%,black_45%,transparent_58%)]" />
@@ -104,10 +104,10 @@ export function FutCard({ entry, size = "sm" }: { entry: RosterEntry; size?: "sm
 }
 
 /** Cromo enlazado a la ficha del jugador. */
-export function PlayerCard({ entry, href }: { entry: RosterEntry; href: string }) {
+export function PlayerCard({ entry, href, index = 0 }: { entry: RosterEntry; href: string; index?: number }) {
   return (
-    <Link href={href} prefetch
-      className="group block drop-shadow-[0_10px_14px_rgba(0,0,0,0.28)] transition duration-200 hover:-translate-y-1 hover:drop-shadow-[0_16px_20px_rgba(210,13,23,0.35)] active:scale-[0.98]">
+    <Link href={href} prefetch style={{ animationDelay: `${Math.min(index, 16) * 55}ms`, ["--shine-delay" as string]: `${(index % 7) * 0.8}s` }}
+      className="anim-deal group block drop-shadow-[0_10px_14px_rgba(0,0,0,0.28)] transition duration-200 hover:-translate-y-1 hover:drop-shadow-[0_16px_20px_rgba(210,13,23,0.35)] active:scale-[0.98]">
       <FutCard entry={entry} />
     </Link>
   );
