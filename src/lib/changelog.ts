@@ -7,6 +7,20 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.0.0",
+    date: "2026-11-06",
+    title: "Partidos: calendario y resultados",
+    changes: [
+      "Nueva sección «Partidos» en el menú: el calendario de la temporada por meses, con los próximos partidos y los resultados.",
+      "El próximo partido, en formato videomarcador: escudos, hora, campo, cuenta atrás y botón «Cómo llegar».",
+      "Balance de la temporada (victorias, empates, derrotas y goles), la racha de los últimos cinco partidos y el historial contra cada rival.",
+      "Lista de rivales con su escudo, sus siglas y su campo habitual. Si no tienen escudo, se les pinta uno con sus siglas.",
+      "Los gestores ponen el resultado al acabar, aplazan, suspenden o cambian la fecha, y el equipo recibe el aviso en el móvil.",
+      "Compartir el próximo partido o el resultado por WhatsApp y añadir el partido al calendario del móvil.",
+      "En el inicio, el próximo partido y los últimos resultados.",
+    ],
+  },
+  {
     version: "2.2.1",
     date: "2026-11-06",
     title: "Revisión de seguridad y accesibilidad",

@@ -73,13 +73,22 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
       delete: "Borrar documentos.",
     },
   },
-  matches: { title: "Partidos", soon: true, acts: { read: "Ver el calendario y las convocatorias.", create: "Crear partidos.", update: "Editar partidos y convocatorias." } },
+  matches: {
+    title: "Partidos",
+    acts: {
+      read: "Ver el calendario, los resultados, la racha y el historial contra cada rival.",
+      create: "Añadir partidos al calendario.",
+      update: "Editar partidos y rivales, poner el resultado, aplazar o suspender (con aviso al equipo).",
+      delete: "Eliminar partidos y rivales creados por error.",
+    },
+  },
 };
 
 export const MENU_BY_MODULE: { module: string; act: Act; label: string }[] = [
   { module: "lottery_admin", act: "read", label: "Sorteos (todas las campañas)" },
   { module: "lottery_sell", act: "read", label: "Sorteos (sus campañas)" },
   { module: "lottery_sell", act: "create", label: "Mis ventas" },
+  { module: "matches", act: "read", label: "Partidos" },
   { module: "squad", act: "read", label: "Plantilla" },
   { module: "finances", act: "read", label: "Finanzas" },
   { module: "users", act: "read", label: "Usuarios" },

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ShoppingCart, Ticket, Wallet, CalendarDays, Shirt } from "lucide-react";
+import { fetchMatchday } from "@/lib/match-queries";
+import { FormStrip, MatchLine, NextMatchCard } from "@/components/matches/match-bits";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha } from "@/lib/format";
@@ -66,6 +68,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const squad = roster.filter((r) => r.status !== "left");
   const me = roster.find((r) => r.player.user_id === s.user.id) ?? null;
 
+  // Partidos: el próximo y los últimos resultados
+  const matchday = s.can("matches") ? await fetchMatchday(supabase, 5) : null;
+
   const firstName = s.profile.full_name.split(" ")[0];
 
   return (
@@ -91,6 +96,27 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </Link>
         )}
       </section>
+
+      {matchday && (
+        <section className="mb-6">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <h2 className="sport flex items-center gap-2 text-2xl font-black"><CalendarDays size={22} className="text-rojo" /> Próximo partido</h2>
+            <Link href="/partidos" prefetch className="shrink-0 text-sm font-bold text-rojo">Calendario →</Link>
+          </div>
+          <div className={`grid gap-4 ${matchday.recent.length ? "lg:grid-cols-[minmax(0,1fr)_24rem]" : ""}`}>
+            <NextMatchCard m={matchday.next} />
+            {matchday.recent.length > 0 && (
+              <div className="min-w-0">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h3 className="sport text-lg font-black">Últimos resultados</h3>
+                  <FormStrip rows={[...matchday.recent].reverse()} label={false} />
+                </div>
+                <ol className="space-y-2">{matchday.recent.slice(0, 3).map((m) => <li key={m.id}><MatchLine m={m} /></li>)}</ol>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {campaign && summary ? (
         <>
@@ -206,22 +232,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </section>
       )}
 
-      <h2 className="sport mb-3 text-2xl font-black">Próximamente</h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {[
-          { icon: CalendarDays, t: "Partidos", d: "Calendario, convocatorias y estadísticas (fase 4)", show: true },
-        ]
-          .filter((x) => x.show)
-          .map(({ icon: Icon, t, d }) => (
-            <div key={t} className="flex items-center gap-3 rounded-2xl bg-white/60 p-4 ring-1 ring-black/5">
-              <Icon size={22} className="text-negro/30" />
-              <div>
-                <div className="font-semibold text-negro/60">{t}</div>
-                <div className="text-xs text-negro/60">{d}</div>
-              </div>
-            </div>
-          ))}
-      </div>
     </>
   );
 }
