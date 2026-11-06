@@ -15,7 +15,7 @@ type Row = Membership & { player: Player };
 export default async function HistoryPage() {
   await requirePerm("squad", "read");
   const supabase = await createClient();
-  const { data } = await supabase.from("squad_members").select("*, player:players!inner(*)").order("season", { ascending: false }).returns<Row[]>();
+  const { data } = await supabase.from("squad_members_full").select("*, player:players!inner(*)").order("season", { ascending: false }).returns<Row[]>();
   const rows = data ?? [];
   const current = seasonOf();
   const seasons = [...new Set(rows.map((r) => r.season))].sort().reverse();

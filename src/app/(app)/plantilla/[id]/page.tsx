@@ -11,6 +11,9 @@ import {
   ageOf, feeOf, feeStatus, fullName, lineOf, ratio, seasonFromSlug, seasonSlug, shirtName, sumStats,
   type Membership, type Player, type PlayerDocument, type PlayerPrivate,
 } from "@/lib/squad";
+import { OutcomeDot } from "@/components/matches/match-bits";
+import { shortDay, type MatchRow } from "@/lib/matches";
+import type { Appearance } from "@/lib/reports";
 import { Avatar } from "@/components/avatar";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { Jersey } from "@/components/squad/jersey";
@@ -37,7 +40,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
 
   const [{ data: player }, { data: history }, { data: priv }] = await Promise.all([
     supabase.from("players").select("*").eq("id", id).maybeSingle<Player>(),
-    supabase.from("squad_members").select("*").eq("player_id", id).order("season", { ascending: false }).returns<Membership[]>(),
+    supabase.from("squad_members_full").select("*").eq("player_id", id).order("season", { ascending: false }).returns<Membership[]>(),
     canPrivate ? supabase.from("player_private").select("*").eq("player_id", id).maybeSingle<PlayerPrivate>() : Promise.resolve({ data: null }),
   ]);
   if (!player) notFound();
@@ -60,6 +63,15 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
   const total = sumStats(seasons);
   const today = new Date().toISOString().slice(0, 10);
   const fees = canFees && member ? await fetchFees(supabase, season, id) : null;
+  // Partidos de la temporada según las actas
+  const { data: appsData } = await supabase.from("match_appearances").select("*, match:matches!inner(*, rival:rivals!inner(*))")
+    .eq("player_id", id).eq("match.season", season).eq("match.status", "played").returns<(Appearance & { match: MatchRow })[]>();
+  const log = (appsData ?? []).sort((a, b) => b.match.match_date.localeCompare(a.match.match_date));
+  const { data: myGoals } = log.length
+    ? await supabase.from("match_goals").select("match_id, scorer_id, assist_id").in("match_id", log.map((a) => a.match_id)).or(`scorer_id.eq.${id},assist_id.eq.${id}`)
+    : { data: [] as { match_id: string; scorer_id: string | null; assist_id: string | null }[] };
+  const gOf = (mid: string) => (myGoals ?? []).filter((g) => g.match_id === mid && g.scorer_id === id).length;
+  const aOf = (mid: string) => (myGoals ?? []).filter((g) => g.match_id === mid && g.assist_id === id).length;
   const feeDue = fees ? feeOf(fees.plan, fees.overrides.get(id)) : null;
   const feePaid = fees?.paid.get(id) ?? 0;
 
@@ -175,6 +187,35 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
+          {log.length > 0 && (
+            <section className="card">
+              <h2 className="mb-3">Sus partidos {season}</h2>
+              <ol className="space-y-1.5">
+                {log.map((a) => {
+                  const g = gOf(a.match_id), as = aOf(a.match_id), m = a.match;
+                  return (
+                    <li key={a.id}>
+                      <Link href={`/partidos/${m.id}`} prefetch={false} className="flex items-center gap-2 rounded-xl bg-gris px-2 py-1.5 text-sm transition hover:ring-1 hover:ring-rojo/40">
+                        <OutcomeDot m={m} size="sm" />
+                        <span className="w-20 shrink-0 text-xs text-negro/65">{shortDay(m.match_date)}</span>
+                        <span className="min-w-0 flex-1 truncate font-semibold">{m.is_home ? "vs" : "en"} {m.rival.name}</span>
+                        <span className="flex shrink-0 items-center gap-1 text-xs font-bold">
+                          {a.started && <span className="rounded bg-negro px-1 text-white">TIT</span>}
+                          {g > 0 && <span title={`${g} goles`}>⚽{g > 1 ? `×${g}` : ""}</span>}
+                          {as > 0 && <span title={`${as} asistencias`} className="rounded bg-sky-100 px-1 text-sky-800">A{as > 1 ? `×${as}` : ""}</span>}
+                          {a.goalkeeper && <span title="Goles encajados">🧤{a.conceded}</span>}
+                          {a.yellows > 0 && <span>{"🟨".repeat(a.yellows)}</span>}
+                          {a.red && <span>🟥</span>}
+                          {m.mvp_player_id === id && <span className="rounded bg-dorado px-1 text-negro">MVP</span>}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          )}
+
           {/* Trayectoria y estadísticas por temporada */}
           <section className="card">
             <h2 className="mb-1">Trayectoria en el Rayo</h2>

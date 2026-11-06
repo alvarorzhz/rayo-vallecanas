@@ -47,6 +47,7 @@ const nextConfig: NextConfig = {
     "/api/loteria/venta/[saleId]/pdf": ["./public/escudo.png"],
     "/api/finanzas/exportar": ["./public/escudo.png"],
     "/api/plantilla/exportar": ["./public/escudo.png"],
+    "/api/partidos/[id]/imagen": ["./public/escudo.png", "./src/assets/fonts/*.ttf"],
   },
   experimental: {
     // Las pantallas ya visitadas o precargadas se muestran al instante desde memoria;

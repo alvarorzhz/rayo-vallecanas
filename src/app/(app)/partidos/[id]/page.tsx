@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { CalendarPlus, MapPin, Pencil, StickyNote, Swords } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fetchCallups, fetchMatch, fetchMyPlayerId } from "@/lib/match-queries";
+import { fetchCallups, fetchMatch, fetchMyPlayerId, fetchReport } from "@/lib/match-queries";
 import {
-  COMPETITION_LABEL, MATCH_STATUS_LABEL, hhmm, longDay, mapsLink, matchShareText, outcomeOf, record, todayMadrid,
+  COMPETITION_LABEL, MATCH_STATUS_LABEL, hhmm, longDay, mapsLink, matchShareText, record, todayMadrid,
   type MatchRow,
 } from "@/lib/matches";
 import { seasonSlug } from "@/lib/squad";
@@ -15,6 +15,7 @@ import { DeleteButton, ResultForm, StatusForm } from "@/components/matches/match
 import { ShareButton } from "@/components/matches/share-button";
 import { Crest } from "@/components/matches/crest";
 import { CallupSection } from "@/components/matches/callup-section";
+import { ReportSection } from "@/components/matches/report-section";
 import { deleteMatch, saveResult, setMatchStatus } from "../actions";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: m ? `vs ${m.rival.name}` : "Partido" };
 }
 
-export default async function MatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ nuevo?: string; guardado?: string; convocatoria?: string }> }) {
+export default async function MatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ nuevo?: string; guardado?: string; convocatoria?: string; acta?: string }> }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const s = await requirePerm("matches", "read");
   const supabase = await createClient();
@@ -32,11 +33,12 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   if (!m) notFound();
 
   // Historial contra este rival
-  const [{ data: h2hData }, callups, myPlayerId] = await Promise.all([
+  const [{ data: h2hData }, callups, myPlayerId, report] = await Promise.all([
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("rival_id", m.rival_id).neq("id", m.id)
       .order("match_date", { ascending: false }).limit(20).returns<MatchRow[]>(),
     fetchCallups(supabase, m),
     fetchMyPlayerId(supabase, s.user.id),
+    m.status === "played" ? fetchReport(supabase, m) : null,
   ]);
   const h2h = h2hData ?? [];
   const h2hRec = record(h2h);
@@ -59,12 +61,15 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
         </>}
       />
       {sp.nuevo && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">¡Partido añadido al calendario!</p>}
+      {sp.acta && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Acta guardada. Las estadísticas ya están al día.</p>}
       {sp.convocatoria && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">{sp.convocatoria === "publicada" ? "¡Convocatoria publicada! Los convocados ya pueden contestar." : "Convocatoria guardada."}</p>}
       {sp.guardado && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Cambios guardados.</p>}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-6">
           <Scoreboard m={m} />
+
+          {report && <ReportSection m={m} report={report} canEdit={canEdit} />}
 
           <CallupSection m={m} rows={callups} myPlayerId={myPlayerId} canEdit={canEdit} url={`https://rayo-vallecanas.vercel.app/partidos/${m.id}`} />
 
@@ -107,7 +112,6 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
             <section className="card">
               <h2 className="mb-3">{m.status === "played" ? "Resultado" : "Resultado final"}</h2>
               <ResultForm action={saveResult.bind(null, m.id)} match={m} rivalName={m.rival.name} />
-              {outcomeOf(m) && <p className="mt-3 text-center text-xs text-negro/65">Las actas con goleadores, tarjetas y MVP llegan en la versión 3.2.</p>}
             </section>
           )}
           {canEdit && (

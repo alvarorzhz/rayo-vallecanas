@@ -204,7 +204,7 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
   }
   const [{ data: players }, { data: members }] = await Promise.all([
     admin.from("players").select("id, first_name, last_name, nickname, foot, height_cm, ext_id"),
-    admin.from("squad_members").select("id, player_id, number, starts, status").eq("season", season),
+    admin.from("squad_members").select("id, player_id, number, status").eq("season", season),
   ]);
   const memberOf = new Map((members ?? []).map((m) => [m.player_id as string, m]));
   let playersNew = 0, playersUpdated = 0;
@@ -235,7 +235,8 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
     // Las fotos de la liga no se traen: son diminutas (71×85) y en el cromo se ven pixeladas.
     // Cada jugador sube la suya desde su ficha.
     // Ficha de la temporada y estadísticas de la liga
-    const stats = { apps: lp.apps, goals: lp.goals, conceded: lp.line === "POR" ? lp.conceded : 0, yellows: lp.yellows, reds: lp.reds };
+    // Los totales de la liga van aparte: la app suma previas + actas y, de cada dato, lo que la liga tenga de más
+    const stats = { league_stats: { apps: lp.apps, goals: lp.goals, conceded: lp.line === "POR" ? lp.conceded : 0, yellows: lp.yellows, reds: lp.reds } };
     const m = memberOf.get(p!.id);
     if (!m) {
       const { error } = await admin.from("squad_members").insert({ player_id: p!.id, season, number: lp.number, position: lp.line, status: "active", joined_on: new Date().toISOString().slice(0, 10), ...stats });
@@ -243,7 +244,7 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
       if (error && /number_uniq/.test(error.message)) await admin.from("squad_members").insert({ player_id: p!.id, season, number: null, position: lp.line, status: "active", ...stats });
       else if (error) throw error;
     } else {
-      await admin.from("squad_members").update({ ...stats, apps: Math.max(stats.apps, m.starts ?? 0) }).eq("id", m.id);
+      await admin.from("squad_members").update(stats).eq("id", m.id);
     }
   }
   return { playersNew, playersUpdated, players: list.length };
@@ -384,4 +385,42 @@ export async function syncLeague(opts: { notifyExcept?: string } = {}): Promise<
   const summary: SyncSummary = { ...squad, rivalsNew, matchesNew, matchesUpdated, results, competition: league.competitionName, at: new Date().toISOString() };
   await admin.from("league_sync").update({ last_synced_at: summary.at, last_summary: summary, competition_name: league.competitionName?.slice(0, 160) ?? cfg.competition_name }).eq("id", 1);
   return summary;
+}
+
+// ---------------------------------------------------------------------
+// Ficha de un partido (match.aspx): quién jugó, goles, encajados y tarjetas
+// ---------------------------------------------------------------------
+export type SheetRow = { extId: string; name: string; number: number | null; goals: number; conceded: number | null; yellows: number; red: boolean };
+
+/** Jugadores de un lado de la ficha: «L» local, «V» visitante. */
+export function parseSheet(html: string, side: "L" | "V"): SheetRow[] {
+  const rows: SheetRow[] = [];
+  const re = new RegExp(
+    `dgrJugadores${side}_ctl\\d+_lblDorsal"[^>]*>([^<]*)<[\\s\\S]*?hlkJugador" title="([^"]*)" href="player\\.aspx\\?itm=(\\d+)"[\\s\\S]*?lblGoles">([^<]*)<[\\s\\S]*?lblGolesRecibidos"[^>]*>([^<]*)<[\\s\\S]*?pnlAmonestaciones">([\\s\\S]*?)</div>`,
+    "g",
+  );
+  for (const m of html.matchAll(re)) {
+    const cards = m[6];
+    const yr = (cards.match(/card_(?:yellow_?red|double)/gi) ?? []).length;
+    const reds = (cards.match(/card_red/gi) ?? []).length;
+    const yellows = Math.min(2, (cards.match(/card_yellow(?!_?red)/gi) ?? []).length + yr * 2);
+    rows.push({
+      extId: m[3],
+      name: decode(m[2]).trim(),
+      number: /^\d+$/.test(m[1].trim()) ? Number(m[1].trim()) : null,
+      goals: /^\d+$/.test(m[4].trim()) ? Number(m[4].trim()) : 0,
+      conceded: /^\d+$/.test(m[5].trim()) ? Number(m[5].trim()) : null,
+      yellows,
+      red: reds > 0 || yr > 0,
+    });
+  }
+  return rows;
+}
+
+/** Ficha de uno de nuestros partidos en la web de la liga. */
+export async function fetchSheet(competition: string, matchExt: string, home: boolean): Promise<SheetRow[]> {
+  if (!/^\d{1,9}$/.test(matchExt)) throw new Error("Partido de la liga no válido");
+  const { get } = await openSession(competition);
+  const html = await get(`match.aspx?itm=${matchExt}`);
+  return parseSheet(html, home ? "L" : "V");
 }

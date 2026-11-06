@@ -136,8 +136,8 @@ export function PlayerForm({
         </section>
 
         <section className="card space-y-4">
-          <h2>Estadísticas {season}</h2>
-          <p className="text-xs text-negro/65">De momento se apuntan a mano. Cuando lleguen los partidos (fase 4) se calcularán solas con cada acta.</p>
+          <h2>Estadísticas previas {season}</h2>
+          <p className="text-xs text-negro/65">Las de las actas y las de la web de la liga se suman solas. Apunta aquí solo lo que no esté en ninguna de las dos (por ejemplo, partidos de antes de usar la app).</p>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
             {STAT_KEYS.filter((k) => (lineOf(position || "DC") === "GK" ? true : k !== "conceded" && k !== "clean_sheets")).map((k) => (
               <div key={k}>

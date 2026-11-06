@@ -3,7 +3,8 @@ import type { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
 import { byKickoff, todayMadrid, type Match, type MatchRow, type Rival } from "@/lib/matches";
 import { sortCallups, type Callup, type CallupRow } from "@/lib/callups";
-import type { Player, SquadStatus } from "@/lib/squad";
+import { sortRoster, type Player, type SquadStatus } from "@/lib/squad";
+import type { Appearance, MatchGoal, ReportPlayer, ReportView } from "@/lib/reports";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
 
@@ -64,4 +65,37 @@ export async function fetchCallups(supabase: DB, m: Pick<Match, "id" | "season">
 export async function fetchMyPlayerId(supabase: DB, userId: string): Promise<string | null> {
   const { data } = await supabase.from("players").select("id").eq("user_id", userId).maybeSingle();
   return (data?.id as string | undefined) ?? null;
+}
+
+/** Jugadores de la plantilla de una temporada (para el acta), más los que ya salgan en ella aunque no estén. */
+export async function fetchReportPool(supabase: DB, season: string, extra: string[] = []): Promise<ReportPlayer[]> {
+  const { data: members } = await supabase.from("squad_members").select("player_id, number, position, status, player:players!inner(*)").eq("season", season)
+    .returns<{ player_id: string; number: number | null; position: string; status: SquadStatus; player: Player }[]>();
+  const rows = (members ?? []).filter((m) => m.status !== "left" || extra.includes(m.player_id));
+  const missing = extra.filter((id) => !rows.some((r) => r.player_id === id));
+  if (missing.length) {
+    const { data: ps } = await supabase.from("players").select("*").in("id", missing).returns<Player[]>();
+    for (const p of ps ?? []) rows.push({ player_id: p.id, number: null, position: "MCD", status: "left", player: p });
+  }
+  return sortRoster(rows).map(({ player_id, player, number, position }) => ({ player_id, player, number, position }));
+}
+
+/** Acta guardada de un partido. */
+export async function fetchReport(supabase: DB, m: Pick<Match, "id" | "season" | "mvp_player_id">): Promise<ReportView & { pool: ReportPlayer[] }> {
+  const [{ data: apps }, { data: goals }] = await Promise.all([
+    supabase.from("match_appearances").select("*").eq("match_id", m.id).returns<Appearance[]>(),
+    supabase.from("match_goals").select("*").eq("match_id", m.id).order("sort").returns<MatchGoal[]>(),
+  ]);
+  const ids = [...new Set([...(apps ?? []).map((a) => a.player_id), ...(goals ?? []).flatMap((g) => [g.scorer_id, g.assist_id]), m.mvp_player_id].filter((x): x is string => !!x))];
+  const pool = await fetchReportPool(supabase, m.season, ids);
+  const by = new Map(pool.map((p) => [p.player_id, p]));
+  const appearances = (apps ?? []).filter((a) => by.has(a.player_id)).map((a) => ({ ...a, ...by.get(a.player_id)! }));
+  const order = new Map(pool.map((p, i) => [p.player_id, i]));
+  appearances.sort((a, b) => Number(b.started) - Number(a.started) || (order.get(a.player_id)! - order.get(b.player_id)!));
+  return {
+    pool,
+    appearances,
+    goals: (goals ?? []).map((g) => ({ ...g, scorer: g.scorer_id ? by.get(g.scorer_id) ?? null : null, assist: g.assist_id ? by.get(g.assist_id) ?? null : null })),
+    mvp: m.mvp_player_id ? by.get(m.mvp_player_id) ?? null : null,
+  };
 }
