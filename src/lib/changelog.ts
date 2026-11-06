@@ -7,6 +7,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.8.0",
+    date: "2026-11-06",
+    title: "Informes de Finanzas y exportación a Excel y PDF",
+    changes: [
+      "Nueva pantalla «Informes» en Finanzas: ingresos y gastos de cada mes, evolución del saldo, reparto por categorías y balance de cada temporada.",
+      "Exporta los movimientos a Excel o a PDF con el escudo, desde Informes o desde la lista de movimientos (respeta los filtros).",
+      "En la lista de movimientos ya se puede filtrar por fechas (desde/hasta), además de por temporada.",
+    ],
+  },
+  {
     version: "1.7.0",
     date: "2026-11-06",
     title: "Finanzas: ingresos, gastos y saldo",
