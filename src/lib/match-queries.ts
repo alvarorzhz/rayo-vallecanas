@@ -1,7 +1,9 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
-import { byKickoff, todayMadrid, type MatchRow, type Rival } from "@/lib/matches";
+import { byKickoff, todayMadrid, type Match, type MatchRow, type Rival } from "@/lib/matches";
+import { sortCallups, type Callup, type CallupRow } from "@/lib/callups";
+import type { Player, SquadStatus } from "@/lib/squad";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
 
@@ -42,4 +44,24 @@ export async function fetchMatchSeasons(supabase: DB): Promise<string[]> {
   const set = new Set<string>((data ?? []).map((r) => r.season));
   set.add(seasonOf());
   return [...set].sort().reverse();
+}
+
+/** Convocados de un partido con su dorsal y posición de esa temporada (RLS: el borrador solo lo ven los gestores). */
+export async function fetchCallups(supabase: DB, m: Pick<Match, "id" | "season">): Promise<CallupRow[]> {
+  const [{ data: rows }, { data: members }] = await Promise.all([
+    supabase.from("match_callups").select("*, player:players!inner(*)").eq("match_id", m.id).returns<(Callup & { player: Player })[]>(),
+    supabase.from("squad_members").select("player_id, number, position, status").eq("season", m.season)
+      .returns<{ player_id: string; number: number | null; position: string; status: SquadStatus }[]>(),
+  ]);
+  const by = new Map((members ?? []).map((x) => [x.player_id, x]));
+  return sortCallups((rows ?? []).map((r) => {
+    const sm = by.get(r.player_id);
+    return { ...r, number: sm?.number ?? null, position: sm?.position ?? "MCD", status: sm?.status ?? null };
+  }));
+}
+
+/** Ficha de jugador vinculada al usuario (si la tiene). */
+export async function fetchMyPlayerId(supabase: DB, userId: string): Promise<string | null> {
+  const { data } = await supabase.from("players").select("id").eq("user_id", userId).maybeSingle();
+  return (data?.id as string | undefined) ?? null;
 }
