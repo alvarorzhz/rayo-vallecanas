@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, ShoppingCart } from "lucide-react";
+import { Plus, ShoppingBag, ShoppingCart } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha, NUMBERING_MODE_LABEL } from "@/lib/format";
@@ -37,11 +37,18 @@ export default async function LotteryPage({ searchParams }: { searchParams: Prom
         title={showArchived ? "Campañas archivadas" : "Sorteos"}
         subtitle={isAdmin ? "Campañas, participaciones, vendedores y cobros" : "Campañas en las que eres vendedor"}
         actions={
-          s.can("lottery_admin", "create") && (
-            <Link href="/loteria/nueva" className="btn-primary">
-              <Plus size={16} /> Nueva campaña
-            </Link>
-          )
+          <>
+            {s.can("lottery_sell", "create") && (
+              <Link href="/mis-ventas" prefetch className="btn-dark">
+                <ShoppingBag size={16} /> Mis ventas
+              </Link>
+            )}
+            {s.can("lottery_admin", "create") && (
+              <Link href="/loteria/nueva" className="btn-primary">
+                <Plus size={16} /> Nueva campaña
+              </Link>
+            )}
+          </>
         }
       />
       {sp.eliminada && (
