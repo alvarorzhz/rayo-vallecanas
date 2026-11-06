@@ -7,6 +7,21 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.7.0",
+    date: "2026-11-06",
+    title: "Finanzas: ingresos, gastos y saldo",
+    changes: [
+      "Nuevo apartado «Finanzas» para llevar las cuentas del club y dejar el Excel: apunta ingresos y gastos con fecha, concepto, categoría, importe, método de pago, persona o proveedor y observaciones.",
+      "Se puede adjuntar la foto o el PDF de la factura o el justificante; se guarda en privado.",
+      "El saldo actual se calcula solo a partir del saldo inicial (Finanzas → Saldo inicial y categorías).",
+      "Temporadas de septiembre a agosto: ingresos, gastos y resultado de cada temporada, y reparto por categorías.",
+      "Lista de movimientos con filtros por temporada, tipo, categoría y búsqueda por texto.",
+      "Los movimientos no se borran: se anulan con un motivo y queda constancia en la auditoría.",
+      "En cada sorteo, un botón pasa a Finanzas lo cobrado (solo lo que aún no se había pasado).",
+      "Los jugadores no pueden ver Finanzas en ningún caso.",
+    ],
+  },
+  {
     version: "1.6.0",
     date: "2026-11-05",
     title: "Avisos al móvil y nuevo panel de Gestión",

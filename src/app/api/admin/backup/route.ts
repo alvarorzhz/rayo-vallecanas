@@ -18,6 +18,9 @@ const TABLES: [string, string][] = [
   ["lottery_shares", "Participaciones y números"],
   ["lottery_payments", "Cobros"],
   ["notifications", "Justificantes enviados"],
+  ["finance_settings", "Finanzas · saldo inicial"],
+  ["finance_categories", "Finanzas · categorías"],
+  ["finance_movements", "Finanzas · movimientos"],
   ["audit_log", "Auditoría"],
 ];
 

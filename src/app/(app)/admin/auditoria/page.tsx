@@ -17,6 +17,9 @@ const TABLE_LABEL: Record<string, string> = {
   lottery_shares: "Participación",
   buyers: "Comprador",
   notifications: "Justificante",
+  finance_movements: "Movimiento económico",
+  finance_categories: "Categoría económica",
+  finance_settings: "Saldo inicial",
   profiles: "Usuario",
   user_permissions: "Permisos",
 };

@@ -7,6 +7,7 @@ import { Empty, Progress, Stat } from "@/components/ui";
 import { SalesTable } from "@/components/lottery/sales-table";
 import { fetchSales } from "@/lib/lottery/queries";
 import type { Campaign, Summary } from "@/lib/types";
+import { seasonOf, seasonRange, type FinanceSummary } from "@/lib/finance";
 
 type Rank = { seller_id: string; full_name: string; shares: number; sold_cents: number };
 
@@ -47,6 +48,14 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     ranking = ((rk.data ?? []) as Rank[]).slice(0, 5);
     latest = sales.rows;
     for (const r of own.data ?? []) mine = { shares: mine.shares + r.quantity, total: mine.total + r.total_cents, paid: mine.paid + r.paid_cents };
+  }
+
+  // Resumen económico (solo quien puede ver Finanzas; nunca jugadores)
+  let fin: FinanceSummary | null = null;
+  const season = seasonOf();
+  if (s.can("finances")) {
+    const r = seasonRange(season)!;
+    fin = (await supabase.rpc("finance_summary", { p_from: r.from, p_to: r.to })).data as FinanceSummary | null;
   }
 
   const firstName = s.profile.full_name.split(" ")[0];
@@ -141,10 +150,24 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
       )}
 
+      {fin && (
+        <section className="mb-6">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <h2 className="sport flex items-center gap-2 text-2xl font-black"><Wallet size={22} className="text-rojo" /> Finanzas</h2>
+            <Link href="/finanzas" prefetch className="shrink-0 text-sm font-bold text-rojo">Ver cuentas →</Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Stat label="Saldo actual" value={euros(fin.balance_cents)} tone="dark" />
+            <Stat label="Ingresos" value={euros(fin.income_cents)} hint={`Temporada ${season}`} />
+            <Stat label="Gastos" value={euros(fin.expense_cents)} hint={`Temporada ${season}`} />
+            <Stat label="Resultado" value={euros(fin.income_cents - fin.expense_cents)} tone="gold" />
+          </div>
+        </section>
+      )}
+
       <h2 className="sport mb-3 text-2xl font-black">Próximamente</h2>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         {[
-          { icon: Wallet, t: "Finanzas", d: "Ingresos, gastos y saldo (fase 2)", show: isAdmin },
           { icon: Shirt, t: "Plantilla", d: "Fichas de jugadores (fase 3)", show: true },
           { icon: CalendarDays, t: "Partidos", d: "Calendario y convocatorias (fase 4)", show: true },
         ]
