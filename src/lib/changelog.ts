@@ -7,6 +7,20 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.1.0",
+    date: "2026-11-06",
+    title: "Convocatorias",
+    changes: [
+      "Los gestores preparan la convocatoria de cada partido: eligen a los convocados, la hora y el sitio de quedada y dejan notas (equipación, coches…).",
+      "Alineación de fútbol 7 sobre el campo: se elige el sistema (3-2-1, 2-3-1…) y quién juega en cada puesto. El resto sale en el banquillo.",
+      "Se puede guardar como borrador y publicarla cuando esté lista: a los convocados les llega el aviso en el móvil.",
+      "Cada convocado contesta «Voy», «Duda» o «No voy» desde el partido o desde el inicio, con un comentario si quiere.",
+      "Los gestores ven quién va, quién duda y quién falta por contestar, apuntan la respuesta de quien avise por WhatsApp y mandan un recordatorio a los que faltan.",
+      "Recordatorio automático: la víspera, a quien no ha contestado; el día del partido, a los que van, con la hora de quedada.",
+      "La convocatoria se comparte por WhatsApp con la lista de convocados y sus dorsales.",
+    ],
+  },
+  {
     version: "3.0.2",
     date: "2026-11-06",
     title: "Sincronizar con la liga",

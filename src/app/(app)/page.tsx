@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShoppingCart, Ticket, Wallet, CalendarDays, Shirt } from "lucide-react";
-import { fetchMatchday } from "@/lib/match-queries";
+import { fetchCallups, fetchMatchday, fetchMyPlayerId } from "@/lib/match-queries";
+import { MyCallupCard, callupOpen } from "@/components/matches/callup-section";
 import { FormStrip, MatchLine, NextMatchCard } from "@/components/matches/match-bits";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -70,6 +71,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   // Partidos: el próximo y los últimos resultados
   const matchday = s.can("matches") ? await fetchMatchday(supabase, 5) : null;
+  // ¿Me han convocado para el próximo partido?
+  let myCallup = null;
+  if (matchday?.next && callupOpen(matchday.next)) {
+    const [rows, me] = await Promise.all([fetchCallups(supabase, matchday.next), fetchMyPlayerId(supabase, s.user.id)]);
+    myCallup = rows.find((r) => r.player_id === me) ?? null;
+  }
 
   const firstName = s.profile.full_name.split(" ")[0];
 
@@ -104,7 +111,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <Link href="/partidos" prefetch className="shrink-0 text-sm font-bold text-rojo">Calendario →</Link>
           </div>
           <div className={`grid gap-4 ${matchday.recent.length ? "lg:grid-cols-[minmax(0,1fr)_24rem]" : ""}`}>
-            <NextMatchCard m={matchday.next} />
+            <div className="min-w-0 space-y-3">
+              <NextMatchCard m={matchday.next} />
+              {matchday.next && myCallup && <MyCallupCard m={matchday.next} mine={myCallup} />}
+            </div>
             {matchday.recent.length > 0 && (
               <div className="min-w-0">
                 <div className="mb-2 flex items-center justify-between gap-2">

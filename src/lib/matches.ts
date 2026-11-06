@@ -30,6 +30,13 @@ export type Match = {
   goals_for: number | null;
   goals_against: number | null;
   notes: string | null;
+  // Convocatoria (v3.1.0)
+  meet_time: string | null;
+  meet_place: string | null;
+  callup_notes: string | null;
+  formation: string | null;
+  callup_published_at: string | null;
+  callup_reminded_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -117,7 +124,7 @@ export function kickoffDate(m: Pick<Match, "match_date" | "kickoff">): Date {
 }
 
 /** Hoy en Madrid, "2026-11-06". */
-export const todayMadrid = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
+export const todayMadrid = (at: Date = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(at);
 
 const dayFmt = new Intl.DateTimeFormat("es-ES", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 const dayLongFmt = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });

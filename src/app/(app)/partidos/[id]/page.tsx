@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CalendarPlus, MapPin, Pencil, StickyNote, Swords } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fetchMatch } from "@/lib/match-queries";
+import { fetchCallups, fetchMatch, fetchMyPlayerId } from "@/lib/match-queries";
 import {
   COMPETITION_LABEL, MATCH_STATUS_LABEL, hhmm, longDay, mapsLink, matchShareText, outcomeOf, record, todayMadrid,
   type MatchRow,
@@ -14,6 +14,7 @@ import { MatchLine, Scoreboard } from "@/components/matches/match-bits";
 import { DeleteButton, ResultForm, StatusForm } from "@/components/matches/match-forms";
 import { ShareButton } from "@/components/matches/share-button";
 import { Crest } from "@/components/matches/crest";
+import { CallupSection } from "@/components/matches/callup-section";
 import { deleteMatch, saveResult, setMatchStatus } from "../actions";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: m ? `vs ${m.rival.name}` : "Partido" };
 }
 
-export default async function MatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ nuevo?: string; guardado?: string }> }) {
+export default async function MatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ nuevo?: string; guardado?: string; convocatoria?: string }> }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const s = await requirePerm("matches", "read");
   const supabase = await createClient();
@@ -31,8 +32,12 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   if (!m) notFound();
 
   // Historial contra este rival
-  const { data: h2hData } = await supabase.from("matches").select("*, rival:rivals!inner(*)").eq("rival_id", m.rival_id).neq("id", m.id)
-    .order("match_date", { ascending: false }).limit(20).returns<MatchRow[]>();
+  const [{ data: h2hData }, callups, myPlayerId] = await Promise.all([
+    supabase.from("matches").select("*, rival:rivals!inner(*)").eq("rival_id", m.rival_id).neq("id", m.id)
+      .order("match_date", { ascending: false }).limit(20).returns<MatchRow[]>(),
+    fetchCallups(supabase, m),
+    fetchMyPlayerId(supabase, s.user.id),
+  ]);
   const h2h = h2hData ?? [];
   const h2hRec = record(h2h);
 
@@ -54,11 +59,14 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
         </>}
       />
       {sp.nuevo && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">¡Partido añadido al calendario!</p>}
+      {sp.convocatoria && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">{sp.convocatoria === "publicada" ? "¡Convocatoria publicada! Los convocados ya pueden contestar." : "Convocatoria guardada."}</p>}
       {sp.guardado && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Cambios guardados.</p>}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-6">
           <Scoreboard m={m} />
+
+          <CallupSection m={m} rows={callups} myPlayerId={myPlayerId} canEdit={canEdit} url={`https://rayo-vallecanas.vercel.app/partidos/${m.id}`} />
 
           <section className="card space-y-3">
             <h2>Dónde y cuándo</h2>
