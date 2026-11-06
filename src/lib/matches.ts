@@ -37,6 +37,11 @@ export type Match = {
   formation: string | null;
   callup_published_at: string | null;
   callup_reminded_at: string | null;
+  ext_id: string | null;
+  // Acta (v3.2.0)
+  mvp_player_id: string | null;
+  report_saved_at: string | null;
+  report_by: string | null;
   created_at: string;
   updated_at: string;
 };

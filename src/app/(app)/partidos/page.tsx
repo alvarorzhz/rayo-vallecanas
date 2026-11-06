@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Plus, Shield, Trophy } from "lucide-react";
+import { BarChart3, CalendarDays, Plus, Shield, Trophy } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
@@ -67,6 +67,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         title="Partidos"
         subtitle={<>Temporada <b>{season}</b>{current ? " · actual" : ""}</>}
         actions={<>
+          <Link href={`/partidos/estadisticas?temporada=${seasonSlug(season)}`} prefetch className="btn-ghost"><BarChart3 size={18} /> Estadísticas</Link>
           {s.can("matches", "update") && <Link href="/partidos/rivales" prefetch className="btn-ghost"><Shield size={18} /> Rivales</Link>}
           {s.can("matches", "update") && <Link href="/partidos/liga" prefetch className="btn-ghost"><Trophy size={18} /> Liga</Link>}
           {canCreate && <Link href="/partidos/nuevo" prefetch className="btn-primary"><Plus size={18} /> Nuevo partido</Link>}

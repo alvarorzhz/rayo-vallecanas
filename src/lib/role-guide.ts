@@ -76,9 +76,9 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
   matches: {
     title: "Partidos",
     acts: {
-      read: "Ver el calendario, los resultados, la racha y el historial contra cada rival, y contestar a su convocatoria (Voy, No voy o Duda).",
+      read: "Ver el calendario, los resultados, la racha y el historial contra cada rival, contestar a su convocatoria (Voy, No voy o Duda) y ver las actas y las estadísticas.",
       create: "Añadir partidos al calendario.",
-      update: "Editar partidos y rivales, poner el resultado, aplazar o suspender (con aviso al equipo), y preparar y publicar las convocatorias con la alineación.",
+      update: "Editar partidos y rivales, poner el resultado, aplazar o suspender (con aviso al equipo), preparar y publicar las convocatorias con la alineación y rellenar el acta de cada partido.",
       delete: "Eliminar partidos y rivales creados por error.",
     },
   },

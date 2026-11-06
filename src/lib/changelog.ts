@@ -7,6 +7,20 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.2.0",
+    date: "2026-11-06",
+    title: "Actas y estadísticas",
+    changes: [
+      "Cada partido jugado tiene su acta: quién jugó y quién fue titular, los goles con su asistencia, las tarjetas, lo que encajó el portero y el MVP.",
+      "Botón «Rellenar con la liga»: trae de la web de la liga quién jugó, las tarjetas y los goles del portero. Titulares, asistencias y MVP los ponéis vosotros.",
+      "Las estadísticas de los cromos y de la plantilla salen solas de las actas. Lo que traiga la liga se respeta sin contar nada dos veces.",
+      "Nueva página de estadísticas: pichichi, asistencias, MVP, zamora, porterías a cero, tarjetas… y el histórico del equipo temporada a temporada.",
+      "En la ficha de cada jugador, sus partidos de la temporada con goles, asistencias, tarjetas y MVP.",
+      "Imagen del resultado con los escudos, el marcador, los goleadores y el MVP, lista para compartir en WhatsApp o Instagram.",
+      "Al guardar el acta, el equipo recibe el aviso con los goleadores y el MVP.",
+    ],
+  },
+  {
     version: "3.1.0",
     date: "2026-11-06",
     title: "Convocatorias",

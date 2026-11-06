@@ -8,7 +8,7 @@ type DB = Awaited<ReturnType<typeof createClient>>;
 /** Plantilla de una temporada, ordenada por línea y dorsal. */
 export async function fetchRoster(supabase: DB, season: string): Promise<RosterEntry[]> {
   const { data } = await supabase
-    .from("squad_members")
+    .from("squad_members_full")
     .select("*, player:players!inner(*)")
     .eq("season", season)
     .returns<(Membership & { player: Player })[]>();
