@@ -152,7 +152,7 @@ export function titleCase(name: string, keep = /^$/) {
 
 export type LeaguePlayer = {
   extId: string; name: string; number: number | null; nickname: string | null; line: "POR" | "DFC" | "MCD" | "DC";
-  foot: "right" | "left" | "both" | null; birth: string | null; height: number | null; photo: string | null;
+  foot: "right" | "left" | "both" | null; birth: string | null; height: number | null;
   apps: number; goals: number; conceded: number; yellows: number; reds: number;
 };
 
@@ -172,14 +172,12 @@ export function parsePlayer(extId: string, html: string): LeaguePlayer | null {
   const b = lbl(html, "lblFechaNacimiento").match(/(\d{1,2}) de (\p{L}+) de (\d{4})/u);
   const mi = b ? MONTHS.indexOf(b[2].toLowerCase()) : -1;
   const height = num(lbl(html, "lblAltura"));
-  const photo = new RegExp(`imgJugadorInfoFoto"[^>]*src="/storage/soccer/players/${extId}\\.jpg"`).test(html) ? `https://www.futormes.com/storage/soccer/players/${extId}.jpg` : null;
   return {
     extId, name: titleCase(name), number: num(lbl(html, "lblDorsal")),
     nickname: nick && !/^sin (definir|apodo)$/i.test(nick) ? nick.slice(0, 24) : null,
     line, foot,
     birth: b && mi >= 0 ? `${b[3]}-${String(mi + 1).padStart(2, "0")}-${b[1].padStart(2, "0")}` : null,
     height: height && height >= 120 && height <= 230 ? height : null,
-    photo,
     apps: num(lbl(html, "lblEstadisticasPartidosJugados")) ?? 0,
     goals: num(lbl(html, "lblEstadisticasGolesMarcados")) ?? 0,
     conceded: num(lbl(html, "lblEstadisticasGolesRecibidos")) ?? 0,
@@ -205,7 +203,7 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
     list.push(...batch.filter((p): p is LeaguePlayer => !!p));
   }
   const [{ data: players }, { data: members }] = await Promise.all([
-    admin.from("players").select("id, first_name, last_name, nickname, foot, height_cm, photo_url, ext_id"),
+    admin.from("players").select("id, first_name, last_name, nickname, foot, height_cm, ext_id"),
     admin.from("squad_members").select("id, player_id, number, starts, status").eq("season", season),
   ]);
   const memberOf = new Map((members ?? []).map((m) => [m.player_id as string, m]));
@@ -217,15 +215,13 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
     let p = players?.find((x) => x.ext_id === ext)
       ?? players?.find((x) => { const n = norm(`${x.first_name} ${x.last_name}`); return n === full || (n.split(" ").length >= 2 && full.startsWith(n + " ")); })
       ?? players?.find((x) => memberOf.get(x.id)?.number === lp.number && norm(x.first_name) === norm(splitName(lp.name).first_name));
-    let photoFor: string | null = null;
     if (!p) {
       const { data, error } = await admin.from("players").insert({ ...splitName(lp.name), nickname: lp.nickname, foot: lp.foot, height_cm: lp.height, ext_id: ext })
-        .select("id, first_name, last_name, nickname, foot, height_cm, photo_url, ext_id").single();
+        .select("id, first_name, last_name, nickname, foot, height_cm, ext_id").single();
       if (error) throw error;
       p = data;
       playersNew++;
       if (lp.birth) await admin.from("player_private").update({ birth_date: lp.birth }).eq("player_id", p.id);
-      photoFor = lp.photo;
     } else {
       // Solo se rellena lo que falta: lo editado en la app manda
       const patch: Record<string, unknown> = {};
@@ -235,8 +231,9 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
       if (!p.nickname && lp.nickname) patch.nickname = lp.nickname;
       if (Object.keys(patch).length) { await admin.from("players").update(patch).eq("id", p.id); playersUpdated++; }
       if (lp.birth) await admin.from("player_private").update({ birth_date: lp.birth }).eq("player_id", p.id).is("birth_date", null);
-      if (!p.photo_url) photoFor = lp.photo;
     }
+    // Las fotos de la liga no se traen: son diminutas (71×85) y en el cromo se ven pixeladas.
+    // Cada jugador sube la suya desde su ficha.
     // Ficha de la temporada y estadísticas de la liga
     const stats = { apps: lp.apps, goals: lp.goals, conceded: lp.line === "POR" ? lp.conceded : 0, yellows: lp.yellows, reds: lp.reds };
     const m = memberOf.get(p!.id);
@@ -247,17 +244,6 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
       else if (error) throw error;
     } else {
       await admin.from("squad_members").update({ ...stats, apps: Math.max(stats.apps, m.starts ?? 0) }).eq("id", m.id);
-    }
-    // Foto provisional (las de la liga son pequeñas)
-    if (photoFor) {
-      try {
-        const img = await fetch(photoFor, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(15000) });
-        if (img.ok && img.headers.get("content-type")?.startsWith("image/jpeg")) {
-          const path = `${p!.id}/foto-${Date.now()}.jpg`;
-          const up = await admin.storage.from("player-photos").upload(path, await img.arrayBuffer(), { contentType: "image/jpeg", upsert: true });
-          if (!up.error) await admin.from("players").update({ photo_url: admin.storage.from("player-photos").getPublicUrl(path).data.publicUrl }).eq("id", p!.id);
-        }
-      } catch { /* sin foto */ }
     }
   }
   return { playersNew, playersUpdated, players: list.length };

@@ -12,10 +12,11 @@ export const CHANGELOG: Release[] = [
     title: "Sincronizar con la liga",
     changes: [
       "Nuevo botón «Sincronizar con la liga» en Partidos: trae de la web de la liga (futormes) el calendario, los campos, los resultados y los rivales con su escudo.",
-      "También trae la plantilla: jugadores, dorsales, apodos, pie, altura, fecha de nacimiento, foto provisional y estadísticas de la liga (partidos, goles, encajados y tarjetas).",
+      "También trae la plantilla: jugadores, dorsales, apodos, pie, altura, fecha de nacimiento y estadísticas de la liga (partidos, goles, encajados y tarjetas).",
       "Se puede repetir cuando queráis: añade los partidos nuevos y actualiza horarios y resultados sin tocar lo que hayáis escrito a mano.",
       "Si cambia un horario o entra un resultado, el equipo recibe el aviso en el móvil.",
       "Nueva página «Liga» en Partidos para indicar la competición.",
+      "Las fotos no se traen de la liga porque allí son muy pequeñas: cada uno sube la suya desde su ficha.",
     ],
   },
   {
