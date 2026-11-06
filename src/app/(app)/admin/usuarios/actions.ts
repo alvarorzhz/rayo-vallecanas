@@ -4,10 +4,22 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/receipt";
 import { tempPassword } from "@/lib/password";
+import { EDITABLE_MODULES, isUuid } from "@/lib/roles";
 
 export type ActionState = { error?: string; ok?: string; password?: string; name?: string; phone?: string | null; email?: string } | undefined;
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
-const MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "squad_private", "matches"] as const;
+const MODULES = EDITABLE_MODULES;
+
+/** «player», «admin», «superadmin» o el id de un perfil a medida → rol y perfil a medida. */
+async function resolveProfile(supabase: Awaited<ReturnType<typeof createClient>>, key: string) {
+  if (isUuid(key)) {
+    const { data } = await supabase.from("custom_roles").select("id, base").eq("id", key).maybeSingle();
+    if (!data) return null;
+    return { role: data.base as string, custom_role_id: data.id as string };
+  }
+  if (!["player", "admin", "superadmin"].includes(key)) return null;
+  return { role: key, custom_role_id: null };
+}
 
 export async function inviteUser(_: ActionState, f: FormData): Promise<ActionState> {
   const supabase = await createClient();
@@ -17,7 +29,8 @@ export async function inviteUser(_: ActionState, f: FormData): Promise<ActionSta
   const email = str(f, "email").toLowerCase();
   const full_name = str(f, "full_name");
   const phone = str(f, "phone") || null;
-  const role = str(f, "role") || "player";
+  const target = await resolveProfile(supabase, str(f, "profile") || "player");
+  if (!target) return { error: "Ese perfil no existe" };
   if (!email || !full_name) return { error: "Nombre y email son obligatorios" };
 
   const admin = createAdminClient();
@@ -35,9 +48,9 @@ export async function inviteUser(_: ActionState, f: FormData): Promise<ActionSta
   if (!byEmail) await admin.from("profiles").update({ must_change_password: true }).eq("id", data.user.id);
 
   // El rol se asigna con la sesión del usuario actual: la BD comprueba que puede hacerlo.
-  if (role !== "player") {
-    const { error: roleErr } = await supabase.from("profiles").update({ role }).eq("id", data.user.id);
-    if (roleErr) return { error: `Usuario creado, pero no se pudo asignar el rol: ${roleErr.message}` };
+  if (target.role !== "player" || target.custom_role_id) {
+    const { error: roleErr } = await supabase.from("profiles").update(target).eq("id", data.user.id);
+    if (roleErr) return { error: `Usuario creado, pero no se pudo asignar el perfil: ${roleErr.message}` };
   }
   revalidatePath("/admin/usuarios");
   if (byEmail) return { ok: `Invitación enviada a ${email}` };
@@ -46,12 +59,14 @@ export async function inviteUser(_: ActionState, f: FormData): Promise<ActionSta
 
 export async function updateUser(uid: string, _: ActionState, f: FormData): Promise<ActionState> {
   const supabase = await createClient();
+  const target = await resolveProfile(supabase, str(f, "profile"));
+  if (!target) return { error: "Ese perfil no existe" };
   const { error } = await supabase
     .from("profiles")
     .update({
       full_name: str(f, "full_name"),
       phone: str(f, "phone") || null,
-      role: str(f, "role"),
+      ...target,
     })
     .eq("id", uid);
   if (error) return { error: error.message };

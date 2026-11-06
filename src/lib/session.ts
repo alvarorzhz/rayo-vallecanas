@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ROLE_LABEL } from "@/lib/format";
 
 export type Module = "lottery_admin" | "lottery_sell" | "users" | "audit" | "finances" | "squad" | "squad_private" | "matches";
 export type Action = "read" | "create" | "update" | "delete";
@@ -9,7 +10,7 @@ export type Perms = Record<Module, Record<Action, boolean>>;
 
 export type Session = {
   user: { id: string; email: string | null };
-  profile: { id: string; full_name: string; role: string; email: string | null; phone: string | null; avatar_url: string | null; notify_sales: boolean };
+  profile: { id: string; full_name: string; role: string; custom_role_id: string | null; role_label: string; email: string | null; phone: string | null; avatar_url: string | null; notify_sales: boolean };
   perms: Perms;
   can: (m: Module, a?: Action) => boolean;
 };
@@ -24,7 +25,7 @@ export const getSession = cache(async (): Promise<Session> => {
   const user = { id: claims.sub, email: (claims.email as string | undefined) ?? null };
 
   const [{ data: profile }, { data: permRows }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role, email, phone, active, avatar_url, notify_sales, must_change_password").eq("id", user.id).single(),
+    supabase.from("profiles").select("id, full_name, role, custom_role_id, email, phone, active, avatar_url, notify_sales, must_change_password, custom_role:custom_roles(name)").eq("id", user.id).single(),
     supabase.rpc("my_permissions"),
   ]);
   if (!profile || !profile.active) {
@@ -38,9 +39,11 @@ export const getSession = cache(async (): Promise<Session> => {
   for (const r of (permRows ?? []) as Array<{ module: Module; can_read: boolean; can_create: boolean; can_update: boolean; can_delete: boolean }>) {
     perms[r.module] = { read: r.can_read, create: r.can_create, update: r.can_update, delete: r.can_delete };
   }
+  const custom = profile.custom_role as { name: string } | { name: string }[] | null;
+  const customName = Array.isArray(custom) ? custom[0]?.name : custom?.name;
   return {
     user,
-    profile,
+    profile: { ...profile, role_label: customName ?? ROLE_LABEL[profile.role] ?? profile.role },
     perms,
     can: (m, a = "read") => Boolean(perms[m]?.[a]),
   };
