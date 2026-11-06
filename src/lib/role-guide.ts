@@ -55,7 +55,15 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
       delete: "Anular movimientos (con motivo; no se borran y quedan en auditoría).",
     },
   },
-  squad: { title: "Plantilla", soon: true, acts: { read: "Ver la plantilla.", create: "Añadir jugadores.", update: "Editar fichas." } },
+  squad: {
+    title: "Plantilla",
+    acts: {
+      read: "Ver la plantilla de cada temporada (cromos, campo y lista) y las fichas: dorsal, posición, estado y trayectoria.",
+      create: "Fichar jugadores nuevos.",
+      update: "Editar fichas, fotos y dorsales, ver los datos personales (teléfono, emergencia, nacimiento) y las observaciones, y vincular fichas con usuarios.",
+      delete: "Eliminar fichas creadas por error.",
+    },
+  },
   matches: { title: "Partidos", soon: true, acts: { read: "Ver el calendario y las convocatorias.", create: "Crear partidos.", update: "Editar partidos y convocatorias." } },
 };
 
@@ -63,6 +71,7 @@ export const MENU_BY_MODULE: { module: string; act: Act; label: string }[] = [
   { module: "lottery_admin", act: "read", label: "Sorteos (todas las campañas)" },
   { module: "lottery_sell", act: "read", label: "Sorteos (sus campañas)" },
   { module: "lottery_sell", act: "create", label: "Mis ventas" },
+  { module: "squad", act: "read", label: "Plantilla" },
   { module: "finances", act: "read", label: "Finanzas" },
   { module: "users", act: "read", label: "Usuarios" },
   { module: "audit", act: "read", label: "Auditoría" },

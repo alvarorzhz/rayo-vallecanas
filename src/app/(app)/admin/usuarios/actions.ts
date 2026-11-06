@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/receipt";
+import { tempPassword } from "@/lib/password";
 
 export type ActionState = { error?: string; ok?: string; password?: string; name?: string; phone?: string | null; email?: string } | undefined;
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
@@ -41,13 +42,6 @@ export async function inviteUser(_: ActionState, f: FormData): Promise<ActionSta
   revalidatePath("/admin/usuarios");
   if (byEmail) return { ok: `Invitación enviada a ${email}` };
   return { ok: `Usuario creado: ${full_name}`, password, name: full_name, phone, email };
-}
-
-/** Contraseña provisional fácil de dictar: sin letras ambiguas (0/O, 1/l). */
-function tempPassword() {
-  const abc = "abcdefghjkmnpqrstuvwxyz";
-  const pick = (s: string, n: number) => Array.from(crypto.getRandomValues(new Uint32Array(n)), (x) => s[x % s.length]).join("");
-  return `Rayo-${pick(abc, 4)}-${pick("23456789", 4)}`;
 }
 
 export async function updateUser(uid: string, _: ActionState, f: FormData): Promise<ActionState> {

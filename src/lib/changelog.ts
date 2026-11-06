@@ -7,6 +7,21 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "2.0.0",
+    date: "2026-11-06",
+    title: "Plantilla: las fichas de todo el equipo",
+    changes: [
+      "Nuevo apartado «Plantilla» en el menú, para todo el equipo: los jugadores de cada temporada con su dorsal, posición y estado.",
+      "Tres formas de verla: cromos de cada jugador, el campo con cada uno en su línea y una lista. Filtros por línea, estado y búsqueda por nombre o dorsal.",
+      "Marcador de la plantilla: jugadores, disponibles, lesionados, edad media y reparto por líneas.",
+      "Ficha de cada jugador con foto, dorsal, posición, pierna, altura, edad, brazalete de capitán y su trayectoria por temporadas.",
+      "Los gestores fichan jugadores eligiendo la posición en el campo, ven qué dorsales están libres y no se puede repetir dorsal ni capitán en una temporada.",
+      "Datos personales (teléfono, email, nacimiento y contacto de emergencia) y observaciones: solo los ven los gestores. Botones para llamar o escribir por WhatsApp.",
+      "Un jugador no necesita usuario para estar en la plantilla. Desde su ficha se vincula con su usuario o se le crea el acceso con contraseña provisional.",
+      "Cada jugador ve «Tu ficha» en el inicio y puede corregir sus datos de contacto. La foto de su perfil pasa a su ficha.",
+    ],
+  },
+  {
     version: "1.8.0",
     date: "2026-11-06",
     title: "Informes de Finanzas y exportación a Excel y PDF",

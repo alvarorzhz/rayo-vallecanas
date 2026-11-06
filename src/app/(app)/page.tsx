@@ -8,6 +8,9 @@ import { SalesTable } from "@/components/lottery/sales-table";
 import { fetchSales } from "@/lib/lottery/queries";
 import type { Campaign, Summary } from "@/lib/types";
 import { seasonOf, seasonRange, type FinanceSummary } from "@/lib/finance";
+import { fetchRoster } from "@/lib/squad-queries";
+import { LINES, LINE_TONE, POSITION_LABEL, lineOf, seasonSlug, shirtName } from "@/lib/squad";
+import { Jersey } from "@/components/squad/jersey";
 
 type Rank = { seller_id: string; full_name: string; shares: number; sold_cents: number };
 
@@ -57,6 +60,11 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     const r = seasonRange(season)!;
     fin = (await supabase.rpc("finance_summary", { p_from: r.from, p_to: r.to })).data as FinanceSummary | null;
   }
+
+  // Plantilla de la temporada y la ficha del propio usuario
+  const roster = s.can("squad") ? await fetchRoster(supabase, season) : [];
+  const squad = roster.filter((r) => r.status !== "left");
+  const me = roster.find((r) => r.player.user_id === s.user.id) ?? null;
 
   const firstName = s.profile.full_name.split(" ")[0];
 
@@ -165,11 +173,43 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </section>
       )}
 
+      {s.can("squad") && (
+        <section className="mb-6">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <h2 className="sport flex items-center gap-2 text-2xl font-black"><Shirt size={22} className="text-rojo" /> Plantilla {season}</h2>
+            <Link href="/plantilla" prefetch className="shrink-0 text-sm font-bold text-rojo">Ver plantilla →</Link>
+          </div>
+          <div className={`grid gap-3 ${me ? "lg:grid-cols-[minmax(0,1fr)_20rem]" : ""}`}>
+            <div className="grid grid-cols-3 gap-3">
+              <Stat label="Jugadores" value={squad.length} tone="dark" />
+              <Stat label="Disponibles" value={squad.filter((r) => r.status === "active").length} tone="red" />
+              <Stat label="Lesionados" value={squad.filter((r) => r.status === "injured").length} hint={squad.some((r) => r.status === "away") ? `${squad.filter((r) => r.status === "away").length} de baja temporal` : undefined} />
+              <div className="col-span-3 flex h-2.5 overflow-hidden rounded-full bg-black/10">
+                {LINES.map((l) => {
+                  const n = squad.filter((r) => lineOf(r.position) === l.key).length;
+                  return n > 0 && <span key={l.key} title={`${l.plural}: ${n}`} className={LINE_TONE[l.key].dot} style={{ width: `${(n / squad.length) * 100}%` }} />;
+                })}
+              </div>
+            </div>
+            {me && (
+              <Link href={`/plantilla/${me.player_id}?temporada=${seasonSlug(season)}`} prefetch
+                className="franja relative flex items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:-translate-y-0.5">
+                <span className="relative shrink-0"><Jersey number={me.number} goalkeeper={lineOf(me.position) === "GK"} size={64} /></span>
+                <span className="relative min-w-0">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-dorado">Tu ficha</span>
+                  <span className="sport block truncate text-2xl font-black leading-tight">{shirtName(me.player)}</span>
+                  <span className="block truncate text-xs text-white/60">{POSITION_LABEL[me.position]}</span>
+                </span>
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
+
       <h2 className="sport mb-3 text-2xl font-black">Próximamente</h2>
       <div className="grid gap-3 sm:grid-cols-2">
         {[
-          { icon: Shirt, t: "Plantilla", d: "Fichas de jugadores (fase 3)", show: true },
-          { icon: CalendarDays, t: "Partidos", d: "Calendario y convocatorias (fase 4)", show: true },
+          { icon: CalendarDays, t: "Partidos", d: "Calendario, convocatorias y estadísticas (fase 4)", show: true },
         ]
           .filter((x) => x.show)
           .map(({ icon: Icon, t, d }) => (

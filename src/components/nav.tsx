@@ -74,7 +74,7 @@ export function Sidebar({ items, name, role, version, avatar }: { items: NavItem
 
 export function BottomNav({ items }: { items: NavItem[] }) {
   const path = usePathname();
-  const visible = items.filter((i) => !i.soon && i.mobile !== false).slice(0, 5);
+  const visible = items.filter((i) => !i.soon && i.mobile !== false).slice(0, 6);
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-negro/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
