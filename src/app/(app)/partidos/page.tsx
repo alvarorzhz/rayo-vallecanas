@@ -11,7 +11,10 @@ import { FormStrip, MatchLine, Scoreboard } from "@/components/matches/match-bit
 import { Ball } from "@/components/squad/ball";
 import { CountUp } from "@/components/squad/count-up";
 import { ShareButton } from "@/components/matches/share-button";
+import { SyncButton } from "@/components/matches/league-forms";
+import { runLeagueSync } from "./actions";
 
+export const maxDuration = 60;
 export const metadata = { title: "Partidos" };
 
 type SP = { temporada?: string; ver?: string; eliminado?: string };
@@ -22,7 +25,11 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const supabase = await createClient();
   const season = seasonFromSlug(sp.temporada) ?? seasonOf();
   const view = sp.ver === "resultados" || sp.ver === "proximos" ? sp.ver : "todos";
-  const [matches, seasons] = await Promise.all([fetchMatches(supabase, season), fetchMatchSeasons(supabase)]);
+  const [matches, seasons, league] = await Promise.all([
+    fetchMatches(supabase, season),
+    fetchMatchSeasons(supabase),
+    supabase.from("league_sync").select("competition").eq("id", 1).maybeSingle().then((r) => r.data),
+  ]);
 
   const today = todayMadrid();
   const upcoming = matches.filter((m) => (m.status === "scheduled" && m.match_date >= today) || m.status === "postponed");
@@ -60,10 +67,19 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         title="Partidos"
         subtitle={<>Temporada <b>{season}</b>{current ? " · actual" : ""}</>}
         actions={<>
-          {(s.can("matches", "update") || canCreate) && <Link href="/partidos/rivales" prefetch className="btn-ghost"><Shield size={18} /> Rivales</Link>}
+          {s.can("matches", "update") && <Link href="/partidos/rivales" prefetch className="btn-ghost"><Shield size={18} /> Rivales</Link>}
+          {s.can("matches", "update") && <Link href="/partidos/liga" prefetch className="btn-ghost"><Trophy size={18} /> Liga</Link>}
           {canCreate && <Link href="/partidos/nuevo" prefetch className="btn-primary"><Plus size={18} /> Nuevo partido</Link>}
         </>}
       />
+      {s.can("matches", "update") && league && current && (
+        <div className="mb-4"><SyncButton action={runLeagueSync} className="btn-ghost text-sm" /></div>
+      )}
+      {s.can("matches", "update") && !league && current && (
+        <Link href="/partidos/liga" className="mb-4 flex items-center gap-2 rounded-xl bg-dorado/15 px-3 py-2 text-sm font-semibold ring-1 ring-dorado/40 hover:ring-dorado">
+          <Trophy size={16} className="text-dorado" /> Conecta la web de la liga para traer el calendario y los resultados solos →
+        </Link>
+      )}
       {sp.eliminado && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Partido eliminado del calendario.</p>}
 
       {hero && (
