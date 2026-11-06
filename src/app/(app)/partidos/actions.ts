@@ -252,3 +252,48 @@ export async function deleteRival(id: string): Promise<MatchState> {
   refresh();
   return { ok: "Rival eliminado" };
 }
+
+// ---------------------------------------------------------------- Liga (futormes)
+export type LeagueState = { error?: string; ok?: string; teams?: { id: string; name: string }[]; competition?: string } | undefined;
+
+export async function saveLeague(_: LeagueState, f: FormData): Promise<LeagueState> {
+  const s = await getSession();
+  if (!s.can("matches", "update")) return { error: "No tienes permiso para hacer esto" };
+  const { competitionFromUrl, fetchLeague } = await import("@/lib/league-sync");
+  const competition = competitionFromUrl(str(f, "url"));
+  if (!competition) return { error: "Pega la dirección de la competición en futormes (la que acaba en «?itm=…»)" };
+  try {
+    const league = await fetchLeague(competition);
+    let team = str(f, "team");
+    if (!team || !league.teams.some((t) => t.id === team)) team = league.teams.find((t) => /rayo\s+valleca/i.test(t.name))?.id ?? "";
+    if (!team) return { error: "No encuentro a Rayo Vallecañas en esa competición: elige nuestro equipo.", teams: league.teams, competition };
+    const supabase = await createClient();
+    const { error } = await supabase.from("league_sync").upsert({ id: 1, provider: "futormes", competition, team, competition_name: league.competitionName?.slice(0, 160) ?? null, updated_by: s.user.id });
+    if (error) throw error;
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+  revalidatePath("/partidos", "layout");
+  return { ok: "Liga guardada. Ya puedes sincronizar." };
+}
+
+export async function runLeagueSync(): Promise<LeagueState> {
+  const s = await getSession();
+  if (!s.can("matches", "update")) return { error: "No tienes permiso para hacer esto" };
+  try {
+    const { syncLeague } = await import("@/lib/league-sync");
+    const r = await syncLeague({ notifyExcept: s.user.id });
+    refresh();
+    const bits = [
+      r.matchesNew && `${r.matchesNew} ${r.matchesNew === 1 ? "partido nuevo" : "partidos nuevos"}`,
+      r.matchesUpdated && `${r.matchesUpdated} ${r.matchesUpdated === 1 ? "partido actualizado" : "partidos actualizados"}`,
+      r.rivalsNew && `${r.rivalsNew} ${r.rivalsNew === 1 ? "rival nuevo" : "rivales nuevos"}`,
+      r.playersNew && `${r.playersNew} ${r.playersNew === 1 ? "jugador nuevo" : "jugadores nuevos"} en la plantilla`,
+    ].filter(Boolean);
+    revalidatePath("/plantilla", "layout");
+    if (r.squadError) return { ok: `${bits.length ? `¡Listo! ${bits.join(", ")}.` : "Calendario al día."} La plantilla no se ha podido leer: ${r.squadError}` };
+    return { ok: bits.length ? `¡Listo! ${bits.join(", ")}.` : "Todo al día: no había cambios en la liga." };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
