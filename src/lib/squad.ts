@@ -25,7 +25,43 @@ export type Membership = {
   armband: "captain" | "vice" | null;
   joined_on: string | null;
   left_on: string | null;
+} & Stats;
+
+/** Estadísticas de una temporada (las apuntan los gestores; en la fase 4 saldrán de las actas). */
+export type Stats = {
+  apps: number;
+  starts: number;
+  goals: number;
+  assists: number;
+  yellows: number;
+  reds: number;
+  mvps: number;
+  conceded: number;
+  clean_sheets: number;
 };
+export const STAT_KEYS = ["apps", "starts", "goals", "assists", "yellows", "reds", "mvps", "conceded", "clean_sheets"] as const;
+export const STAT_LABEL: Record<keyof Stats, { short: string; long: string }> = {
+  apps: { short: "PJ", long: "Partidos jugados" },
+  starts: { short: "TIT", long: "De titular" },
+  goals: { short: "GOL", long: "Goles" },
+  assists: { short: "ASI", long: "Asistencias" },
+  yellows: { short: "TA", long: "Tarjetas amarillas" },
+  reds: { short: "TR", long: "Tarjetas rojas" },
+  mvps: { short: "MVP", long: "Mejor del partido" },
+  conceded: { short: "GC", long: "Goles encajados" },
+  clean_sheets: { short: "P0", long: "Porterías a cero" },
+};
+/** Las seis estadísticas del cromo: los porteros cambian goles y asistencias por porterías a cero y encajados. */
+export const cardStats = (line: Line): (keyof Stats)[] =>
+  line === "GK" ? ["apps", "clean_sheets", "conceded", "mvps", "yellows", "reds"] : ["apps", "goals", "assists", "mvps", "yellows", "reds"];
+
+export function sumStats(rows: Stats[]): Stats {
+  const t = Object.fromEntries(STAT_KEYS.map((k) => [k, 0])) as Stats;
+  for (const r of rows) for (const k of STAT_KEYS) t[k] += r[k] ?? 0;
+  return t;
+}
+/** "0,75" (dos decimales como mucho). */
+export const ratio = (a: number, b: number) => (b ? (Math.round((a / b) * 100) / 100).toString().replace(".", ",") : "–");
 
 export type PlayerPrivate = {
   player_id: string;
@@ -41,19 +77,16 @@ export type PlayerPrivate = {
 /** Jugador con su ficha de la temporada que se está viendo. */
 export type RosterEntry = Membership & { player: Player };
 
-/** Posiciones (abreviaturas habituales en España) agrupadas por línea, en orden de campo. */
+/** Posiciones de fútbol 7 (abreviaturas habituales), agrupadas por línea y en orden de campo. */
 export const POSITIONS: { code: string; label: string; line: Line }[] = [
   { code: "POR", label: "Portero", line: "GK" },
   { code: "LD", label: "Lateral derecho", line: "DEF" },
-  { code: "DFC", label: "Defensa central", line: "DEF" },
+  { code: "DFC", label: "Central", line: "DEF" },
   { code: "LI", label: "Lateral izquierdo", line: "DEF" },
-  { code: "MCD", label: "Mediocentro defensivo", line: "MID" },
-  { code: "MC", label: "Mediocentro", line: "MID" },
-  { code: "MD", label: "Interior derecho", line: "MID" },
-  { code: "MI", label: "Interior izquierdo", line: "MID" },
+  { code: "MCD", label: "Pivote", line: "MID" },
+  { code: "MD", label: "Banda derecha", line: "MID" },
+  { code: "MI", label: "Banda izquierda", line: "MID" },
   { code: "MCO", label: "Mediapunta", line: "MID" },
-  { code: "ED", label: "Extremo derecho", line: "FWD" },
-  { code: "EI", label: "Extremo izquierdo", line: "FWD" },
   { code: "DC", label: "Delantero centro", line: "FWD" },
 ];
 export const POSITION_LABEL: Record<string, string> = Object.fromEntries(POSITIONS.map((p) => [p.code, p.label]));

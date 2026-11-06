@@ -10,20 +10,26 @@ export function Pitch({ roster, hrefFor }: { roster: RosterEntry[]; hrefFor: (id
   const byLine = (l: Line) => roster.filter((r) => lineOf(r.position) === l);
   const rows = [...LINES].reverse();
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-[#1f7a3a] shadow-xl ring-4 ring-negro">
+    <div className="relative mx-auto max-w-2xl overflow-hidden rounded-3xl bg-[#1f7a3a] shadow-xl ring-4 ring-negro">
       {/* Césped a franjas */}
       <div aria-hidden className="absolute inset-0 bg-[repeating-linear-gradient(180deg,rgba(255,255,255,0.06)_0_56px,transparent_56px_112px)]" />
-      {/* Líneas del campo */}
-      <div aria-hidden className="absolute inset-3 rounded-lg border-2 border-white/60 sm:inset-4" />
-      <div aria-hidden className="absolute inset-x-3 top-1/2 border-t-2 border-white/60 sm:inset-x-4" />
-      <div aria-hidden className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/60 sm:h-36 sm:w-36" />
-      <div aria-hidden className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70" />
-      <div aria-hidden className="absolute left-1/2 top-3 h-20 w-1/2 -translate-x-1/2 border-2 border-t-0 border-white/60 sm:top-4 sm:w-2/5" />
-      <div aria-hidden className="absolute left-1/2 top-3 h-8 w-1/4 -translate-x-1/2 border-2 border-t-0 border-white/60 sm:top-4 sm:w-1/5" />
-      <div aria-hidden className="absolute bottom-3 left-1/2 h-20 w-1/2 -translate-x-1/2 border-2 border-b-0 border-white/60 sm:bottom-4 sm:w-2/5" />
-      <div aria-hidden className="absolute bottom-3 left-1/2 h-8 w-1/4 -translate-x-1/2 border-2 border-b-0 border-white/60 sm:bottom-4 sm:w-1/5" />
+      {/* Líneas de un campo de fútbol 7 (unos 60 × 40 m): áreas de 12 m, punto de penalti a 9 m y porterías de 6 m */}
+      <div aria-hidden className="absolute inset-3 sm:inset-4">
+        <div className="absolute inset-0 rounded-md border-2 border-white/60" />
+        <div className="absolute inset-x-0 top-1/2 border-t-2 border-white/60" />
+        <div className="absolute left-1/2 top-1/2 aspect-square w-[30%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/60" />
+        <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70" />
+        {(["top", "bottom"] as const).map((side) => (
+          <div key={side}>
+            <div className={`absolute left-1/2 h-[17%] w-[65%] -translate-x-1/2 border-2 border-white/60 ${side === "top" ? "top-0 border-t-0" : "bottom-0 border-b-0"}`} />
+            <div className={`absolute left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/70 ${side === "top" ? "top-[13%]" : "bottom-[13%]"}`} />
+            <div className={`absolute left-1/2 h-2 w-[15%] -translate-x-1/2 rounded-sm border-2 border-white/80 bg-white/10 ${side === "top" ? "-top-2.5" : "-bottom-2.5"}`} />
+          </div>
+        ))}
+        <span className="sport absolute bottom-[1%] right-[2%] text-[10px] font-black tracking-widest text-white/40">FÚTBOL 7</span>
+      </div>
 
-      <div className="relative flex min-h-[34rem] flex-col justify-between gap-4 px-3 py-8 sm:min-h-[40rem] sm:px-8">
+      <div className="relative flex min-h-[36rem] flex-col justify-between gap-4 px-3 py-8 sm:min-h-[44rem]  sm:px-8">
         {rows.map((l) => {
           const players = byLine(l.key);
           return (

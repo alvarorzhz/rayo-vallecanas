@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { tempPassword } from "@/lib/password";
-import { POSITIONS, seasonSlug } from "@/lib/squad";
+import { POSITIONS, STAT_KEYS, STAT_LABEL, seasonSlug } from "@/lib/squad";
 import type { AvatarState } from "@/app/(app)/perfil/actions";
 
 export type ActionState = { error?: string; ok?: string; password?: string; name?: string; phone?: string | null; email?: string } | undefined;
@@ -72,7 +72,16 @@ function memberFromForm(f: FormData, prevStatus?: string) {
   const status = ["active", "injured", "away", "left"].includes(str(f, "status")) ? str(f, "status") : "active";
   const armband = ["captain", "vice"].includes(str(f, "armband")) ? str(f, "armband") : null;
   const today = new Date().toISOString().slice(0, 10);
+  const stats: Record<string, number> = {};
+  for (const k of STAT_KEYS) {
+    if (!f.has(k)) continue;
+    const n = Number(str(f, k) || 0);
+    if (!Number.isInteger(n) || n < 0 || n > 999) throw new Error(`${STAT_LABEL[k].long}: número no válido`);
+    stats[k] = n;
+  }
+  if (stats.starts != null && stats.apps != null && stats.starts > stats.apps) throw new Error("No puede tener más partidos de titular que jugados");
   return {
+    ...stats,
     season,
     number,
     position,

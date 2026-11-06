@@ -7,6 +7,7 @@ import { fetchRoster, fetchSeasons } from "@/lib/squad-queries";
 import {
   FOOT_LABEL, LINES, LINE_TONE, STATUSES, STATUS_LABEL, STATUS_TONE, POSITION_LABEL,
   fullName, lineFromSlug, lineOf, seasonFromSlug, seasonSlug, shirtName, statusFromSlug,
+  type RosterEntry,
 } from "@/lib/squad";
 import { Empty, PageHeader } from "@/components/ui";
 import { Armband, PlayerCard, PositionChip } from "@/components/squad/player-card";
@@ -93,6 +94,8 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         )}
       </section>
 
+      <Leaders roster={inSquad} hrefFor={hrefFor} />
+
       {/* Vista, temporada y filtros */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex rounded-xl bg-white p-1 shadow-sm ring-1 ring-black/5">
@@ -150,7 +153,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         <div className="card overflow-x-auto p-0 sm:p-0">
           <table className="table">
             <thead>
-              <tr><th className="w-10 text-center">#</th><th>Jugador</th><th>Posición</th><th className="hidden sm:table-cell">Pierna</th><th className="hidden sm:table-cell">Estado</th></tr>
+              <tr><th className="w-10 text-center">#</th><th>Jugador</th><th>Posición</th><th className="hidden text-center md:table-cell" title="Partidos jugados">PJ</th><th className="hidden text-center md:table-cell" title="Goles">GOL</th><th className="hidden text-center md:table-cell" title="Asistencias">ASI</th><th className="hidden lg:table-cell">Pierna</th><th className="hidden sm:table-cell">Estado</th></tr>
             </thead>
             <tbody>
               {shown.map((r) => (
@@ -175,7 +178,10 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
                     </Link>
                   </td>
                   <td><PositionChip code={r.position} /> <span className="hidden text-xs text-negro/60 md:inline">{POSITION_LABEL[r.position]}</span></td>
-                  <td className="hidden text-negro/70 sm:table-cell">{r.player.foot ? FOOT_LABEL[r.player.foot] : "—"}</td>
+                  <td className="hidden text-center font-bold tabular-nums md:table-cell">{r.apps}</td>
+                  <td className="hidden text-center font-bold tabular-nums md:table-cell">{r.goals}</td>
+                  <td className="hidden text-center font-bold tabular-nums md:table-cell">{r.assists}</td>
+                  <td className="hidden text-negro/70 lg:table-cell">{r.player.foot ? FOOT_LABEL[r.player.foot] : "—"}</td>
                   <td className="hidden sm:table-cell"><span className={`badge ${STATUS_TONE[r.status]}`}>{STATUS_LABEL[r.status]}</span></td>
                 </tr>
               ))}
@@ -183,7 +189,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
           </table>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-6 md:grid-cols-4 xl:grid-cols-5">
           {shown.map((r) => <PlayerCard key={r.id} entry={r} href={hrefFor(r.player_id)} />)}
         </div>
       )}
@@ -201,5 +207,43 @@ function Chip({ href, on, dot, children }: { href: string; on: boolean; dot?: st
       className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold transition ${on ? "bg-negro text-white" : "bg-white text-negro/70 ring-1 ring-black/10 hover:ring-negro/30"}`}>
       {dot && <span className={`h-2 w-2 rounded-full ${dot}`} />}{children}
     </Link>
+  );
+}
+
+/** Líderes de la temporada: goleador, asistente, más partidos y más veces mejor del partido. */
+function Leaders({ roster, hrefFor }: { roster: RosterEntry[]; hrefFor: (id: string) => string }) {
+  const cats: { key: "goals" | "assists" | "apps" | "mvps"; label: string; unit: string }[] = [
+    { key: "goals", label: "Pichichi", unit: "goles" },
+    { key: "assists", label: "Asistente", unit: "asist." },
+    { key: "apps", label: "Más partidos", unit: "PJ" },
+    { key: "mvps", label: "MVP", unit: "veces" },
+  ];
+  const top = cats
+    .map((c) => ({ ...c, r: [...roster].sort((a, b) => b[c.key] - a[c.key] || (a.number ?? 99) - (b.number ?? 99))[0] }))
+    .filter((c) => c.r && c.r[c.key] > 0);
+  if (!top.length) return null;
+  return (
+    <section className="mb-6">
+      <h2 className="sport mb-3 text-2xl font-black">Líderes de la temporada</h2>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {top.map(({ key, label, unit, r }) => (
+          <Link key={key} href={hrefFor(r.player_id)} prefetch
+            className="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-dorado">
+            <span aria-hidden className="absolute -right-3 top-0 h-full w-5 -skew-x-[20deg] bg-dorado" />
+            {r.player.photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={r.player.photo_url} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-dorado" />
+            ) : (
+              <span className="shrink-0"><Jersey number={r.number} goalkeeper={lineOf(r.position) === "GK"} size={46} /></span>
+            )}
+            <span className="relative min-w-0">
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-negro/50">{label}</span>
+              <span className="sport block truncate text-lg font-black leading-tight">{shirtName(r.player)}</span>
+              <span className="block text-xs text-negro/60"><b className="sport text-base text-rojo">{r[key]}</b> {unit}</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }

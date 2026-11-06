@@ -6,14 +6,14 @@ import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
 import { fecha, phoneE164 } from "@/lib/format";
 import {
-  ARMBAND_LABEL, FOOT_LABEL, LINE_LABEL, LINE_TONE, POSITION_LABEL, STATUS_LABEL, STATUS_TONE,
-  ageOf, fullName, lineOf, seasonFromSlug, seasonSlug, shirtName,
+  ARMBAND_LABEL, FOOT_LABEL, LINE_LABEL, STATUS_LABEL, STATUS_TONE,
+  ageOf, fullName, lineOf, ratio, seasonFromSlug, seasonSlug, shirtName, sumStats,
   type Membership, type Player, type PlayerPrivate,
 } from "@/lib/squad";
 import { Avatar } from "@/components/avatar";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { Jersey } from "@/components/squad/jersey";
-import { Armband, PositionChip } from "@/components/squad/player-card";
+import { Armband, FutCard, PositionChip } from "@/components/squad/player-card";
 import { CreateAccessForm, DeletePlayerForm, LinkUserForm, MyContactForm } from "@/components/squad/squad-forms";
 import { createAccess, deletePlayer, linkUser, removePlayerPhoto, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
 
@@ -44,6 +44,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
   const line = member ? lineOf(member.position) : null;
   const age = ageOf(contact?.birth_date);
   const back = `/plantilla?temporada=${seasonSlug(season)}`;
+  const total = sumStats(seasons);
 
   // Usuario vinculado y usuarios libres para vincular (solo gestores con acceso a Usuarios)
   const canUsers = s.can("users", "read") && isManager;
@@ -76,19 +77,18 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
             {member.number}
           </span>
         )}
-        <div className="relative flex flex-col items-center gap-5 p-6 sm:flex-row sm:items-end sm:p-8">
-          <div className="relative shrink-0">
-            {player.photo_url ? (
+        <div className="relative flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-center sm:p-8">
+          <div className="w-52 shrink-0 drop-shadow-[0_18px_24px_rgba(0,0,0,0.6)] sm:w-60">
+            {member ? (
+              <FutCard entry={{ ...member, player }} size="lg" />
+            ) : player.photo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={player.photo_url} alt="" className="h-36 w-36 rounded-3xl object-cover shadow-2xl ring-4 ring-dorado sm:h-44 sm:w-44" />
+              <img src={player.photo_url} alt="" className="aspect-square w-full rounded-3xl object-cover ring-4 ring-dorado" />
             ) : (
-              <div className="flex h-36 w-36 items-center justify-center rounded-3xl bg-white/5 ring-4 ring-dorado/60 sm:h-44 sm:w-44">
-                <Jersey number={member?.number ?? null} goalkeeper={line === "GK"} size={110} />
-              </div>
+              <div className="flex aspect-square w-full items-center justify-center rounded-3xl bg-white/5 ring-4 ring-dorado/60"><Jersey number={null} size={120} /></div>
             )}
-            {member?.armband && <Armband kind={member.armband} className="absolute -right-2 -top-2 h-8 min-w-8 text-sm" />}
           </div>
-          <div className="min-w-0 text-center sm:text-left">
+          <div className="min-w-0 flex-1 text-center sm:text-left">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
               {member && <PositionChip code={member.position} long />}
               {member && (
@@ -98,65 +98,111 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                   {STATUS_LABEL[member.status]}
                 </span>
               )}
+              {member?.armband && <span className="badge bg-rojo text-white">{ARMBAND_LABEL[member.armband]}</span>}
             </div>
             <h1 className="sport mt-2 text-5xl leading-[0.85] font-black sm:text-6xl">
               {member?.number != null && <span className="mr-2 text-dorado">{member.number}</span>}
               {shirtName(player)}
             </h1>
             <p className="mt-2 text-white/70">{fullName(player)}</p>
-            {member && <p className="mt-1 text-xs text-white/50">Temporada {member.season}{member.armband ? ` · ${ARMBAND_LABEL[member.armband]}` : ""}</p>}
+            {/* Perfil del jugador */}
+            <dl className="mt-5 grid max-w-xl grid-cols-2 gap-x-4 gap-y-3 text-left sm:grid-cols-3">
+              {[
+                ["Línea", line ? LINE_LABEL[line] : "–"],
+                ["Pierna", player.foot ? FOOT_LABEL[player.foot] : "–"],
+                ["Altura", player.height_cm ? `${(player.height_cm / 100).toFixed(2).replace(".", ",")} m` : "–"],
+                ["Edad", age != null ? `${age} años` : "–"],
+                ["En el club", player.joined_club_on ? `desde ${player.joined_club_on.slice(0, 4)}` : "–"],
+                ["Temporadas", seasons.length || "–"],
+              ].map(([k, v]) => (
+                <div key={k} className="border-l-2 border-dorado/70 pl-2">
+                  <dt className="text-[10px] font-bold uppercase tracking-wider text-white/50">{k}</dt>
+                  <dd className="sport truncate text-lg font-black leading-tight">{v}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
           {isManager && (
-            <div className="flex gap-2 sm:ml-auto sm:self-start">
+            <div className="flex gap-2 sm:self-start">
               <Link href={`/plantilla/${id}/editar?temporada=${seasonSlug(season)}`} prefetch className="btn-primary"><Pencil size={16} /> Editar</Link>
             </div>
           )}
         </div>
       </section>
 
-      {/* Datos deportivos */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {[
-          ["Dorsal", member?.number ?? "–"],
-          ["Línea", line ? LINE_LABEL[line] : "–"],
-          ["Pierna", player.foot ? FOOT_LABEL[player.foot] : "–"],
-          ["Altura", player.height_cm ? `${(player.height_cm / 100).toFixed(2).replace(".", ",")} m` : "–"],
-          ["Edad", age != null ? `${age} años` : "–"],
-          ["Temporadas", seasons.length || "–"],
-        ].map(([k, v], i) => (
-          <div key={k} className="relative overflow-hidden rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-            <span aria-hidden className={`absolute -right-3 top-0 h-full w-5 -skew-x-[20deg] ${i === 0 ? "bg-rojo" : i === 1 && line ? LINE_TONE[line].dot : "bg-negro/10"}`} />
-            <div className="relative text-[11px] font-bold uppercase tracking-wider text-negro/50">{k}</div>
-            <div className="sport relative mt-1 text-2xl font-black leading-none sm:text-3xl">{v}</div>
+      {/* Estadísticas de la temporada */}
+      {member && (
+        <section className="mb-6">
+          <h2 className="sport mb-3 text-2xl font-black">Temporada {member.season}</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+            {(line === "GK"
+              ? [["Partidos", member.apps, `${member.starts} de titular`], ["Porterías a cero", member.clean_sheets, null], ["Encajados", member.conceded, `${ratio(member.conceded, member.apps)} por partido`], ["MVP", member.mvps, "mejor del partido"]]
+              : [["Partidos", member.apps, `${member.starts} de titular`], ["Goles", member.goals, `${ratio(member.goals, member.apps)} por partido`], ["Asistencias", member.assists, null], ["MVP", member.mvps, "mejor del partido"]]
+            ).map(([k, v, hint], i) => (
+              <div key={String(k)} className={`relative col-span-1 overflow-hidden rounded-2xl p-4 shadow-sm sm:col-span-1 lg:col-span-2 ${i === 1 ? "bg-gradient-to-br from-rojo to-rojo-oscuro text-white" : i === 0 ? "bg-gradient-to-br from-negro-2 to-negro text-white" : "bg-white ring-1 ring-black/5"}`}>
+                <span aria-hidden className={`absolute -right-3 top-0 h-full w-6 -skew-x-[20deg] ${i === 1 ? "bg-white/25" : i === 0 ? "bg-rojo" : "bg-dorado"}`} />
+                <div className={`relative text-[11px] font-bold uppercase tracking-wider ${i < 2 ? "text-white/70" : "text-negro/50"}`}>{k}</div>
+                <div className="sport relative mt-1 text-4xl leading-none font-black sm:text-5xl">{v}</div>
+                {hint && <div className={`relative mt-1 text-xs ${i < 2 ? "text-white/70" : "text-negro/50"}`}>{hint}</div>}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+          <div className="mt-3 flex flex-wrap gap-2 text-sm">
+            <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5"><span className="inline-block h-3.5 w-2.5 rounded-sm bg-amber-400" /> {member.yellows} {member.yellows === 1 ? "amarilla" : "amarillas"}</span>
+            <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5"><span className="inline-block h-3.5 w-2.5 rounded-sm bg-rojo" /> {member.reds} {member.reds === 1 ? "roja" : "rojas"}</span>
+            {line !== "GK" && member.apps > 0 && <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5">{member.goals + member.assists} goles + asistencias</span>}
+            {member.apps > 0 && <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5">Titular en el {Math.round((member.starts / member.apps) * 100)}%</span>}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
-          {/* Trayectoria en el club */}
+          {/* Trayectoria y estadísticas por temporada */}
           <section className="card">
-            <h2 className="mb-3">Trayectoria en el Rayo</h2>
+            <h2 className="mb-1">Trayectoria en el Rayo</h2>
             {player.joined_club_on && <p className="mb-3 text-sm text-negro/60">En el club desde el <b>{fecha(player.joined_club_on)}</b>.</p>}
             {seasons.length ? (
-              <ol className="relative space-y-3 border-l-2 border-dashed border-black/10 pl-5">
-                {seasons.map((m) => (
-                  <li key={m.id} className="relative">
-                    <span aria-hidden className={`absolute -left-[1.64rem] top-1 h-3.5 w-3.5 rounded-full ring-4 ring-white ${LINE_TONE[lineOf(m.position)].dot}`} />
-                    <Link href={`/plantilla/${id}?temporada=${seasonSlug(m.season)}`} className={`flex flex-wrap items-center gap-2 rounded-xl p-2 transition hover:bg-gris ${m.season === season ? "bg-gris" : ""}`}>
-                      <span className="sport w-16 text-lg font-black">{m.season}</span>
-                      <span className="sport flex h-8 min-w-8 items-center justify-center rounded-md bg-negro px-1 text-base font-black text-white">{m.number ?? "–"}</span>
-                      <PositionChip code={m.position} />
-                      <span className="text-sm text-negro/60">{POSITION_LABEL[m.position]}</span>
-                      <span className={`badge ml-auto ${STATUS_TONE[m.status]}`}>{STATUS_LABEL[m.status]}</span>
-                      {m.armband && <Armband kind={m.armband} />}
-                    </Link>
-                  </li>
-                ))}
-              </ol>
+              <div className="-mx-4 overflow-x-auto sm:-mx-5">
+                <table className="table min-w-[34rem]">
+                  <thead>
+                    <tr>
+                      <th className="pl-4 sm:pl-5">Temporada</th><th className="text-center">#</th><th>Pos.</th>
+                      {(line === "GK" ? ["PJ", "TIT", "P0", "GC", "MVP", "TA", "TR"] : ["PJ", "TIT", "GOL", "ASI", "MVP", "TA", "TR"]).map((h) => <th key={h} className="text-center">{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {seasons.map((m) => (
+                      <tr key={m.id} className={m.season === season ? "bg-gris" : ""}>
+                        <td className="pl-4 sm:pl-5">
+                          <Link href={`/plantilla/${id}?temporada=${seasonSlug(m.season)}`} className="sport text-base font-black hover:text-rojo">{m.season}</Link>
+                          {m.status !== "active" && <span className={`badge ml-2 ${STATUS_TONE[m.status]}`}>{STATUS_LABEL[m.status]}</span>}
+                          {m.armband && <Armband kind={m.armband} className="ml-1 h-5 min-w-5 text-[10px]" />}
+                        </td>
+                        <td className="text-center"><span className="sport font-black">{m.number ?? "–"}</span></td>
+                        <td><PositionChip code={m.position} /></td>
+                        {(line === "GK" ? [m.apps, m.starts, m.clean_sheets, m.conceded, m.mvps, m.yellows, m.reds] : [m.apps, m.starts, m.goals, m.assists, m.mvps, m.yellows, m.reds]).map((v, i) => (
+                          <td key={i} className="text-center font-semibold tabular-nums">{v}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                  {seasons.length > 1 && (
+                    <tfoot>
+                      <tr className="bg-negro text-white">
+                        <td className="sport rounded-bl-xl py-2 pl-4 font-black sm:pl-5" colSpan={3}>Total en el club</td>
+                        {(line === "GK" ? [total.apps, total.starts, total.clean_sheets, total.conceded, total.mvps, total.yellows, total.reds] : [total.apps, total.starts, total.goals, total.assists, total.mvps, total.yellows, total.reds]).map((v, i) => (
+                          <td key={i} className="sport py-2 text-center text-base font-black tabular-nums">{v}</td>
+                        ))}
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
             ) : (
               <p className="text-sm text-negro/50">Aún no está en ninguna plantilla.</p>
             )}
+            <p className="mt-3 text-xs text-negro/50">PJ partidos · TIT titular · {line === "GK" ? "P0 porterías a cero · GC goles encajados" : "GOL goles · ASI asistencias"} · MVP mejor del partido · TA/TR tarjetas. Con los partidos (fase 4) se calcularán solas.</p>
             {isManager && !seasons.some((m) => m.season === seasonOf()) && (
               <Link href={`/plantilla/${id}/editar?temporada=${seasonSlug(seasonOf())}`} className="btn-ghost mt-4">Añadir a la temporada {seasonOf()}</Link>
             )}

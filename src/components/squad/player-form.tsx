@@ -1,14 +1,13 @@
 "use client";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { FormMessage } from "@/components/form-message";
-import { SubmitButton } from "@/components/submit-button";
-import { LINE_TONE, POSITIONS, POSITION_LABEL, STATUSES, lineOf, type Membership, type Player, type PlayerPrivate } from "@/lib/squad";
+import { LINE_TONE, POSITIONS, POSITION_LABEL, STATUSES, STAT_KEYS, STAT_LABEL, lineOf, type Membership, type Player, type PlayerPrivate } from "@/lib/squad";
 import type { ActionState } from "@/app/(app)/plantilla/actions";
 
 /** Situación de cada posición en el campo (en %, atacando hacia arriba). */
 const SPOTS: Record<string, [number, number]> = {
-  POR: [50, 89], LI: [15, 69], DFC: [50, 73], LD: [85, 69], MCD: [50, 58],
-  MI: [17, 45], MC: [50, 46], MD: [83, 45], MCO: [50, 33], EI: [17, 19], DC: [50, 13], ED: [83, 19],
+  POR: [50, 88], LI: [17, 70], DFC: [50, 73], LD: [83, 70], MCD: [50, 56],
+  MI: [16, 43], MD: [84, 43], MCO: [50, 37], DC: [50, 16],
 };
 
 /** Campo para elegir la posición tocando su sitio. */
@@ -19,9 +18,9 @@ export function PositionPicker({ value, onChange }: { value: string; onChange: (
         <div aria-hidden className="absolute inset-0 bg-[repeating-linear-gradient(180deg,rgba(255,255,255,0.07)_0_28px,transparent_28px_56px)]" />
         <div aria-hidden className="absolute inset-2 rounded border-2 border-white/50" />
         <div aria-hidden className="absolute inset-x-2 top-1/2 border-t-2 border-white/50" />
-        <div aria-hidden className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/50" />
-        <div aria-hidden className="absolute bottom-2 left-1/2 h-12 w-1/2 -translate-x-1/2 border-2 border-b-0 border-white/50" />
-        <div aria-hidden className="absolute left-1/2 top-2 h-12 w-1/2 -translate-x-1/2 border-2 border-t-0 border-white/50" />
+        <div aria-hidden className="absolute left-1/2 top-1/2 aspect-square w-[28%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/50" />
+        <div aria-hidden className="absolute bottom-2 left-1/2 h-[16%] w-[62%] -translate-x-1/2 border-2 border-b-0 border-white/50" />
+        <div aria-hidden className="absolute left-1/2 top-2 h-[16%] w-[62%] -translate-x-1/2 border-2 border-t-0 border-white/50" />
         {POSITIONS.map((p) => {
           const [x, y] = SPOTS[p.code];
           const on = value === p.code;
@@ -61,13 +60,20 @@ export function PlayerForm({
   canCreate?: boolean;
 }) {
   const [state, formAction] = useActionState(action, undefined);
+  const [pending, start] = useTransition();
+  // Se envía a mano (sin action en el form) para que React no vacíe los campos si hay un error
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+    start(() => formAction(fd));
+  }
   const [position, setPosition] = useState(member?.position ?? "");
   const [number, setNumber] = useState(member?.number?.toString() ?? "");
   const taken = usedNumbers.find((u) => String(u.number) === number);
   const isNew = !player;
 
   return (
-    <form action={formAction} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <input type="hidden" name="season" value={season} />
       <input type="hidden" name="position" value={position} />
       <div className="space-y-6">
@@ -120,6 +126,21 @@ export function PlayerForm({
         </section>
 
         <section className="card space-y-4">
+          <h2>Estadísticas {season}</h2>
+          <p className="text-xs text-negro/50">De momento se apuntan a mano. Cuando lleguen los partidos (fase 4) se calcularán solas con cada acta.</p>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+            {STAT_KEYS.filter((k) => (lineOf(position || "DC") === "GK" ? true : k !== "conceded" && k !== "clean_sheets")).map((k) => (
+              <div key={k}>
+                <label className="label truncate" htmlFor={`st-${k}`} title={STAT_LABEL[k].long}>
+                  <span className="sport mr-1 font-black">{STAT_LABEL[k].short}</span><span className="text-xs font-normal text-negro/50">{STAT_LABEL[k].long}</span>
+                </label>
+                <input id={`st-${k}`} name={k} type="number" min={0} max={999} inputMode="numeric" defaultValue={member?.[k] ?? 0} className="input sport text-xl font-black" />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="card space-y-4">
           <h2>Contacto</h2>
           <p className="text-xs text-negro/50">Solo lo ven los gestores y el propio jugador.</p>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -157,9 +178,9 @@ export function PlayerForm({
         <div className="space-y-2 lg:sticky lg:top-6">
           <FormMessage state={state} />
           {!position && <p className="text-center text-xs text-negro/50">Elige su posición en el campo para poder guardar.</p>}
-          <SubmitButton disabled={!position || Boolean(taken)} className="btn-primary w-full py-3 text-lg">{isNew ? "Fichar jugador" : "Guardar cambios"}</SubmitButton>
+          <button type="submit" disabled={pending || !position || Boolean(taken)} className="btn-primary w-full py-3 text-lg">{pending ? "Guardando…" : isNew ? "Fichar jugador" : "Guardar cambios"}</button>
           {isNew && canCreate && (
-            <SubmitButton name="again" value="1" disabled={!position || Boolean(taken)} className="btn-ghost w-full">Guardar y fichar otro</SubmitButton>
+            <button type="submit" name="again" value="1" disabled={pending || !position || Boolean(taken)} className="btn-ghost w-full">Guardar y fichar otro</button>
           )}
         </div>
       </div>
