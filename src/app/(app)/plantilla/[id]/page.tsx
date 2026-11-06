@@ -14,8 +14,8 @@ import { Avatar } from "@/components/avatar";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { Jersey } from "@/components/squad/jersey";
 import { Armband, FutCard, PositionChip } from "@/components/squad/player-card";
-import { CreateAccessForm, DeletePlayerForm, LinkUserForm, MyContactForm } from "@/components/squad/squad-forms";
-import { createAccess, deletePlayer, linkUser, removePlayerPhoto, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
+import { CreateAccessForm, DeletePlayerForm, LinkUserForm, MyContactForm, RetireForm } from "@/components/squad/squad-forms";
+import { createAccess, deletePlayer, linkUser, rejoinPlayer, removePlayerPhoto, retirePlayer, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
 
 export const metadata = { title: "Ficha del jugador" };
 
@@ -178,6 +178,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                           <Link href={`/plantilla/${id}?temporada=${seasonSlug(m.season)}`} className="sport text-base font-black hover:text-rojo">{m.season}</Link>
                           {m.status !== "active" && <span className={`badge ml-2 ${STATUS_TONE[m.status]}`}>{STATUS_LABEL[m.status]}</span>}
                           {m.armband && <Armband kind={m.armband} className="ml-1 h-5 min-w-5 text-[10px]" />}
+                          {m.status === "left" && m.left_on && <span className="block text-[11px] text-negro/50">Baja el {fecha(m.left_on)}</span>}
                         </td>
                         <td className="text-center"><span className="sport font-black">{m.number ?? "–"}</span></td>
                         <td><PositionChip code={m.position} /></td>
@@ -244,6 +245,19 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
               <h2 className="mb-2">Tu foto</h2>
               <p className="mb-3 text-sm text-negro/60">La foto de tu ficha es la de tu perfil.</p>
               <Link href="/perfil" className="btn-ghost"><Camera size={16} /> Cambiar mi foto</Link>
+            </section>
+          )}
+
+          {isManager && member && (
+            <section className="card">
+              <h2 className="mb-2">Situación en {member.season}</h2>
+              <p className="mb-3 text-sm text-negro/60">
+                {member.status === "left"
+                  ? <>Se fue del equipo{member.left_on ? <> el <b>{fecha(member.left_on)}</b></> : ""}. Sus estadísticas y su historia se conservan.</>
+                  : "Si deja el equipo, dale de baja: deja libre su dorsal y su historia se conserva."}
+              </p>
+              <RetireForm retire={retirePlayer.bind(null, id, member.season)} rejoin={rejoinPlayer.bind(null, id, member.season)}
+                left={member.status === "left"} today={new Date().toISOString().slice(0, 10)} />
             </section>
           )}
 

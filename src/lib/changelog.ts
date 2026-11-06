@@ -7,6 +7,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "2.1.0",
+    date: "2026-11-06",
+    title: "Temporadas e historia de la plantilla",
+    changes: [
+      "Preparar la temporada nueva en un momento: eliges quién sigue y se copian sus posiciones, dorsales y capitanes. Las estadísticas empiezan a cero.",
+      "Al preparar la temporada también puedes recuperar a jugadores que se fueron o a exjugadores de otros años.",
+      "Bajas con fecha desde la ficha del jugador («Dar de baja»): deja libre su dorsal y su historia se conserva. Si vuelve, «Reincorporar».",
+      "Nueva página «Historia» en Plantilla: cada temporada con sus jugadores, fichajes, bajas, goles, pichichi y capitán.",
+      "Récords del club (máximo goleador, más partidos, más asistencias y más temporadas), los dorsales que ha llevado cada jugador y la lista de exjugadores.",
+    ],
+  },
+  {
     version: "2.0.0",
     date: "2026-11-06",
     title: "Plantilla: las fichas de todo el equipo",
