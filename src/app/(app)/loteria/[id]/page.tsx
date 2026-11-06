@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, ArchiveRestore, Download, Pencil, ShoppingCart, Users, Grid3x3, List, Trophy, ShieldAlert } from "lucide-react";
+import { Archive, ArchiveRestore, Download, Pencil, ShoppingCart, Users, Grid3x3, List, Trophy, ShieldAlert, Wallet } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha, NUMBERING_MODE_LABEL } from "@/lib/format";
@@ -8,6 +8,8 @@ import { CampaignBadge, Empty, PageHeader, Progress, Stat } from "@/components/u
 import { SalesTable } from "@/components/lottery/sales-table";
 import { fetchNumbers, fetchSales, type NumberRow } from "@/lib/lottery/queries";
 import { DeleteCampaignForm, RaffleDrawForm } from "@/components/lottery/client-forms";
+import { ImportCampaignButton } from "@/components/finance/client-forms";
+import { importCampaign } from "@/app/(app)/finanzas/actions";
 import { archiveCampaign, deleteCampaign, drawRaffle, setCampaignStatus, setWinningPrize } from "../actions";
 import type { Campaign, Summary } from "@/lib/types";
 
@@ -35,6 +37,10 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
     fetchSales(supabase, { campaignId: id, sellerId: isAdmin ? undefined : s.user.id, limit: 8 }),
     isAdmin ? supabase.rpc("lottery_seller_ranking", { p_campaign_id: id }).then((r) => (r.data ?? []) as Rank[]) : Promise.resolve([] as Rank[]),
   ]);
+
+  const finance = isAdmin && s.can("finances")
+    ? ((await supabase.rpc("finance_campaign_status", { p_campaign_id: id })).data as { paid_cents: number; transferred_cents: number; last_at: string | null } | null)
+    : null;
 
   const raffle = c.kind === "raffle";
   const toSell = Math.max(0, summary.total - summary.sold - summary.voided);
@@ -156,6 +162,26 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
               ))}
             </>
           )}
+        </div>
+      )}
+
+      {finance && (
+        <div className="card mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="mb-1 flex items-center gap-2 font-bold"><Wallet size={18} className="text-rojo" /> Finanzas</h2>
+            <p className="text-sm text-negro/60">
+              Cobrado: <b>{euros(finance.paid_cents)}</b> · Ya en Finanzas: <b>{euros(finance.transferred_cents)}</b>
+              {finance.last_at && <> · último paso el {fecha(finance.last_at)}</>}
+            </p>
+          </div>
+          {finance.paid_cents !== finance.transferred_cents && s.can("finances", "create") ? (
+            <ImportCampaignButton action={importCampaign.bind(null, id)}
+              label={finance.paid_cents > finance.transferred_cents
+                ? `Pasar ${euros(finance.paid_cents - finance.transferred_cents)} a Finanzas`
+                : `Apuntar devolución de ${euros(finance.transferred_cents - finance.paid_cents)}`} />
+          ) : finance.paid_cents > 0 ? (
+            <span className="badge bg-green-100 text-green-800">Todo pasado a Finanzas</span>
+          ) : null}
         </div>
       )}
 
