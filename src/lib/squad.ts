@@ -156,3 +156,16 @@ export function sortRoster<T extends { position: string; number: number | null; 
 /** Temporada en la URL: "2026/27" <-> "2026-27". */
 export const seasonSlug = (s: string) => s.replace("/", "-");
 export const seasonFromSlug = (s?: string | null) => (s && /^\d{4}-\d{2}$/.test(s) ? s.replace("-", "/") : null);
+
+/** "2026/27" -> "2027/28" */
+export const nextSeason = (s: string) => {
+  const y = Number(s.slice(0, 4)) + 1;
+  return `${y}/${String((y + 1) % 100).padStart(2, "0")}`;
+};
+/** "2026/27" -> "2025/26" */
+export const prevSeason = (s: string) => {
+  const y = Number(s.slice(0, 4)) - 1;
+  return `${y}/${String((y + 1) % 100).padStart(2, "0")}`;
+};
+/** Primer día de la temporada: "2026/27" -> "2026-09-01" */
+export const seasonStart = (s: string) => `${s.slice(0, 4)}-09-01`;

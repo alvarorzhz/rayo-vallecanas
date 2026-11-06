@@ -258,3 +258,79 @@ export async function updateMyContact(_: ActionState, f: FormData): Promise<Acti
   refresh();
   return { ok: "¡Datos guardados!" };
 }
+
+// ------------------------------------------------------------------ Temporadas
+
+/**
+ * Prepara una temporada copiando a los jugadores elegidos de otra: misma posición y,
+ * si se pide, mismo dorsal y brazalete. Las estadísticas empiezan a cero.
+ */
+export async function prepareSeason(_: ActionState, f: FormData): Promise<ActionState> {
+  const from = str(f, "from");
+  const to = str(f, "to");
+  if (!/^\d{4}\/\d{2}$/.test(from) || !/^\d{4}\/\d{2}$/.test(to) || from === to) return { error: "Temporadas no válidas" };
+  const ids = f.getAll("player").map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x));
+  if (!ids.length) return { error: "Elige al menos un jugador" };
+  const keepNumbers = f.get("keep_numbers") === "on";
+  const keepArmbands = f.get("keep_armbands") === "on";
+
+  const supabase = await createClient();
+  const { data: canCreate } = await supabase.rpc("has_perm", { p_module: "squad", p_action: "create" });
+  if (!canCreate) return { error: "No tienes permiso para preparar temporadas" };
+  // Lo último de cada jugador (de la temporada de origen o, si no estaba, de su última temporada)
+  const [{ data: rows }, { data: already }] = await Promise.all([
+    supabase.from("squad_members").select("player_id, season, number, position, status, armband").in("player_id", ids).lte("season", from).order("season", { ascending: false }),
+    supabase.from("squad_members").select("player_id, number, armband").eq("season", to),
+  ]);
+  const inTarget = new Set((already ?? []).map((r) => r.player_id));
+  const usedNumbers = new Set((already ?? []).map((r) => r.number).filter((n) => n != null));
+  const usedArmbands = new Set((already ?? []).map((r) => r.armband).filter(Boolean));
+  const last = new Map<string, NonNullable<typeof rows>[number]>();
+  for (const r of rows ?? []) if (!last.has(r.player_id)) last.set(r.player_id, r);
+
+  const start = `${to.slice(0, 4)}-09-01`;
+  const inserts = [];
+  let renumbered = 0;
+  for (const id of ids) {
+    const r = last.get(id);
+    if (!r || inTarget.has(id)) continue;
+    let number = keepNumbers ? r.number : null;
+    if (number != null && usedNumbers.has(number)) { number = null; renumbered++; }
+    if (number != null) usedNumbers.add(number);
+    let armband = keepArmbands && r.season === from ? r.armband : null;
+    if (armband && usedArmbands.has(armband)) armband = null;
+    if (armband) usedArmbands.add(armband);
+    inserts.push({ player_id: id, season: to, number, position: r.position, status: r.status === "left" ? "active" : r.status, armband, joined_on: start });
+  }
+  if (!inserts.length) return { error: `Esos jugadores ya están en la temporada ${to}` };
+  const { error } = await supabase.from("squad_members").insert(inserts);
+  if (error) return { error: errMsg(error) };
+  refresh();
+  redirect(`/plantilla?temporada=${seasonSlug(to)}&preparada=${inserts.length}${renumbered ? `&sindorsal=${renumbered}` : ""}`);
+}
+
+/** Da de baja definitiva a un jugador en una temporada, con fecha. */
+export async function retirePlayer(id: string, season: string, _: ActionState, f: FormData): Promise<ActionState> {
+  let left_on: string | null;
+  try {
+    left_on = date(f, "left_on") ?? new Date().toISOString().slice(0, 10);
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("squad_members").update({ status: "left", left_on, armband: null }).eq("player_id", id).eq("season", season).select("id");
+  if (error) return { error: errMsg(error) };
+  if (!data?.length) return { error: "No tienes permiso para hacer esto" };
+  refresh(id);
+  return { ok: "Baja registrada. Su historia se conserva." };
+}
+
+/** Vuelve a poner en activo a un jugador que estaba de baja en esa temporada. */
+export async function rejoinPlayer(id: string, season: string): Promise<ActionState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("squad_members").update({ status: "active", left_on: null }).eq("player_id", id).eq("season", season).select("id");
+  if (error) return { error: errMsg(error) + ". Cámbiale el dorsal desde Editar." };
+  if (!data?.length) return { error: "No tienes permiso para hacer esto" };
+  refresh(id);
+  return { ok: "¡Vuelve al equipo!" };
+}

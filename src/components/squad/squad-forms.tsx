@@ -72,3 +72,27 @@ export function DeletePlayerForm({ action }: { action: () => Promise<void> }) {
     </form>
   );
 }
+
+/** Dar de baja definitiva (con fecha) o reincorporar. */
+export function RetireForm({ retire, rejoin, left, today }: { retire: A; rejoin: () => Promise<ActionState>; left: boolean; today: string }) {
+  const [state, retireAction] = useActionState(retire, undefined);
+  const [state2, rejoinAction] = useActionState(rejoin, undefined);
+  if (left)
+    return (
+      <form action={rejoinAction} className="space-y-2">
+        <SubmitButton className="btn-ghost" pendingText="Guardando…">Reincorporar al equipo</SubmitButton>
+        <FormMessage state={state2} />
+      </form>
+    );
+  return (
+    <form action={retireAction} className="space-y-2"
+      onSubmit={(e) => { if (!confirm("¿Dar de baja definitiva a este jugador? Su historia y estadísticas se conservan.")) e.preventDefault(); }}>
+      <label className="label" htmlFor="left_on">Dar de baja definitiva</label>
+      <div className="flex flex-wrap gap-2">
+        <input id="left_on" name="left_on" type="date" defaultValue={today} className="input w-auto flex-1" />
+        <SubmitButton className="btn-dark" pendingText="Guardando…">Dar de baja</SubmitButton>
+      </div>
+      <FormMessage state={state} />
+    </form>
+  );
+}

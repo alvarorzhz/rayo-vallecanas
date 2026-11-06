@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { LayoutGrid, List, Plus, Search, Shirt } from "lucide-react";
+import { CalendarPlus, History, LayoutGrid, List, Plus, Search, Shirt } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
 import { fetchRoster, fetchSeasons } from "@/lib/squad-queries";
 import {
   FOOT_LABEL, LINES, LINE_TONE, STATUSES, STATUS_LABEL, STATUS_TONE, POSITION_LABEL,
-  fullName, lineFromSlug, lineOf, seasonFromSlug, seasonSlug, shirtName, statusFromSlug,
+  fullName, lineFromSlug, lineOf, nextSeason, prevSeason, seasonFromSlug, seasonSlug, shirtName, statusFromSlug,
   type RosterEntry,
 } from "@/lib/squad";
 import { Empty, PageHeader } from "@/components/ui";
@@ -16,7 +16,7 @@ import { Jersey } from "@/components/squad/jersey";
 
 export const metadata = { title: "Plantilla" };
 
-type SP = { temporada?: string; vista?: string; linea?: string; estado?: string; q?: string };
+type SP = { temporada?: string; vista?: string; linea?: string; estado?: string; q?: string; preparada?: string; sindorsal?: string };
 
 export default async function SquadPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
@@ -57,10 +57,19 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
       <PageHeader
         title="Plantilla"
         subtitle={<>Temporada <b>{season}</b>{current ? " · actual" : ""}</>}
-        actions={canCreate && (
-          <Link href={`/plantilla/nuevo?temporada=${seasonSlug(season)}`} prefetch className="btn-primary"><Plus size={18} /> Nuevo jugador</Link>
-        )}
+        actions={<>
+          <Link href="/plantilla/historia" prefetch className="btn-ghost"><History size={18} /> Historia</Link>
+          {canCreate && !seasons.includes(nextSeason(season)) && roster.length > 0 && (
+            <Link href={`/plantilla/nueva-temporada?desde=${seasonSlug(season)}`} prefetch className="btn-dark"><CalendarPlus size={18} /> Preparar {nextSeason(season)}</Link>
+          )}
+          {canCreate && <Link href={`/plantilla/nuevo?temporada=${seasonSlug(season)}`} prefetch className="btn-primary"><Plus size={18} /> Nuevo jugador</Link>}
+        </>}
       />
+      {sp.preparada && (
+        <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">
+          ¡Temporada {season} preparada con {sp.preparada} jugadores!{sp.sindorsal ? ` ${sp.sindorsal} se han quedado sin dorsal porque estaba repetido: pónselo desde su ficha.` : ""} Ahora puedes fichar a los nuevos.
+        </p>
+      )}
 
       {/* Marcador de la plantilla */}
       <section className="franja relative mb-6 overflow-hidden rounded-3xl bg-negro p-5 text-white shadow-xl sm:p-6">
@@ -137,7 +146,15 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
       {roster.length === 0 ? (
         <Empty>
           {canCreate ? (
-            <>Aún no hay jugadores en la temporada {season}. <Link href={`/plantilla/nuevo?temporada=${seasonSlug(season)}`} className="font-semibold text-rojo">Da de alta al primero</Link>.</>
+            <>
+              Aún no hay jugadores en la temporada {season}.{" "}
+              {seasons.includes(prevSeason(season)) ? (
+                <Link href={`/plantilla/nueva-temporada?desde=${seasonSlug(prevSeason(season))}`} className="font-semibold text-rojo">Cópiala de la temporada {prevSeason(season)}</Link>
+              ) : (
+                <Link href={`/plantilla/nuevo?temporada=${seasonSlug(season)}`} className="font-semibold text-rojo">Da de alta al primero</Link>
+              )}
+              .
+            </>
           ) : (
             <>Aún no hay jugadores en la temporada {season}.</>
           )}
