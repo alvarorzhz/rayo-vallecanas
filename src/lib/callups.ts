@@ -94,3 +94,47 @@ export function callupShareText(m: MatchRow, rows: CallupRow[], url?: string) {
     url ? `\nConfirma en la app: ${url}` : null,
   ].filter((x) => x !== null).join("\n");
 }
+
+/** Partido con la convocatoria ya cerrada: se jugó o se suspendió. A partir de aquí se ve como historial. */
+export const callupClosed = (m: Pick<MatchRow, "status">) => m.status === "played" || m.status === "cancelled";
+
+/** Lo que pasó con cada convocado según el acta: titular, suplente o no jugó (null si aún no hay acta). */
+export type Attendance = "started" | "sub" | "absent";
+export const ATTENDANCE_LABEL: Record<Attendance, string> = { started: "Titular", sub: "Jugó", absent: "No jugó" };
+export const ATTENDANCE_TONE: Record<Attendance, string> = {
+  started: "bg-negro text-white",
+  sub: "bg-green-100 text-green-800",
+  absent: "bg-black/10 text-negro/70",
+};
+
+/** Cruce de la convocatoria con el acta. */
+export function callupVsReport<T extends Pick<Callup, "player_id" | "reply">, A extends { player_id: string; started: boolean }>(rows: T[], appearances: A[] | null) {
+  const apps = appearances ? new Map(appearances.map((a) => [a.player_id, a])) : null;
+  const attendance = (playerId: string): Attendance | null => {
+    if (!apps) return null;
+    const a = apps.get(playerId);
+    return a ? (a.started ? "started" : "sub") : "absent";
+  };
+  const called = new Set(rows.map((r) => r.player_id));
+  const yes = rows.filter((r) => r.reply === "yes");
+  return {
+    attendance,
+    /** Jugaron sin estar convocados (refuerzos de última hora). */
+    extras: appearances ? appearances.filter((a) => !called.has(a.player_id)) : [],
+    /** De los que dijeron «Voy», cuántos jugaron. */
+    keptWord: apps ? yes.filter((r) => apps.has(r.player_id)).length : null,
+    saidYes: yes.length,
+    /** Jugaron entre los convocados. */
+    playedCalled: apps ? rows.filter((r) => apps.has(r.player_id)).length : null,
+  };
+}
+
+/** Resumen de las convocatorias de un jugador: veces convocado, respuestas y si luego jugó. */
+export function callupRecord(items: { reply: Reply; played: boolean | null }[]) {
+  const t = { called: items.length, yes: 0, maybe: 0, no: 0, pending: 0, played: 0, withReport: 0 };
+  for (const i of items) {
+    t[i.reply]++;
+    if (i.played !== null) { t.withReport++; if (i.played) t.played++; }
+  }
+  return t;
+}
