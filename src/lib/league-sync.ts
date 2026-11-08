@@ -33,7 +33,7 @@ export type LeagueRow = {
 
 export type LeagueData = { competitionName: string | null; teams: { id: string; name: string }[]; rows: LeagueRow[] };
 
-const decode = (s: string) =>
+export const decode = (s: string) =>
   s.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ")
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
     .replace(/&([a-z]+);/gi, (m, n) => ({ aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú", ntilde: "ñ", Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú", Ntilde: "Ñ", ordf: "ª", ordm: "º", middot: "·" } as Record<string, string>)[n] ?? m)
@@ -54,7 +54,7 @@ export function competitionFromUrl(input: string): string | null {
 }
 
 /** La web guarda la competición elegida en la sesión: primero se abre su portada y luego el resto con la misma cookie. */
-async function openSession(competition: string) {
+export async function openSession(competition: string) {
   const jar = new Map<string, string>();
   const get = async (path: string) => {
     const res = await fetch(`${BASE}/${path}`, {
