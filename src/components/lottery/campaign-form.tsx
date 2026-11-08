@@ -129,6 +129,23 @@ export function CampaignForm({
           <input id="ref_prefix" name="ref_prefix" className="input uppercase" maxLength={6} defaultValue={campaign?.ref_prefix ?? "RV"} />
           <p className="mt-1 text-xs text-negro/65">Ej.: RV-{campaign?.year ?? year}-0001</p>
         </div>
+        {raffle && (
+          <>
+            <div className="sm:col-span-3">
+              <label className="label" htmlFor="prize_text">Premio</label>
+              <input id="prize_text" name="prize_text" maxLength={300} className="input" defaultValue={campaign?.prize_text ?? ""}
+                placeholder="Ej.: Cesta de Navidad valorada en 150 €" />
+            </div>
+            <div className="sm:col-span-3">
+              <label className="label" htmlFor="public_purpose">¿A qué se destina lo recaudado?</label>
+              <textarea id="public_purpose" name="public_purpose" rows={2} maxLength={600} className="input"
+                defaultValue={campaign?.public_purpose ?? ""} placeholder="Ej.: Las fichas federativas y las equipaciones de la temporada." />
+              <p className="mt-1 text-xs text-negro/65">
+                Se muestra en la página pública de la rifa. Lo recaudado solo aparece cuando la rifa ya está sorteada.
+              </p>
+            </div>
+          </>
+        )}
         <div className="sm:col-span-3">
           <label className="label" htmlFor="notes">Observaciones</label>
           <textarea id="notes" name="notes" rows={2} className="input" defaultValue={campaign?.notes ?? ""} />

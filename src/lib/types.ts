@@ -18,6 +18,10 @@ export type Campaign = {
   winning_prize_cents: number | null;
   notes: string | null;
   created_at: string;
+  public_enabled: boolean;
+  public_slug: string | null;
+  prize_text: string | null;
+  public_purpose: string | null;
 };
 
 export type Sale = {
