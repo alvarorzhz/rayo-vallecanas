@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { Cross, Plane } from "lucide-react";
 import { Jersey } from "@/components/squad/jersey";
+import { LegendCard } from "@/components/squad/legend-card";
 import { LINE_TONE, POSITION_LABEL, STAT_LABEL, cardStats, lineOf, shirtName, type RosterEntry } from "@/lib/squad";
 
 /** Brazalete de capitán (C) o de segundo capitán (2C). */
@@ -103,12 +103,21 @@ export function FutCard({ entry, size = "sm" }: { entry: RosterEntry; size?: "sm
   );
 }
 
-/** Cromo enlazado a la ficha del jugador. */
+/** Cromo enlazado a la ficha del jugador (con su cara Leyenda escondida). */
 export function PlayerCard({ entry, href, index = 0 }: { entry: RosterEntry; href: string; index?: number }) {
+  const line = lineOf(entry.position);
+  const legend = {
+    name: shirtName(entry.player),
+    number: entry.number,
+    position: entry.position,
+    photo: entry.player.photo_url,
+    goalkeeper: line === "GK",
+    stats: cardStats(line).map((k) => STAT_LABEL[k]),
+  };
   return (
-    <Link href={href} prefetch style={{ animationDelay: `${Math.min(index, 16) * 55}ms`, ["--shine-delay" as string]: `${(index % 7) * 0.8}s` }}
+    <LegendCard href={href} legend={legend} style={{ animationDelay: `${Math.min(index, 16) * 55}ms`, ["--shine-delay" as string]: `${(index % 7) * 0.8}s` }}
       className="anim-deal group block drop-shadow-[0_10px_14px_rgba(0,0,0,0.28)] transition duration-200 hover:-translate-y-1 hover:drop-shadow-[0_16px_20px_rgba(210,13,23,0.35)] active:scale-[0.98]">
       <FutCard entry={entry} />
-    </Link>
+    </LegendCard>
   );
 }

@@ -12,7 +12,7 @@ export function WhatsNew({ skip = false }: { skip?: boolean }) {
   useEffect(() => {
     try {
       if (localStorage.getItem(KEY) === APP_VERSION) return;
-      if (skip) localStorage.setItem(KEY, APP_VERSION);
+      if (skip || CHANGELOG[0].quiet) localStorage.setItem(KEY, APP_VERSION);
       else setOpen(true);
     } catch {}
   }, [skip]);

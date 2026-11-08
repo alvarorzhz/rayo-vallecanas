@@ -174,8 +174,8 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
           <h2 className="sport mb-3 text-2xl font-black">Temporada {member.season}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
             {(line === "GK"
-              ? [["Partidos", member.apps, `${member.starts} de titular`], ["Porterías a cero", member.clean_sheets, null], ["Encajados", member.conceded, `${ratio(member.conceded, member.apps)} por partido`], ["MVP", member.mvps, "mejor del partido"]]
-              : [["Partidos", member.apps, `${member.starts} de titular`], ["Goles", member.goals, `${ratio(member.goals, member.apps)} por partido`], ["Asistencias", member.assists, null], ["MVP", member.mvps, "mejor del partido"]]
+              ? [["Partidos", member.apps, null], ["Porterías a cero", member.clean_sheets, null], ["Encajados", member.conceded, `${ratio(member.conceded, member.apps)} por partido`], ["MVP", member.mvps, "mejor del partido"]]
+              : [["Partidos", member.apps, null], ["Goles", member.goals, `${ratio(member.goals, member.apps)} por partido`], ["Asistencias", member.assists, null], ["MVP", member.mvps, "mejor del partido"]]
             ).map(([k, v, hint], i) => (
               <div key={String(k)} style={{ animationDelay: `${i * 90}ms` }} className={`anim-score relative col-span-1 overflow-hidden rounded-2xl p-4 shadow-sm sm:col-span-1 lg:col-span-2 ${i === 1 ? "bg-gradient-to-br from-rojo to-rojo-oscuro text-white" : i === 0 ? "bg-gradient-to-br from-negro-2 to-negro text-white" : "bg-white ring-1 ring-black/5"}`}>
                 <span aria-hidden className={`absolute -right-3 top-0 h-full w-6 -skew-x-[20deg] ${i === 1 ? "bg-white/25" : i === 0 ? "bg-rojo" : "bg-dorado"}`} />
@@ -189,7 +189,6 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
             <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5"><span className="anim-card-show inline-block h-3.5 w-2.5 rounded-sm bg-amber-400" /> {member.yellows} {member.yellows === 1 ? "amarilla" : "amarillas"}</span>
             <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5"><span className="anim-card-show inline-block h-3.5 w-2.5 rounded-sm bg-rojo" style={{ animationDelay: "150ms" }} /> {member.reds} {member.reds === 1 ? "roja" : "rojas"}</span>
             {line !== "GK" && member.apps > 0 && <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5">{member.goals + member.assists} goles + asistencias</span>}
-            {member.apps > 0 && <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5">Titular en el {Math.round((member.starts / member.apps) * 100)}%</span>}
           </div>
         </section>
       )}
@@ -209,7 +208,6 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                         <span className="w-20 shrink-0 text-xs text-negro/65">{shortDay(m.match_date)}</span>
                         <span className="min-w-0 flex-1 truncate font-semibold">{m.is_home ? "vs" : "en"} {m.rival.name}</span>
                         <span className="flex shrink-0 items-center gap-1 text-xs font-bold">
-                          {a.started && <span className="rounded bg-negro px-1 text-white">TIT</span>}
                           {g > 0 && <span title={`${g} goles`}>⚽{g > 1 ? `×${g}` : ""}</span>}
                           {as > 0 && <span title={`${as} asistencias`} className="rounded bg-sky-100 px-1 text-sky-800">A{as > 1 ? `×${as}` : ""}</span>}
                           {a.goalkeeper && <span title="Goles encajados">🧤{a.conceded}</span>}
@@ -265,7 +263,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                   <thead>
                     <tr>
                       <th className="pl-4 sm:pl-5">Temporada</th><th className="text-center">#</th><th>Pos.</th>
-                      {(line === "GK" ? ["PJ", "TIT", "P0", "GC", "MVP", "TA", "TR"] : ["PJ", "TIT", "GOL", "ASI", "MVP", "TA", "TR"]).map((h) => <th key={h} className="text-center">{h}</th>)}
+                      {(line === "GK" ? ["PJ", "P0", "GC", "MVP", "TA", "TR"] : ["PJ", "GOL", "ASI", "MVP", "TA", "TR"]).map((h) => <th key={h} className="text-center">{h}</th>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -279,7 +277,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                         </td>
                         <td className="text-center"><span className="sport font-black">{m.number ?? "–"}</span></td>
                         <td><PositionChip code={m.position} /></td>
-                        {(line === "GK" ? [m.apps, m.starts, m.clean_sheets, m.conceded, m.mvps, m.yellows, m.reds] : [m.apps, m.starts, m.goals, m.assists, m.mvps, m.yellows, m.reds]).map((v, i) => (
+                        {(line === "GK" ? [m.apps, m.clean_sheets, m.conceded, m.mvps, m.yellows, m.reds] : [m.apps, m.goals, m.assists, m.mvps, m.yellows, m.reds]).map((v, i) => (
                           <td key={i} className="text-center font-semibold tabular-nums">{v}</td>
                         ))}
                       </tr>
@@ -289,7 +287,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                     <tfoot>
                       <tr className="bg-negro text-white">
                         <td className="sport rounded-bl-xl py-2 pl-4 font-black sm:pl-5" colSpan={3}>Total en el club</td>
-                        {(line === "GK" ? [total.apps, total.starts, total.clean_sheets, total.conceded, total.mvps, total.yellows, total.reds] : [total.apps, total.starts, total.goals, total.assists, total.mvps, total.yellows, total.reds]).map((v, i) => (
+                        {(line === "GK" ? [total.apps, total.clean_sheets, total.conceded, total.mvps, total.yellows, total.reds] : [total.apps, total.goals, total.assists, total.mvps, total.yellows, total.reds]).map((v, i) => (
                           <td key={i} className="sport py-2 text-center text-base font-black tabular-nums">{v}</td>
                         ))}
                       </tr>
@@ -300,7 +298,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
             ) : (
               <p className="text-sm text-negro/65">Aún no está en ninguna plantilla.</p>
             )}
-            <p className="mt-3 text-xs text-negro/65">PJ partidos · TIT titular · {line === "GK" ? "P0 porterías a cero · GC goles encajados" : "GOL goles · ASI asistencias"} · MVP mejor del partido · TA/TR tarjetas. Con los partidos (fase 4) se calcularán solas.</p>
+            <p className="mt-3 text-xs text-negro/65">PJ partidos · {line === "GK" ? "P0 porterías a cero · GC goles encajados" : "GOL goles · ASI asistencias"} · MVP mejor del partido · TA/TR tarjetas. Con los partidos (fase 4) se calcularán solas.</p>
             {isManager && !seasons.some((m) => m.season === seasonOf()) && (
               <Link href={`/plantilla/${id}/editar?temporada=${seasonSlug(seasonOf())}`} className="btn-ghost mt-4">Añadir a la temporada {seasonOf()}</Link>
             )}

@@ -3,9 +3,20 @@
  * Al publicar cambios: añadir una entrada arriba y subir "version" en package.json.
  * Versionado: MAYOR.MENOR.PARCHE (nueva fase o cambio grande · nueva función · arreglo).
  */
-export type Release = { version: string; date: string; title: string; changes: string[] };
+/** quiet: no abre la ventana de novedades al actualizar (retoques sin importancia). */
+export type Release = { version: string; date: string; title: string; changes: string[]; quiet?: boolean };
 
 export const CHANGELOG: Release[] = [
+  {
+    version: "3.13.0",
+    date: "2026-11-08",
+    title: "Pequeños retoques",
+    quiet: true,
+    changes: [
+      "En la ficha de cada jugador ya no se muestran los partidos de titular, que daban lugar a confusión.",
+      "Pequeños retoques de diseño.",
+    ],
+  },
   {
     version: "3.12.0",
     date: "2026-11-08",
