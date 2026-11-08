@@ -8,6 +8,12 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.13.1",
+    date: "2026-11-08",
+    title: "Inicio sin partidos de titular",
+    changes: ["En Inicio ya no se muestran los partidos de titular: ni en «Tu temporada» ni en «Tu partido»."],
+  },
+  {
     version: "3.13.0",
     date: "2026-11-08",
     title: "Pequeños retoques",
