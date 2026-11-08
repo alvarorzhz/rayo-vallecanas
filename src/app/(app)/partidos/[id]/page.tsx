@@ -16,6 +16,8 @@ import { ShareButton } from "@/components/matches/share-button";
 import { Crest } from "@/components/matches/crest";
 import { CallupSection } from "@/components/matches/callup-section";
 import { ReportSection } from "@/components/matches/report-section";
+import { CallupHistory } from "@/components/matches/callup-history";
+import { callupClosed } from "@/lib/callups";
 import { deleteMatch, saveResult, setMatchStatus } from "../actions";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -71,7 +73,9 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
 
           {report && <ReportSection m={m} report={report} canEdit={canEdit} />}
 
-          <CallupSection m={m} rows={callups} myPlayerId={myPlayerId} canEdit={canEdit} url={`https://rayo-vallecanas.vercel.app/partidos/${m.id}`} />
+          {callupClosed(m)
+            ? <CallupHistory m={m} rows={callups} report={report} myPlayerId={myPlayerId} />
+            : <CallupSection m={m} rows={callups} myPlayerId={myPlayerId} canEdit={canEdit} url={`https://rayo-vallecanas.vercel.app/partidos/${m.id}`} />}
 
           <section className="card space-y-3">
             <h2>Dónde y cuándo</h2>

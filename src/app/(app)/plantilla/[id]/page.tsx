@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Camera, Cross, FolderLock, Mail, Pencil, Phone, Plane, ShieldAlert, Unlink, UserCheck, Wallet } from "lucide-react";
+import { Camera, ClipboardList, Cross, FolderLock, Mail, Pencil, Phone, Plane, ShieldAlert, Unlink, UserCheck, Wallet } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
@@ -14,6 +14,7 @@ import {
 import { OutcomeDot } from "@/components/matches/match-bits";
 import { shortDay, type MatchRow } from "@/lib/matches";
 import type { Appearance } from "@/lib/reports";
+import { REPLY_LABEL, REPLY_TONE, callupRecord, type Callup } from "@/lib/callups";
 import { Avatar } from "@/components/avatar";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { Jersey } from "@/components/squad/jersey";
@@ -72,6 +73,14 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
     : { data: [] as { match_id: string; scorer_id: string | null; assist_id: string | null }[] };
   const gOf = (mid: string) => (myGoals ?? []).filter((g) => g.match_id === mid && g.scorer_id === id).length;
   const aOf = (mid: string) => (myGoals ?? []).filter((g) => g.match_id === mid && g.assist_id === id).length;
+  // Historial de convocatorias de la temporada (partidos ya jugados o suspendidos)
+  const { data: callupData } = await supabase.from("match_callups").select("id, match_id, reply, reply_note, match:matches!inner(*, rival:rivals!inner(*))")
+    .eq("player_id", id).eq("match.season", season).in("match.status", ["played", "cancelled"]).not("match.callup_published_at", "is", null)
+    .returns<(Pick<Callup, "id" | "match_id" | "reply" | "reply_note"> & { match: MatchRow })[]>();
+  const playedIds = new Set(log.map((a) => a.match_id));
+  const callupLog = (callupData ?? []).sort((a, b) => b.match.match_date.localeCompare(a.match.match_date))
+    .map((c) => ({ ...c, played: c.match.status === "played" && c.match.report_saved_at ? playedIds.has(c.match_id) : null }));
+  const cRec = callupRecord(callupLog.filter((c) => c.match.status === "played"));
   const feeDue = fees ? feeOf(fees.plan, fees.overrides.get(id)) : null;
   const feePaid = fees?.paid.get(id) ?? 0;
 
@@ -207,6 +216,36 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                           {a.yellows > 0 && <span>{"🟨".repeat(a.yellows)}</span>}
                           {a.red && <span>🟥</span>}
                           {m.mvp_player_id === id && <span className="rounded bg-dorado px-1 text-negro">MVP</span>}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          )}
+
+          {callupLog.length > 0 && (
+            <section className="card">
+              <h2 className="mb-1 flex items-center gap-2"><ClipboardList size={18} className="text-rojo" /> Sus convocatorias {season}</h2>
+              <p className="mb-3 text-sm text-negro/65">
+                Convocado <b className="text-negro">{callupLog.length} {callupLog.length === 1 ? "vez" : "veces"}</b>
+                {cRec.called > 0 && <> · dijo «Voy» en <b className="text-negro">{cRec.yes}</b> de {cRec.called} partidos jugados</>}
+                {cRec.withReport > 0 && <> · jugó <b className="text-negro">{cRec.played}</b> de {cRec.withReport} con acta</>}
+                {cRec.pending > 0 && <> · sin contestar {cRec.pending}</>}
+              </p>
+              <ol className="space-y-1.5">
+                {callupLog.map((c) => {
+                  const m = c.match;
+                  return (
+                    <li key={c.id}>
+                      <Link href={`/partidos/${m.id}#convocatoria`} prefetch={false} className="flex items-center gap-2 rounded-xl bg-gris px-2 py-1.5 text-sm transition hover:ring-1 hover:ring-rojo/40">
+                        <OutcomeDot m={m} size="sm" />
+                        <span className="w-20 shrink-0 text-xs text-negro/65">{shortDay(m.match_date)}</span>
+                        <span className="min-w-0 flex-1 truncate font-semibold">{m.is_home ? "vs" : "en"} {m.rival.name}{m.status === "cancelled" && <span className="font-normal text-negro/65"> · suspendido</span>}</span>
+                        <span className="flex shrink-0 items-center gap-1">
+                          <span className={`badge ${REPLY_TONE[c.reply]}`}>{REPLY_LABEL[c.reply]}</span>
+                          {c.played !== null && <span className={`badge ${c.played ? "bg-green-100 text-green-800" : "bg-black/10 text-negro/70"}`}>{c.played ? "Jugó" : "No jugó"}</span>}
                         </span>
                       </Link>
                     </li>

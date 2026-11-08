@@ -18,6 +18,17 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: "3.8.0",
+    date: "2026-11-08",
+    title: "Historial de convocatorias",
+    changes: [
+      "Cada partido jugado o suspendido guarda su convocatoria como historial: quién fue convocado, qué contestó cada uno, cuándo lo hizo y su comentario.",
+      "Si hay acta, ves al lado de cada convocado si fue titular, si jugó o si no jugó, cuántos de los que dijeron «Voy» jugaron al final y quién jugó sin estar convocado.",
+      "Se marca cuando la respuesta la apuntó un gestor en lugar del jugador, y la alineación prevista queda guardada para consultarla.",
+      "En la ficha de cada jugador, nuevo «Sus convocatorias»: veces convocado en la temporada, sus respuestas y si jugó cada partido.",
+    ],
+  },
+  {
     version: "3.7.0",
     date: "2026-11-08",
     title: "Nuevo Inicio, centrado en el partido",
