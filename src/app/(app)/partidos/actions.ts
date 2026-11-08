@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/session";
 import { sendPush } from "@/lib/push";
+import { resultNotice } from "@/lib/result-watch";
 import { COMPETITIONS, CLUB_NAME, hhmm, longDay, type MatchRow, type MatchStatus } from "@/lib/matches";
 
 export type MatchState = { error?: string; ok?: string } | undefined;
@@ -133,9 +134,8 @@ export async function saveResult(id: string, _: MatchState, f: FormData): Promis
     if (error) throw error;
     if (f.get("notify") === "on" && before?.status !== "played") {
       const m = data as unknown as MatchRow;
-      const score = m.is_home ? `${CLUB_NAME} ${gf} - ${ga} ${m.rival.name}` : `${m.rival.name} ${ga} - ${gf} ${CLUB_NAME}`;
-      const title = gf > ga ? "✅ ¡Victoria!" : gf < ga ? "Resultado final" : "🤝 Empate";
-      await notifyTeam(title, score, id);
+      const n = resultNotice({ gf, ga, home: m.is_home, club: CLUB_NAME, rival: m.rival.name });
+      await notifyTeam(n.title, n.body, id);
     }
   } catch (e) {
     return { error: errMsg(e) };

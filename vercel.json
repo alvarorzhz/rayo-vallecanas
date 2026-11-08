@@ -3,6 +3,11 @@
   "regions": ["fra1"],
   "crons": [
     { "path": "/api/cron/convocatorias", "schedule": "0 8 * * *" },
-    { "path": "/api/cron/liga", "schedule": "0 7 * * 1" }
+    { "path": "/api/cron/liga", "schedule": "0 7 * * 1" },
+    { "path": "/api/cron/resultado?vuelta=1", "schedule": "0 13 * * *" },
+    { "path": "/api/cron/resultado?vuelta=2", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/resultado?vuelta=3", "schedule": "0 19 * * *" },
+    { "path": "/api/cron/resultado?vuelta=4", "schedule": "30 21 * * *" },
+    { "path": "/api/cron/resultado?vuelta=5", "schedule": "0 7 * * *" }
   ]
 }
