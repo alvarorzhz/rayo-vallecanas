@@ -8,6 +8,20 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.14.0",
+    date: "2026-11-08",
+    title: "Patrocinadores",
+    changes: [
+      "Nueva pestaña «Patrocinadores» en Gestión, con la ficha de cada uno: logo, nivel (principal o colaborador), web, Instagram, persona de contacto y notas. Ya están Bar El Barrio (principal), Transportes Joya y Granitos Yuste con sus logos.",
+      "Acuerdos por temporada: si aportan dinero, material o servicios (en especie) o ambas cosas, qué reciben a cambio, fechas, estado (negociando, firmado, cobrado, vencido o cancelado) y el contrato en PDF, guardado en privado.",
+      "La parte en dinero se divide en plazos. Con «Cobrar», el plazo se apunta como ingreso en Finanzas (categoría Patrocinios). Si se anula el movimiento en Finanzas, el plazo vuelve a quedar pendiente.",
+      "Arriba, el marcador de la temporada: acordado, cobrado, pendiente y acuerdos en especie, con aviso de los plazos sin cobrar y de los acuerdos que vencen pronto.",
+      "Los gestores reciben un aviso en el móvil cuando un plazo pasa de fecha sin cobrar (como mucho uno a la semana) y cuando falta un mes para que venza un acuerdo.",
+      "Los logos, muy discretos: una línea «Con el apoyo de» al pie de Inicio y el patrocinador principal, pequeño, en la imagen del resultado. Gestores y superadministradores deciden en «Dónde se muestran los logos» si salen y dónde.",
+      "Nuevo permiso «Patrocinadores» en los perfiles. Los jugadores nunca ven importes, contactos ni contratos: solo los logos.",
+    ],
+  },
+  {
     version: "3.13.1",
     date: "2026-11-08",
     title: "Inicio sin partidos de titular",

@@ -17,9 +17,10 @@ type DB = { from: (t: string) => any }; // eslint-disable-line @typescript-eslin
 
 export const ACTS: Act[] = ["read", "create", "update", "delete"];
 /** Módulos que se pueden configurar (la auditoría es siempre y solo del superadministrador). */
-export const EDITABLE_MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "squad_private", "matches"];
-/** Reglas fijas del club: los jugadores nunca ven Finanzas ni datos personales de otros. */
-export const blocked = (base: Base, module: string) => base === "player" && (module === "finances" || module === "squad_private");
+export const EDITABLE_MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "squad_private", "matches", "sponsors"];
+/** Reglas fijas del club: los jugadores nunca ven Finanzas, los patrocinios ni datos personales de otros. */
+export const PLAYER_BLOCKED = ["finances", "squad_private", "sponsors"];
+export const blocked = (base: Base, module: string) => base === "player" && PLAYER_BLOCKED.includes(module);
 
 const toSet = (rows: Row[]): PermSet =>
   Object.fromEntries(rows.map((r) => [r.module, { read: r.can_read, create: r.can_create, update: r.can_update, delete: r.can_delete }]));

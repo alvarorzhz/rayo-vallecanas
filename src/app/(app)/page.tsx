@@ -12,6 +12,8 @@ import { seasonOf, seasonRange, type FinanceSummary } from "@/lib/finance";
 import { fetchRoster } from "@/lib/squad-queries";
 import { form, record } from "@/lib/matches";
 import { MySeason } from "@/components/squad/my-season";
+import { SponsorStrip } from "@/components/sponsors/showcase";
+import { fetchDisplay, type Showcase } from "@/lib/sponsors";
 
 const LG_COLS: Record<number, string> = { 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" };
 
@@ -83,6 +85,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         return { ...focus, callups, myPlayerId, ...preview, report };
       })()
     : null;
+
+  // Patrocinadores: una línea discreta al final, si los gestores lo tienen activado
+  const [display, showcase] = await Promise.all([fetchDisplay(supabase), supabase.rpc("sponsor_showcase")]);
+  const sponsors = display.show_home ? ((showcase.data ?? []) as Showcase[]) : [];
 
   const firstName = s.profile.full_name.split(" ")[0];
   const greeting = `¡Hola, ${firstName}! ⚡`;
@@ -169,6 +175,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           ))}
         </section>
       ) : null}
+
+      <SponsorStrip sponsors={sponsors} />
     </>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BellRing, DatabaseBackup, IdCard, ScrollText, Users } from "lucide-react";
+import { BellRing, DatabaseBackup, Handshake, IdCard, ScrollText, Users } from "lucide-react";
 
-const ICONS = { Users, IdCard, BellRing, ScrollText, DatabaseBackup };
+const ICONS = { Users, IdCard, BellRing, Handshake, ScrollText, DatabaseBackup };
 export type AdminTab = { href: string; label: string; icon: keyof typeof ICONS };
 
 export function AdminTabs({ tabs }: { tabs: AdminTab[] }) {

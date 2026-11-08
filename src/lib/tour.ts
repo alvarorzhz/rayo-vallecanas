@@ -85,9 +85,10 @@ export function buildTour(s: Session): TourStep[] {
   }
 
   const isSuper = s.profile.role === "superadmin";
-  if (s.can("users") || s.can("lottery_admin", "update") || isSuper) {
+  if (s.can("users") || s.can("lottery_admin", "update") || s.can("sponsors") || isSuper) {
     const p: string[] = [];
     if (s.can("users")) p.push("Usuarios: da de alta a gente nueva y cambia su perfil.", "Perfiles: decide con casillas qué puede hacer cada perfil.");
+    if (s.can("sponsors")) p.push("Patrocinadores: sus acuerdos, contratos y cobros.");
     if (s.can("users", "update") || s.can("lottery_admin", "update")) p.push("Avisos: manda un aviso al móvil de todo el equipo.");
     if (isSuper) p.push("Auditoría y copia de seguridad (solo superadministrador).");
     steps.push({ key: "gestion", href: "/admin", target: "/admin", icon: "Settings", title: "Gestión", text: "El panel de control del club.", points: p });

@@ -8,11 +8,11 @@ export const ROLE_INFO: Record<string, { summary: string; who: string }> = {
   },
   admin: {
     who: "Quienes gestionan los sorteos, las cuentas y los usuarios del club.",
-    summary: "Gestiona los sorteos (lotería y rifas) de principio a fin, ve todas las ventas y cobros, lleva las cuentas del club en Finanzas, y da de alta y gestiona usuarios.",
+    summary: "Gestiona los sorteos (lotería y rifas) de principio a fin, ve todas las ventas y cobros, lleva las cuentas del club en Finanzas y los patrocinadores, y da de alta y gestiona usuarios.",
   },
   player: {
     who: "Jugadores del equipo.",
-    summary: "Vende lotería y rifas en las campañas en las que está asignado y ve solo sus propias ventas. Ve la plantilla y corrige sus propios datos y documentos. No puede ver Finanzas ni los datos personales de otros.",
+    summary: "Vende lotería y rifas en las campañas en las que está asignado y ve solo sus propias ventas. Ve la plantilla y corrige sus propios datos y documentos. No puede ver Finanzas, los patrocinios ni los datos personales de otros.",
   },
 };
 
@@ -82,6 +82,15 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
       delete: "Eliminar partidos y rivales creados por error.",
     },
   },
+  sponsors: {
+    title: "Patrocinadores (nunca para jugadores)",
+    acts: {
+      read: "Ver en Gestión los patrocinadores con su contacto, los acuerdos de cada temporada (importes, qué reciben a cambio), los contratos y los plazos cobrados y pendientes.",
+      create: "Dar de alta patrocinadores y acuerdos nuevos.",
+      update: "Editar fichas, logos, acuerdos y plazos, y subir contratos. Para apuntar un cobro en Finanzas hace falta además poder crear movimientos en Finanzas.",
+      delete: "Eliminar patrocinadores y acuerdos (si tienen cobros, primero hay que anularlos en Finanzas).",
+    },
+  },
 };
 
 export const MENU_BY_MODULE: { module: string; act: Act; label: string }[] = [
@@ -91,6 +100,7 @@ export const MENU_BY_MODULE: { module: string; act: Act; label: string }[] = [
   { module: "matches", act: "read", label: "Partidos" },
   { module: "squad", act: "read", label: "Plantilla" },
   { module: "finances", act: "read", label: "Finanzas" },
+  { module: "sponsors", act: "read", label: "Patrocinadores" },
   { module: "users", act: "read", label: "Usuarios" },
   { module: "audit", act: "read", label: "Auditoría" },
 ];
