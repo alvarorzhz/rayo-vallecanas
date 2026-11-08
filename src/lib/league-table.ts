@@ -1,77 +1,19 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { decode, openSession, parseCalendar, prettyTeam } from "@/lib/league-sync";
+import { openSession } from "@/lib/league-sync";
+import { parseCalendar, parseCompetitionName, parseTable, type Outcome, type StandingRow } from "@/lib/league-parse";
+
+export type { Outcome, StandingRow } from "@/lib/league-parse";
+export { parseTable } from "@/lib/league-parse";
 
 /**
  * Clasificación de la liga (futormes · table.aspx). Solo se lee: no se guarda en
  * la base de datos. Se guarda en caché media hora y se refresca al sincronizar.
  */
 
-export type Outcome = "W" | "D" | "L";
-
-export type StandingRow = {
-  pos: number;
-  teamId: string;
-  name: string;
-  played: number;
-  won: number;
-  drawn: number;
-  lost: number;
-  gf: number;
-  ga: number;
-  gd: number;
-  penalty: number;           // puntos de sanción
-  points: number;
-  move: number;              // + sube, − baja, 0 mantiene
-  zone: { label: string; color: string } | null;
-  form: Outcome[];           // últimos 5, del más antiguo al más reciente
-};
-
 export type LeagueTable = { competition: string | null; rows: StandingRow[]; round: string | null; fetchedAt: string };
 
 export const TABLE_TAG = "league-table";
-
-const n = (v: string | undefined) => (v && /^-?\d+$/.test(v.trim()) ? Number(v.trim()) : 0);
-
-export function parseTable(html: string): Omit<StandingRow, "form">[] {
-  const start = html.indexOf('id="ctl00_ContentPlaceHolder1_dgrClasificacion"');
-  if (start < 0) return [];
-  const body = html.slice(start);
-  const idx = [...new Set([...body.matchAll(/dgrClasificacion_(ctl\d+)_lblOrden"/g)].map((m) => m[1]))];
-  const rows: Omit<StandingRow, "form">[] = [];
-  for (const k of idx) {
-    const p = `dgrClasificacion_${k}_`;
-    const lbl = (name: string) => body.match(new RegExp(`${p}${name}"[^>]*>([^<]*)<`))?.[1];
-    const team = body.match(new RegExp(`${p}hlkEquipo" title="([^"]*)" href="team\\.aspx\\?itm=(\\d+)"`));
-    if (!team) continue;
-    const ind = body.match(new RegExp(`${p}pnlIndicador" title="([^"]*)" style="background-color:(#[0-9A-Fa-f]{3,6})`));
-    const status = body.match(new RegExp(`${p}imgStatus" title="([^"]*)"`))?.[1] ?? "";
-    const steps = n(status.match(/(\d+)/)?.[1]);
-    rows.push({
-      pos: n(lbl("lblOrden")),
-      teamId: team[2],
-      name: prettyTeam(decode(team[1])),
-      played: n(lbl("lblPartidosJugados")),
-      won: n(lbl("lblPartidosGanados")),
-      drawn: n(lbl("lblPartidosEmpatados")),
-      lost: n(lbl("lblPartidosPerdidos")),
-      gf: n(lbl("lblGolesAFavor")),
-      ga: n(lbl("lblGolesEnContra")),
-      gd: n(lbl("lblDiferenciaGoles")),
-      penalty: n(lbl("lblPuntosSancion")),
-      points: n(lbl("lblPuntos")),
-      move: /sube/i.test(status) ? steps : /baja/i.test(status) ? -steps : 0,
-      zone: ind ? { label: zoneLabel(decode(ind[1])), color: ind[2] } : null,
-    });
-  }
-  return rows.sort((a, b) => a.pos - b.pos);
-}
-
-/** "ACCESO 4ª DIV. CLAUSURA" -> "Acceso 4ª Div. Clausura" */
-const zoneLabel = (s: string) => {
-  const t = s.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, a: string, b: string) => a + b.toUpperCase()).replace(/ (A|De|Del|La) /g, (m) => m.toLowerCase());
-  return t.charAt(0).toUpperCase() + t.slice(1);
-};
 
 async function load(competition: string): Promise<LeagueTable> {
   const sess = await openSession(competition);
@@ -89,7 +31,7 @@ async function load(competition: string): Promise<LeagueTable> {
     push(g.homeId, h > a ? "W" : h < a ? "L" : "D");
     push(g.awayId, a > h ? "W" : a < h ? "L" : "D");
   }
-  const comp = decode(sess.situation).match(/Campeonato:(?:<\/b>)?\s*([^"<]{3,160})/)?.[1]?.trim() ?? null;
+  const comp = parseCompetitionName(sess.situation);
   return {
     competition: comp,
     round: games.at(-1)?.round ?? null,

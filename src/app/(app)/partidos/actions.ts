@@ -292,7 +292,11 @@ export async function runLeagueSync(): Promise<LeagueState> {
       r.playersNew && `${r.playersNew} ${r.playersNew === 1 ? "jugador nuevo" : "jugadores nuevos"} en la plantilla`,
     ].filter(Boolean);
     revalidatePath("/plantilla", "layout");
-    if (r.squadError) return { ok: `${bits.length ? `¡Listo! ${bits.join(", ")}.` : "Calendario al día."} La plantilla no se ha podido leer: ${r.squadError}` };
+    revalidatePath("/partidos/liga");
+    if (r.status === "partial") {
+      const done = bits.length ? `Guardado: ${bits.join(", ")}.` : "Lo que se ha podido leer está al día.";
+      return { error: `Sincronización incompleta. ${done} ${r.issues.length === 1 ? "Incidencia" : `${r.issues.length} incidencias`}: ${r.issues.slice(0, 3).join(" · ")}${r.issues.length > 3 ? " · …" : ""} Queda apuntado en Partidos → Liga.` };
+    }
     return { ok: bits.length ? `¡Listo! ${bits.join(", ")}.` : "Todo al día: no había cambios en la liga." };
   } catch (e) {
     return { error: errMsg(e) };

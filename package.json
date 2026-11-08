@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test --test-reporter=spec \"src/lib/__tests__/*.test.ts\"",
+    "test:live": "LEAGUE_LIVE=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test --test-reporter=spec src/lib/__tests__/league-live.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

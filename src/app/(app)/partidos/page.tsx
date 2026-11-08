@@ -13,6 +13,8 @@ import { CountUp } from "@/components/squad/count-up";
 import { ShareButton } from "@/components/matches/share-button";
 import { SyncButton } from "@/components/matches/league-forms";
 import { runLeagueSync } from "./actions";
+import { LeagueProblem } from "@/components/matches/league-problem";
+import type { StoredSummary } from "@/lib/league-status";
 import { Suspense } from "react";
 import { getLeagueTable } from "@/lib/league-table";
 import { StandingsMini, StandingsTable, type TableRival } from "@/components/matches/league-table";
@@ -32,7 +34,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const [matches, seasons, league] = await Promise.all([
     fetchMatches(supabase, season),
     fetchMatchSeasons(supabase),
-    supabase.from("league_sync").select("competition, team").eq("id", 1).maybeSingle().then((r) => r.data),
+    supabase.from("league_sync").select("competition, team, last_summary").eq("id", 1).maybeSingle<{ competition: string; team: string; last_summary: StoredSummary }>().then((r) => r.data),
   ]);
 
   const today = todayMadrid();
@@ -79,6 +81,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
           {canCreate && <Link href="/partidos/nuevo" prefetch className="btn-primary"><Plus size={18} /> Nuevo partido</Link>}
         </>}
       />
+      {s.can("matches", "update") && league?.last_summary && <LeagueProblem summary={league.last_summary} compact />}
       {s.can("matches", "update") && league && current && (
         <div className="mb-4"><SyncButton action={runLeagueSync} className="btn-ghost text-sm" /></div>
       )}
