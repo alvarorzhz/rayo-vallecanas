@@ -48,7 +48,10 @@ export function PushSettings({ isManager, notifySales }: { isManager: boolean; n
           <span>Avisarme de cada venta nueva <span className="text-negro/65">(si hay muchas ventas, puedes quitarlo)</span></span>
         </label>
       )}
-      <p className="text-xs text-negro/65">Cada dispositivo (móvil, ordenador…) se activa por separado.</p>
+      <p className="text-xs text-negro/65">
+        Cada dispositivo (móvil, ordenador…) se activa por separado. En Android y en el ordenador (Chrome o Edge) puedes
+        contestar a la convocatoria con los botones «Voy» y «No voy» del propio aviso; en iPhone, toca el aviso y contesta en la app.
+      </p>
       <FormMessage state={msg} />
     </div>
   );

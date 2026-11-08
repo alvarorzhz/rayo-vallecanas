@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BellRing, Share, X } from "lucide-react";
 import { enablePush, isIOS, isStandalone, pushSupported, syncSubscription } from "@/lib/push-client";
 
@@ -20,6 +21,14 @@ function postpone() {
 
 /** Al entrar en la app pregunta si se quieren activar los avisos (o explica cómo en iPhone). */
 export function PushPrompt() {
+  const router = useRouter();
+  // Si se contesta a la convocatoria desde el aviso con la app abierta, se refresca la pantalla
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMsg = (e: MessageEvent) => { if (e.data?.type === "callup-replied") router.refresh(); };
+    navigator.serviceWorker.addEventListener("message", onMsg);
+    return () => navigator.serviceWorker.removeEventListener("message", onMsg);
+  }, [router]);
   const [mode, setMode] = useState<"ask" | "ios" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

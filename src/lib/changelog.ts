@@ -7,6 +7,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.10.0",
+    date: "2026-11-08",
+    title: "Contesta a la convocatoria desde el aviso",
+    changes: [
+      "El aviso de «¡Estás convocado!» y los recordatorios de «¿Vas?» traen dos botones, «✅ Voy» y «❌ No voy»: tu respuesta se apunta sin abrir la app y te llega un aviso confirmándolo.",
+      "Funciona en Android y en el ordenador con Chrome o Edge. En iPhone (y en Safari del Mac) el sistema no muestra botones en los avisos de las apps web: tocas el aviso y contestas en la app como hasta ahora.",
+      "Si no hay conexión, la convocatoria ya está cerrada o el aviso es de hace días, te lo dice y al tocarlo se abre el partido para contestar.",
+      "Para «Duda» o para dejar una nota, sigue siendo desde la app.",
+    ],
+  },
+  {
     version: "3.7.0",
     date: "2026-11-08",
     title: "Nuevo Inicio, centrado en el partido",

@@ -33,24 +33,36 @@ export async function vapidKeys() {
   return keys;
 }
 
-export type PushPayload = { title: string; body: string; url?: string; tag?: string };
+export type PushAction = { action: string; title: string };
+export type PushPayload = {
+  title: string;
+  body: string;
+  url?: string;
+  tag?: string;
+  /** Botones del aviso (Chrome/Edge en Android, Windows y Mac; Safari y el iPhone no los enseñan). */
+  actions?: PushAction[];
+  /** Respuesta directa desde el aviso: el service worker la manda a /api/convocatoria/responder. */
+  reply?: { token: string };
+};
+/** Datos extra de cada destinatario (p. ej. su token para contestar desde el aviso). */
+export type PerUser = (userId: string) => Partial<PushPayload>;
 
 /** Envía un aviso a todos los dispositivos de esos usuarios. Nunca lanza error: un aviso no debe romper una venta. */
-export async function sendPush(userIds: string[], payload: PushPayload) {
+export async function sendPush(userIds: string[], payload: PushPayload, perUser?: PerUser) {
   const ids = [...new Set(userIds)].filter(Boolean);
   if (!ids.length) return 0;
   try {
     const { publicKey, privateKey } = await vapidKeys();
     webpush.setVapidDetails("https://rayo-vallecanas.vercel.app", publicKey, privateKey);
     const admin = createAdminClient();
-    const { data: subs } = await admin.from("push_subscriptions").select("id, endpoint, p256dh, auth").in("user_id", ids);
+    const { data: subs } = await admin.from("push_subscriptions").select("id, user_id, endpoint, p256dh, auth").in("user_id", ids);
     let ok = 0;
     await Promise.all(
       (subs ?? []).map(async (s) => {
         try {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-            JSON.stringify({ icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", url: "/", ...payload }),
+            JSON.stringify({ icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", url: "/", ...payload, ...perUser?.(s.user_id as string) }),
             { TTL: 60 * 60 * 24 },
           );
           ok++;

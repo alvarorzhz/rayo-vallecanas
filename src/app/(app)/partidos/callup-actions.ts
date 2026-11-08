@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { usersOfPlayers } from "@/lib/callup-push";
+import { replyButtons, usersOfPlayers } from "@/lib/callup-push";
 import { getSession } from "@/lib/session";
 import { sendPush } from "@/lib/push";
 import { CLUB_NAME, hhmm, longDay, type MatchRow } from "@/lib/matches";
@@ -107,10 +107,10 @@ export async function saveCallup(matchId: string, _: CallupState, f: FormData): 
     const users = (await usersOfPlayers(targets)).filter((u) => u !== s.user.id);
     await sendPush(users, {
       title: "⚽ ¡Estás convocado!",
-      body: `${vs(m)} · ${longDay(m.match_date)}${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}. ${meet(m)} ¿Vas? Contesta en la app.`.replace(/\s+/g, " ").trim(),
+      body: `${vs(m)} · ${longDay(m.match_date)}${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}. ${meet(m)} ¿Vas?`.replace(/\s+/g, " ").trim(),
       url: `/partidos/${matchId}`,
       tag: `convocatoria-${matchId}`,
-    });
+    }, await replyButtons(matchId, m.match_date));
   }
   refresh(matchId);
   redirect(`/partidos/${matchId}?convocatoria=${publishedNow ? "publicada" : "guardada"}#convocatoria`);
@@ -170,6 +170,6 @@ export async function remindPending(matchId: string): Promise<CallupState> {
     body: `${vs(m)} · ${longDay(m.match_date)}${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}. Contesta a la convocatoria.`,
     url: `/partidos/${matchId}`,
     tag: `convocatoria-${matchId}`,
-  });
+  }, await replyButtons(matchId, m.match_date));
   return { ok: sent ? `Recordatorio enviado a ${users.length} ${users.length === 1 ? "jugador" : "jugadores"}.` : "Ninguno de ellos tiene los avisos activados en el móvil." };
 }
