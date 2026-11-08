@@ -18,6 +18,8 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchTodayMatch } from "@/lib/match-queries";
 import { TodayStrip } from "@/components/matches/matchday-fx";
 import { CLUB_SHORT, hhmm, rivalShort } from "@/lib/matches";
+import { fetchNewSignings } from "@/lib/squad-queries";
+import { SigningsOnEnter } from "@/components/squad/signing-reveal";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
@@ -32,7 +34,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     items.push({ href: "/admin", label: "Gestión", icon: "Settings" });
 
   // Especial Matchday: el día del partido, una tira «Hoy jugamos» arriba en todas las páginas
-  const today = s.can("matches") ? await fetchTodayMatch(await createClient()) : null;
+  const supabase = await createClient();
+  const [today, signings] = await Promise.all([
+    s.can("matches") ? fetchTodayMatch(supabase) : null,
+    // Fichajes nuevos que aún no se le han presentado (la primera vez solo se pone la marca)
+    s.can("squad") && s.signingsSeen ? fetchNewSignings(supabase, s.signingsSeen) : [],
+  ]);
   const strip = today && {
     id: today.id,
     time: hhmm(today.kickoff),
@@ -78,6 +85,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* El tutorial de bienvenida ya enseña la app: las novedades salen a partir de la siguiente versión */}
       <WhatsNew skip={s.tutorialSeen < TOUR_VERSION} />
       <Tour steps={buildTour(s)} version={TOUR_VERSION} seen={s.tutorialSeen} />
+      {s.can("squad") && (
+        <SigningsOnEnter entries={signings} init={!s.signingsSeen} now={new Date().toISOString()} me={s.user.id} />
+      )}
       <PushPrompt />
       <EasterEggs />
       <Suspense>
