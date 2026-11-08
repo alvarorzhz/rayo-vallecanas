@@ -7,6 +7,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.6.0",
+    date: "2026-11-08",
+    title: "Clasificación de la liga",
+    changes: [
+      "En Partidos hay una pestaña nueva, «Clasificación», con la tabla completa de la liga: puntos, partidos ganados, empatados y perdidos, goles y diferencia.",
+      "Arriba, nuestra posición en grande y lo que nos falta: a cuántos puntos estamos de la zona de arriba o de salir del descenso.",
+      "Cada equipo con su escudo, la flecha de si ha subido o bajado en la última jornada y su racha de los últimos cinco partidos.",
+      "Las zonas de la liga (acceso y descenso) van marcadas con su color, como en la web de la liga, y nuestra fila destacada.",
+      "En el calendario, una mini tabla con nuestra posición y los equipos de alrededor lleva a la clasificación completa.",
+      "Se actualiza sola desde la web de la liga cada media hora y al pulsar «Sincronizar».",
+    ],
+  },
+  {
     version: "3.5.0",
     date: "2026-11-08",
     title: "Especial Matchday ⚡",

@@ -13,6 +13,10 @@ import { CountUp } from "@/components/squad/count-up";
 import { ShareButton } from "@/components/matches/share-button";
 import { SyncButton } from "@/components/matches/league-forms";
 import { runLeagueSync } from "./actions";
+import { Suspense } from "react";
+import { getLeagueTable } from "@/lib/league-table";
+import { StandingsMini, StandingsTable, type TableRival } from "@/components/matches/league-table";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const maxDuration = 60;
 export const metadata = { title: "Partidos" };
@@ -24,11 +28,11 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const s = await requirePerm("matches", "read");
   const supabase = await createClient();
   const season = seasonFromSlug(sp.temporada) ?? seasonOf();
-  const view = sp.ver === "resultados" || sp.ver === "proximos" ? sp.ver : "todos";
+  const view = sp.ver === "resultados" || sp.ver === "proximos" || sp.ver === "clasificacion" ? sp.ver : "todos";
   const [matches, seasons, league] = await Promise.all([
     fetchMatches(supabase, season),
     fetchMatchSeasons(supabase),
-    supabase.from("league_sync").select("competition").eq("id", 1).maybeSingle().then((r) => r.data),
+    supabase.from("league_sync").select("competition, team").eq("id", 1).maybeSingle().then((r) => r.data),
   ]);
 
   const today = todayMadrid();
@@ -58,6 +62,8 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
     return `/partidos?${qs}`;
   };
   const current = season === seasonOf();
+  const withTable = !!league && current;
+  const tableView = view === "clasificacion" && withTable;
   const canCreate = s.can("matches", "create");
   const hero = current ? next ?? last : last;
 
@@ -83,7 +89,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       )}
       {sp.eliminado && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Partido eliminado del calendario.</p>}
 
-      {hero && (
+      {!tableView && hero && (
         <section className="mb-6">
           <div className="mb-2 flex items-end justify-between gap-3">
             <h2 className="sport text-xl font-black">{hero === next ? "Próximo partido" : "Último resultado"}</h2>
@@ -94,7 +100,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       )}
 
       {/* Balance de la temporada */}
-      {rec.played > 0 && (
+      {!tableView && rec.played > 0 && (
         <section className="relative mb-6 overflow-hidden rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
           <span aria-hidden className="absolute -right-4 top-0 h-full w-10 -skew-x-[20deg] bg-dorado/80" />
           <div className="relative grid grid-cols-3 gap-4 sm:grid-cols-6">
@@ -120,17 +126,24 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         </section>
       )}
 
+      {/* Mini clasificación */}
+      {withTable && view === "todos" && (
+        <Suspense fallback={null}>
+          <MiniTable supabase={supabase} competition={league!.competition} team={league!.team} href={link({ ver: "clasificacion" })} />
+        </Suspense>
+      )}
+
       {/* Vista y temporada */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex rounded-xl bg-white p-1 shadow-sm ring-1 ring-black/5">
-          {([["todos", "Calendario"], ["proximos", "Próximos"], ["resultados", "Resultados"]] as const).map(([v, label]) => (
+          {([["todos", "Calendario"], ["proximos", "Próximos"], ["resultados", "Resultados"], ...(withTable ? [["clasificacion", "Clasificación"]] as const : [])] as const).map(([v, label]) => (
             <Link key={v} href={link({ ver: v })} prefetch aria-current={view === v ? "page" : undefined}
               className={`sport rounded-lg px-3 py-1.5 text-sm font-black transition ${view === v ? "bg-negro text-white" : "text-negro/65 hover:text-negro"}`}>
               {label}
             </Link>
           ))}
         </div>
-        {seasons.length > 1 && (
+        {!tableView && seasons.length > 1 && (
           <div className="flex flex-wrap gap-1">
             {seasons.map((t) => (
               <Link key={t} href={link({ temporada: seasonSlug(t) })} prefetch
@@ -142,7 +155,11 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         )}
       </div>
 
-      {matches.length === 0 ? (
+      {tableView ? (
+        <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-white/70 ring-1 ring-black/5" aria-label="Cargando la clasificación" />}>
+          <FullTable supabase={supabase} competition={league!.competition} team={league!.team} />
+        </Suspense>
+      ) : matches.length === 0 ? (
         <Empty>
           <span aria-hidden className="mb-3 block h-8 overflow-hidden"><span className="inline-block [--roll:90px]"><Ball size={30} className="anim-roll" /></span></span>
           Aún no hay partidos en la temporada {season}.{" "}
@@ -166,4 +183,33 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       )}
     </>
   );
+}
+
+type TableProps = { supabase: SupabaseClient; competition: string; team: string };
+
+async function tableData({ supabase, competition }: TableProps) {
+  const [table, rivals] = await Promise.all([
+    getLeagueTable(competition),
+    supabase.from("rivals").select("name, short_name, color, crest_url, ext_id").not("ext_id", "is", null).returns<TableRival[]>().then((r) => r.data ?? []),
+  ]);
+  return { table, rivals };
+}
+
+async function MiniTable(p: TableProps & { href: string }) {
+  const { table, rivals } = await tableData(p);
+  if (!table) return null;
+  return <StandingsMini table={table} us={p.team} rivals={rivals} href={p.href} />;
+}
+
+async function FullTable(p: TableProps) {
+  const { table, rivals } = await tableData(p);
+  if (!table) {
+    return (
+      <Empty>
+        Ahora mismo no se puede leer la clasificación de la web de la liga.{" "}
+        <a href={`https://www.futormes.com/mod/soccer/situation.aspx?itm=${p.competition}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-rojo">Verla en la web de la liga</a>
+      </Empty>
+    );
+  }
+  return <StandingsTable table={table} us={p.team} rivals={rivals} />;
 }

@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -283,6 +283,7 @@ export async function runLeagueSync(): Promise<LeagueState> {
   try {
     const { syncLeague } = await import("@/lib/league-sync");
     const r = await syncLeague({ notifyExcept: s.user.id });
+    revalidateTag("league-table");
     refresh();
     const bits = [
       r.matchesNew && `${r.matchesNew} ${r.matchesNew === 1 ? "partido nuevo" : "partidos nuevos"}`,
