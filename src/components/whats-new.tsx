@@ -7,13 +7,15 @@ import { CHANGELOG, APP_VERSION } from "@/lib/changelog";
 const KEY = "rv-version-vista";
 
 /** Muestra las novedades una vez cuando la app se actualiza a una versión nueva. */
-export function WhatsNew() {
+export function WhatsNew({ skip = false }: { skip?: boolean }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     try {
-      if (localStorage.getItem(KEY) !== APP_VERSION) setOpen(true);
+      if (localStorage.getItem(KEY) === APP_VERSION) return;
+      if (skip) localStorage.setItem(KEY, APP_VERSION);
+      else setOpen(true);
     } catch {}
-  }, []);
+  }, [skip]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();

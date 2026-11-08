@@ -2,6 +2,7 @@ import { getSession } from "@/lib/session";
 import { PageHeader } from "@/components/ui";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { PushSettings } from "@/components/push-settings";
+import { TourButton } from "@/components/tour";
 import Link from "next/link";
 import { Shirt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -47,6 +48,11 @@ export default async function ProfilePage() {
             ))}
           </dl>
           <p className="mt-3 text-xs text-negro/65">Para cambiar tu nombre o teléfono, pídeselo a un gestor.</p>
+        </section>
+        <section className="card">
+          <h2 className="mb-1 font-bold">Tutorial</h2>
+          <p className="mb-3 text-sm text-negro/65">Un recorrido rápido por todas las secciones de la app.</p>
+          <TourButton />
         </section>
       </div>
     </>
