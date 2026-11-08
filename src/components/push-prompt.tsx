@@ -37,7 +37,7 @@ export function PushPrompt() {
     let t: ReturnType<typeof setTimeout>;
     const check = () => {
       // Espera a que se cierren las novedades y el tutorial para no amontonar ventanas
-      if (document.getElementById("whats-new-title") || document.getElementById("rv-tour")) {
+      if (document.getElementById("whats-new-title") || document.getElementById("rv-tour") || document.getElementById("rv-fichaje")) {
         t = setTimeout(check, 1500);
         return;
       }

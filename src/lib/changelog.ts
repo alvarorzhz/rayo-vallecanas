@@ -18,6 +18,17 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: "3.16.0",
+    date: "2026-11-08",
+    title: "Presentación de fichajes",
+    changes: [
+      "Cuando llega un jugador nuevo a la plantilla, ya sea dado de alta a mano o al importar la plantilla de la web de la liga, la primera vez que entras en la app se presenta a lo grande.",
+      "Como en los sobres de los juegos de fútbol: «Nuevo fichaje», tres pistas (posición, pierna y dorsal), el cromo girando y, con un fogonazo, el jugador con confeti.",
+      "Si hay varios fichajes seguidos se presentan uno detrás de otro. Se salta tocando la pantalla y no vuelve a salir, tampoco en otro móvil.",
+      "En la ficha de cada jugador, el botón «Presentación» la repite cuando quieras.",
+    ],
+  },
+  {
     version: "3.15.0",
     date: "2026-11-08",
     title: "Nueva imagen del resultado",
