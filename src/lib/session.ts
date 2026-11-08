@@ -28,10 +28,13 @@ export const getSession = cache(async (): Promise<Session> => {
   if (!claims?.sub) redirect("/login");
   const user = { id: claims.sub, email: (claims.email as string | undefined) ?? null };
 
-  const [{ data: profile }, { data: permRows }] = await Promise.all([
+  const [{ data: profile }, { data: permRows }, { data: alive }] = await Promise.all([
     supabase.from("profiles").select("id, full_name, role, custom_role_id, email, phone, active, avatar_url, notify_sales, must_change_password, custom_role:custom_roles(name)").eq("id", user.id).single(),
     supabase.rpc("my_permissions"),
+    supabase.rpc("session_alive"),
   ]);
+  // Un superadministrador cerró esta sesión desde Auditoría → Sesiones
+  if (alive === false) redirect("/auth/salir?error=sesion");
   if (!profile || !profile.active) {
     // Usuario deshabilitado: se le cierra la sesión en una ruta que sí puede borrar cookies
     redirect("/auth/salir?error=inactivo");

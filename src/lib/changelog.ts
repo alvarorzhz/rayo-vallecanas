@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.21.0",
+    date: "2026-11-08",
+    title: "Auditoría más detallada: cambios, accesos y sesiones",
+    changes: [
+      "Solo para el superadministrador. Auditoría tiene ahora tres pestañas: «Cambios», «Accesos» y «Sesiones abiertas».",
+      "Cambios: cada modificación enseña una tabla con el campo, el valor de antes y el de ahora, con nombres en español, importes en euros, fechas y nombres de personas en vez de códigos. En las altas y los borrados se pueden ver todos los datos.",
+      "Se puede filtrar por apartado, tipo de acción, persona y fechas, y abrir el historial completo de un registro (por ejemplo, todo lo que le ha pasado a una venta).",
+      "Accesos: cada entrada, salida, intento fallido y cambio de contraseña, con el dispositivo (iPhone, Android, ordenador…) y la IP. También el último acceso de cada persona.",
+      "Sesiones abiertas: qué dispositivos tienen la sesión iniciada ahora mismo. Si alguien pierde el móvil, se le cierra la sesión desde aquí al momento.",
+    ],
+  },
+  {
     version: "3.20.1",
     date: "2026-11-08",
     title: "Arreglos: imagen del resultado y convocatoria en Inicio",
