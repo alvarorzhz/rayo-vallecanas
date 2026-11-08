@@ -4,7 +4,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { PushSettings } from "@/components/push-settings";
 import { TourButton } from "@/components/tour";
 import Link from "next/link";
-import { Shirt } from "lucide-react";
+import { Shirt, Vote } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { removeAvatar, uploadAvatar } from "./actions";
 
@@ -32,6 +32,14 @@ export default async function ProfilePage() {
             <span className="text-rojo">→</span>
           </Link>
         )}
+        <Link href="/votaciones" prefetch className="card flex items-center gap-3 hover:ring-rojo">
+          <Vote size={22} className="text-rojo" />
+          <span className="flex-1">
+            <span className="block font-bold">Votaciones</span>
+            <span className="block text-xs text-negro/65">Las que están abiertas y los resultados de las anteriores</span>
+          </span>
+          <span className="text-rojo">→</span>
+        </Link>
         <section className="card">
           <h2 className="mb-3 font-bold">Avisos (notificaciones)</h2>
           <PushSettings isManager={s.can("lottery_admin", "update")} notifySales={p.notify_sales} />

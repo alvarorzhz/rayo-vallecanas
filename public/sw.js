@@ -94,17 +94,19 @@ function openApp(path) {
   });
 }
 
-// Contesta a la convocatoria sin abrir la app y confirma con otro aviso. Si falla, abre el partido.
+// Contesta (convocatoria o votación) sin abrir la app y confirma con otro aviso. Si falla, abre la app.
+const REPLY_ENDPOINTS = ["/api/convocatoria/responder", "/api/votacion/responder"];
 function replyFromNotification(n, reply) {
   const d = n.data || {};
-  return fetch("/api/convocatoria/responder", {
+  const endpoint = REPLY_ENDPOINTS.includes(d.reply.endpoint) ? d.reply.endpoint : REPLY_ENDPOINTS[0];
+  return fetch(endpoint, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ token: d.reply.token, reply }),
   })
     .then((res) => res.json().catch(() => ({})).then((j) => ({ ok: res.ok && j.ok, j })))
     .then(({ ok, j }) =>
-      self.registration.showNotification(ok ? j.title : "No se pudo apuntar tu respuesta", {
+      self.registration.showNotification(ok ? j.title : j.failTitle || "No se pudo apuntar tu respuesta", {
         body: ok ? j.body : (j.error || "Sin conexión") + ". Toca para contestar en la app.",
         icon: "/icons/icon-192.png",
         badge: "/icons/icon-192.png",

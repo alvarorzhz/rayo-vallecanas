@@ -41,8 +41,8 @@ export type PushPayload = {
   tag?: string;
   /** Botones del aviso (Chrome/Edge en Android, Windows y Mac; Safari y el iPhone no los enseñan). */
   actions?: PushAction[];
-  /** Respuesta directa desde el aviso: el service worker la manda a /api/convocatoria/responder. */
-  reply?: { token: string };
+  /** Respuesta directa desde el aviso: el service worker la manda a endpoint (por defecto, /api/convocatoria/responder). */
+  reply?: { token: string; endpoint?: string };
 };
 /** Datos extra de cada destinatario (p. ej. su token para contestar desde el aviso). */
 export type PerUser = (userId: string) => Partial<PushPayload>;
@@ -74,9 +74,22 @@ export async function sendPush(userIds: string[], payload: PushPayload, perUser?
         }
       }),
     );
+    await logPush(payload, ids.length, ok);
     return ok;
   } catch {
     return 0;
+  }
+}
+
+/** Apunta el aviso en el registro (Gestión → Avisos) y borra los de hace más de 90 días. Nunca lanza error. */
+async function logPush(p: PushPayload, people: number, devices: number) {
+  if (p.tag === "prueba") return; // el aviso de prueba de Mi perfil no se apunta
+  try {
+    const admin = createAdminClient();
+    await admin.from("push_log").insert({ title: p.title.slice(0, 120), body: p.body.slice(0, 400), url: p.url ?? "/", tag: p.tag ?? null, people, devices });
+    if (Math.random() < 0.1) await admin.from("push_log").delete().lt("created_at", new Date(Date.now() - 90 * 86_400_000).toISOString());
+  } catch {
+    // el registro es informativo: si falla, el aviso ya ha salido
   }
 }
 

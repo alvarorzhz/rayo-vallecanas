@@ -18,6 +18,20 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: "3.17.0",
+    date: "2026-11-08",
+    title: "Votaciones sí/no",
+    changes: [
+      "Nuevas votaciones de sí o no: quien manda los avisos lanza una pregunta desde Gestión → Avisos → «Votación sí/no», a todo el equipo, solo a los jugadores o solo a los gestores, y elige cuánto dura (de 1 hora a 1 semana, o hasta un día y hora).",
+      "Llega un aviso al móvil con los botones «Sí» y «No» para votar sin abrir la app (donde el móvil lo permite). También se vota desde Inicio, donde sale la votación mientras está abierta.",
+      "Puedes cambiar tu voto hasta el cierre. El recuento se ve después de votar, para no condicionar a nadie.",
+      "Voto secreto opcional: nadie ve quién ha votado qué, ni los gestores, solo el recuento. Si no es secreto, se ve el voto de cada uno.",
+      "Los gestores pueden recordar la votación a los que faltan, cerrarla antes de tiempo o borrarla. El resultado se puede compartir por WhatsApp.",
+      "Todas las votaciones, abiertas y cerradas, en «Votaciones» (desde Inicio o Mi perfil).",
+      "En Gestión → Avisos, la lista de todos los avisos que manda la app (cuándo salen y a quién) y el historial de los últimos avisos enviados, automáticos o manuales.",
+    ],
+  },
+  {
     version: "3.16.0",
     date: "2026-11-08",
     title: "Presentación de fichajes",
