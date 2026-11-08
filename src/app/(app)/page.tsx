@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BarChart3, ShoppingCart, Shirt, Ticket, Wallet } from "lucide-react";
 import { fetchCallups, fetchMatchday, fetchMatchdayFocus, fetchMatchdayPreview, fetchMyPlayerId, fetchPlayerLog, fetchReport } from "@/lib/match-queries";
 import { MatchdayDetails, MatchdayHero } from "@/components/matches/matchday";
+import { fetchMatchWeather } from "@/lib/weather";
 import { MyCallupCard, callupOpen } from "@/components/matches/callup-section";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -78,13 +79,15 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const md = focus
     ? await (async () => {
         const final = focus.phase === "final" || focus.phase === "post";
-        const [callups, myPlayerId, preview, report] = await Promise.all([
+        const [callups, myPlayerId, preview, report, weather] = await Promise.all([
           final ? Promise.resolve([]) : fetchCallups(supabase, focus.m),
           fetchMyPlayerId(supabase, s.user.id),
           final ? Promise.resolve({ lastH2H: null, topScorer: null }) : fetchMatchdayPreview(supabase, focus.m),
           final && focus.m.report_saved_at ? fetchReport(supabase, focus.m) : Promise.resolve(null),
+          // El tiempo en Salamanca a la hora del partido: la víspera y el mismo día
+          focus.phase === "eve" || focus.phase === "day" ? fetchMatchWeather(focus.m.match_date, focus.m.kickoff) : Promise.resolve(null),
         ]);
-        return { ...focus, callups, myPlayerId, ...preview, report };
+        return { ...focus, callups, myPlayerId, ...preview, report, weather };
       })()
     : null;
 
@@ -120,7 +123,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       {/* 1 · El partido: siempre en portada, según el momento */}
       {md ? (
         <>
-          <MatchdayHero m={md.m} phase={md.phase} greeting={greeting} form={recentForm} next={md.phase === "post" ? matchday?.next ?? null : null} />
+          <MatchdayHero m={md.m} phase={md.phase} greeting={greeting} form={recentForm} next={md.phase === "post" ? matchday?.next ?? null : null} weather={md.weather} />
           <MatchdayDetails m={md.m} phase={md.phase} callups={md.callups} myPlayerId={md.myPlayerId} canEdit={s.can("matches", "update")}
             recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} />
         </>

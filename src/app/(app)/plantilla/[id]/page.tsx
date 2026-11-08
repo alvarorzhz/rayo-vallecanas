@@ -24,6 +24,7 @@ import { PlayerDocs } from "@/components/squad/player-docs";
 import { FeeBar } from "@/components/squad/fee-bar";
 import { FeeOverrideForm, FeePaymentForm } from "@/components/squad/fee-forms";
 import { CountUp } from "@/components/squad/count-up";
+import { SigningReplay } from "@/components/squad/signing-reveal";
 import { createAccess, deletePlayer, deletePlayerDoc, linkUser, rejoinPlayer, removePlayerPhoto, retirePlayer, savePlayerDoc, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
 import { registerFeePayment, saveFeeOverride } from "../cuotas/actions";
 
@@ -160,9 +161,11 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
               ))}
             </dl>
           </div>
-          {isManager && (
-            <div className="flex gap-2 sm:self-start">
-              <Link href={`/plantilla/${id}/editar?temporada=${seasonSlug(season)}`} prefetch className="btn-primary"><Pencil size={16} /> Editar</Link>
+          {(isManager || (member && member.status !== "left")) && (
+            <div className="flex flex-wrap justify-center gap-2 sm:flex-col sm:self-start">
+              {isManager && <Link href={`/plantilla/${id}/editar?temporada=${seasonSlug(season)}`} prefetch className="btn-primary"><Pencil size={16} /> Editar</Link>}
+              {/* Presentación del fichaje, para volver a verla o enseñarla */}
+              {member && member.status !== "left" && <SigningReplay entry={{ ...member, player }} me={s.user.id} />}
             </div>
           )}
         </div>

@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.18.0",
+    date: "2026-11-08",
+    title: "El tiempo en la previa",
+    changes: [
+      "La víspera y el día del partido, la portada de Inicio enseña el tiempo en Salamanca a la hora del pitido: cielo, temperatura, probabilidad de lluvia y viento.",
+      "Si hay opciones de lluvia, frío, viento o calor, sale un consejo corto para preparar la bolsa (chubasquero, térmica, agua…).",
+      "Si el partido aún no tiene hora, se ve el resumen del día con la mínima y la máxima.",
+    ],
+  },
+  {
     version: "3.17.0",
     date: "2026-11-08",
     title: "Votaciones sí/no",
@@ -19,6 +29,17 @@ export const CHANGELOG: Release[] = [
       "Los gestores pueden recordar la votación a los que faltan, cerrarla antes de tiempo o borrarla. El resultado se puede compartir por WhatsApp.",
       "Todas las votaciones, abiertas y cerradas, en «Votaciones» (desde Inicio o Mi perfil).",
       "En Gestión → Avisos, la lista de todos los avisos que manda la app (cuándo salen y a quién) y el historial de los últimos avisos enviados, automáticos o manuales.",
+    ],
+  },
+  {
+    version: "3.16.0",
+    date: "2026-11-08",
+    title: "Presentación de fichajes",
+    changes: [
+      "Cuando llega un jugador nuevo a la plantilla, ya sea dado de alta a mano o al importar la plantilla de la web de la liga, la primera vez que entras en la app se presenta a lo grande.",
+      "Como en los sobres de los juegos de fútbol: «Nuevo fichaje», tres pistas (posición, pierna y dorsal), el cromo girando y, con un fogonazo, el jugador con confeti.",
+      "Si hay varios fichajes seguidos se presentan uno detrás de otro. Se salta tocando la pantalla y no vuelve a salir, tampoco en otro móvil.",
+      "En la ficha de cada jugador, el botón «Presentación» la repite cuando quieras.",
     ],
   },
   {
