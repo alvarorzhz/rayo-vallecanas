@@ -67,29 +67,66 @@ self.addEventListener("push", (event) => {
     data = { title: "Rayo Vallecañas", body: event.data ? event.data.text() : "" };
   }
   const title = data.title || "Rayo Vallecañas";
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body: data.body || "",
-      icon: data.icon || "/icons/icon-192.png",
-      badge: data.badge || "/icons/icon-192.png",
-      tag: data.tag,
-      data: { url: data.url || "/" },
-    }),
-  );
+  const options = {
+    body: data.body || "",
+    icon: data.icon || "/icons/icon-192.png",
+    badge: data.badge || "/icons/icon-192.png",
+    tag: data.tag,
+    data: { url: data.url || "/", reply: data.reply || null },
+  };
+  // Botones (Voy / No voy). Donde el sistema no los admite (Safari, iPhone) simplemente no salen
+  // y tocar el aviso abre la app como siempre.
+  if (Array.isArray(data.actions) && data.actions.length && data.reply) options.actions = data.actions.slice(0, 2);
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
-      for (const w of wins) {
-        if (w.url.startsWith(self.location.origin) && "focus" in w) {
-          w.navigate(url);
-          return w.focus();
-        }
+// Abre (o enfoca) la app en esa dirección
+function openApp(path) {
+  const url = new URL(path || "/", self.location.origin).href;
+  return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+    for (const w of wins) {
+      if (w.url.startsWith(self.location.origin) && "focus" in w) {
+        w.navigate(url);
+        return w.focus();
       }
-      return self.clients.openWindow(url);
-    }),
-  );
+    }
+    return self.clients.openWindow(url);
+  });
+}
+
+// Contesta a la convocatoria sin abrir la app y confirma con otro aviso. Si falla, abre el partido.
+function replyFromNotification(n, reply) {
+  const d = n.data || {};
+  return fetch("/api/convocatoria/responder", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token: d.reply.token, reply }),
+  })
+    .then((res) => res.json().catch(() => ({})).then((j) => ({ ok: res.ok && j.ok, j })))
+    .then(({ ok, j }) =>
+      self.registration.showNotification(ok ? j.title : "No se pudo apuntar tu respuesta", {
+        body: ok ? j.body : (j.error || "Sin conexión") + ". Toca para contestar en la app.",
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        tag: n.tag || undefined,
+        silent: ok,
+        data: { url: d.url || "/" },
+      }),
+    )
+    .then(() => {
+      // Si la app está abierta, que se refresque para enseñar la respuesta
+      return self.clients.matchAll({ type: "window" }).then((wins) => wins.forEach((w) => w.postMessage({ type: "callup-replied" })));
+    })
+    .catch(() => openApp(d.url));
+}
+
+self.addEventListener("notificationclick", (event) => {
+  const n = event.notification;
+  n.close();
+  const d = n.data || {};
+  if ((event.action === "yes" || event.action === "no") && d.reply && d.reply.token) {
+    event.waitUntil(replyFromNotification(n, event.action));
+    return;
+  }
+  event.waitUntil(openApp(d.url));
 });

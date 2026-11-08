@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
-import { usersOfPlayers } from "@/lib/callup-push";
+import { replyButtons, usersOfPlayers } from "@/lib/callup-push";
 import { CLUB_NAME, hhmm, todayMadrid, type MatchRow } from "@/lib/matches";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,8 @@ export async function GET(req: Request) {
     const meet = m.meet_time || m.meet_place ? ` Quedamos${m.meet_time ? ` a las ${hhmm(m.meet_time)}` : ""}${m.meet_place ? ` en ${m.meet_place}` : ""}.` : "";
     sent += await sendPush(users, isToday
       ? { title: "⚽ ¡Hoy jugamos!", body: `${vs}${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}${m.venue ? ` · ${m.venue}` : ""}.${meet}`, url: `/partidos/${m.id}`, tag: `convocatoria-${m.id}` }
-      : { title: "⏰ Mañana hay partido: ¿vas?", body: `${vs}${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}. Aún no has contestado a la convocatoria.`, url: `/partidos/${m.id}`, tag: `convocatoria-${m.id}` });
+      : { title: "⏰ Mañana hay partido: ¿vas?", body: `${vs}${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}. Aún no has contestado a la convocatoria.`, url: `/partidos/${m.id}`, tag: `convocatoria-${m.id}` },
+      isToday ? undefined : await replyButtons(m.id, m.match_date));
   }
   return NextResponse.json({ ok: true, matches: matches?.length ?? 0, sent });
 }
