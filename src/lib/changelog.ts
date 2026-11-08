@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.18.0",
+    date: "2026-11-08",
+    title: "El tiempo en la previa",
+    changes: [
+      "La víspera y el día del partido, la portada de Inicio enseña el tiempo en Salamanca a la hora del pitido: cielo, temperatura, probabilidad de lluvia y viento.",
+      "Si hay opciones de lluvia, frío, viento o calor, sale un consejo corto para preparar la bolsa (chubasquero, térmica, agua…).",
+      "Si el partido aún no tiene hora, se ve el resumen del día con la mínima y la máxima.",
+    ],
+  },
+  {
     version: "3.15.0",
     date: "2026-11-08",
     title: "Nueva imagen del resultado",

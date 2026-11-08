@@ -8,6 +8,7 @@ import { PHASE_TITLE, type MatchdayPhase } from "@/lib/matchday";
 import { tally, type CallupRow } from "@/lib/callups";
 import { lineOf, shirtName, type Player } from "@/lib/squad";
 import type { ReportView } from "@/lib/reports";
+import { skyOf, weatherTip, type MatchWeather } from "@/lib/weather";
 import { Crest } from "@/components/matches/crest";
 import { FormStrip, MatchLine } from "@/components/matches/match-bits";
 import { MeetLine, MyCallupCard, callupOpen } from "@/components/matches/callup-section";
@@ -24,8 +25,10 @@ const darkBtn = "btn bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/
  * Portada de Inicio, siempre dedicada al partido: el próximo en una semana normal (week),
  * la víspera, el día de partido, en juego, el final y el post partido de los dos días siguientes.
  */
-export function MatchdayHero({ m, phase, greeting, form = [], next = null }: {
+export function MatchdayHero({ m, phase, greeting, form = [], next = null, weather = null }: {
   m: MatchRow; phase: MatchdayPhase; greeting: string;
+  /** La víspera y el día del partido: el tiempo en Salamanca a la hora del partido. */
+  weather?: MatchWeather | null;
   /** Últimos resultados (el más reciente al final), para la racha de la portada en semana normal. */
   form?: MatchRow[];
   /** En el post partido, el siguiente partido. */
@@ -47,6 +50,7 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null }: {
     run ? `Racha: ${run}` : null,
     next ? `Siguiente: ${next.rival.name}` : null,
     m.venue,
+    weather ? `${skyOf(weather).icon} ${weather.temp}° · lluvia ${weather.rain}%` : null,
     "¡Aúpa Rayo! ⚡",
   ].filter(Boolean) as string[];
 
@@ -122,6 +126,7 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null }: {
             <span className="first-letter:uppercase">{phase === "post" && when ? `${when}, ` : ""}{longDay(m.match_date)}</span>
             {m.venue && <span className="inline-flex items-center gap-1.5"><MapPin size={15} className="text-dorado" /> {m.venue}</span>}
           </div>
+          {ahead && weather && <WeatherChip w={weather} time={time} />}
           {run && <div className="flex items-center gap-2 text-sm font-bold text-white/90"><FormStrip rows={form} label={false} /> <span>🔥 {run}</span></div>}
           {!run && phase === "week" && form.length > 0 && <FormStrip rows={form} />}
           {!done && <MeetLine m={m} className="text-white/90" />}
@@ -157,6 +162,38 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null }: {
         </div>
       </div>
     </section>
+  );
+}
+
+/** El tiempo en Salamanca a la hora del partido: cielo, temperatura, lluvia y viento. */
+function WeatherChip({ w, time }: { w: MatchWeather; time: string | null }) {
+  const { icon, text } = skyOf(w);
+  const at = w.hour && time ? ` a las ${time}` : " ese día";
+  const tip = weatherTip(w);
+  const wet = w.rain >= 30;
+  return (
+    <div className="anim-rise flex w-full max-w-md flex-col items-center gap-1.5 rounded-2xl bg-white/[0.08] px-4 py-2.5 ring-1 ring-white/15"
+      aria-label={`Tiempo en Salamanca${at}: ${text}, ${w.temp} grados, ${w.rain}% de probabilidad de lluvia`}>
+      <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-dorado">
+        El tiempo en Salamanca{at}
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+        <span className="flex items-center gap-2">
+          <span aria-hidden className="text-3xl leading-none">{icon}</span>
+          <span className="sport text-3xl font-black leading-none tabular-nums">{w.temp}°</span>
+          <span className="text-left text-xs leading-tight text-white/80">{text}{w.min != null && w.max != null && <><br />{w.min}° / {w.max}°</>}</span>
+        </span>
+        <span className={`sport flex items-center gap-1 rounded-lg px-2 py-1 text-lg font-black leading-none ${wet ? "bg-sky-500/25 text-sky-200" : "bg-white/10"}`}>
+          <span aria-hidden>☔</span> {w.rain}%<span className="text-xs font-bold text-white/70">lluvia</span>
+        </span>
+        {w.wind != null && (
+          <span className="sport flex items-center gap-1 text-lg font-black leading-none text-white/90">
+            <span aria-hidden>💨</span> {w.wind}<span className="text-xs font-bold text-white/70">km/h</span>
+          </span>
+        )}
+      </div>
+      {tip && <p className="text-center text-xs text-white/75">{tip}</p>}
+    </div>
   );
 }
 
