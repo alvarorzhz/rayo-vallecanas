@@ -24,8 +24,8 @@ export function MySeason({ entry, squad, log, season }: { entry: RosterEntry; sq
   const gk = lineOf(entry.position) === "GK";
   const href = `/plantilla/${entry.player_id}?temporada=${seasonSlug(season)}`;
   const stats: [string, number][] = gk
-    ? [["Partidos", entry.apps], ["Titular", entry.starts], ["Port. a cero", entry.clean_sheets], ["Encajados", entry.conceded], ["MVP", entry.mvps]]
-    : [["Partidos", entry.apps], ["Titular", entry.starts], ["Goles", entry.goals], ["Asist.", entry.assists], ["MVP", entry.mvps]];
+    ? [["Partidos", entry.apps], ["Port. a cero", entry.clean_sheets], ["Encajados", entry.conceded], ["MVP", entry.mvps]]
+    : [["Partidos", entry.apps], ["Goles", entry.goals], ["Asist.", entry.assists], ["MVP", entry.mvps]];
 
   // Puesto en la tabla de goleadores (o de MVP para los porteros) del equipo
   const key = gk ? "mvps" : "goals";
@@ -43,7 +43,7 @@ export function MySeason({ entry, squad, log, season }: { entry: RosterEntry; sq
   const last = log[0] ?? null;
   const lastText = (r: LogRow) => {
     const [a, b] = sides(r.match, r.match.rival);
-    const bits = [r.started ? "titular" : "suplente", r.goals && `${r.goals} ${r.goals === 1 ? "gol" : "goles"}`, r.assists && `${r.assists} asist.`, r.mvp && "MVP 🌟"].filter(Boolean);
+    const bits = [r.goals && `${r.goals} ${r.goals === 1 ? "gol" : "goles"}`, r.assists && `${r.assists} asist.`, r.mvp && "MVP 🌟"].filter(Boolean);
     return { score: `${a.goals}-${b.goals}`, bits: bits.join(" · ") };
   };
 
@@ -72,7 +72,7 @@ export function MySeason({ entry, squad, log, season }: { entry: RosterEntry; sq
           </p>
           <p className="mt-1 text-sm text-white/70">{POSITION_LABEL[entry.position]}</p>
 
-          <dl className="mt-4 grid grid-cols-5 gap-1.5 sm:gap-2">
+          <dl className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-2">
             {stats.map(([k, v]) => (
               <div key={k} className="flex flex-col-reverse rounded-xl bg-white/[0.08] px-1 py-2 text-center ring-1 ring-white/10">
                 <dt className="mt-1 truncate text-[10px] font-bold uppercase tracking-wide text-white/70 sm:text-[11px]">{k}</dt>
@@ -105,7 +105,7 @@ export function MySeason({ entry, squad, log, season }: { entry: RosterEntry; sq
               {last && (
                 <Link href={`/partidos/${last.match_id}`} prefetch={false} className="group flex min-w-0 items-center gap-1.5 text-sm text-white/85 hover:text-white">
                   <span className="shrink-0 text-white/70">Último:</span>
-                  <span className="truncate"><b>{last.match.rival.name}</b> {lastText(last).score} · {shortDay(last.match.match_date)} · {lastText(last).bits}</span>
+                  <span className="truncate"><b>{last.match.rival.name}</b> {lastText(last).score} · {shortDay(last.match.match_date)}{lastText(last).bits ? ` · ${lastText(last).bits}` : ""}</span>
                   <ArrowRight size={15} className="shrink-0 transition group-hover:translate-x-0.5" />
                 </Link>
               )}

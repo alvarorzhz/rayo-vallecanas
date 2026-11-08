@@ -287,7 +287,6 @@ function MyMatchCard({ app, report }: { app: ReportView["appearances"][number]; 
   const assists = report.goals.filter((g) => g.assist_id === app.player_id).length;
   const mvp = report.mvp?.player_id === app.player_id;
   const facts: [string, string | number][] = [
-    ["Rol", app.started ? "Titular" : "Suplente"],
     ...(app.goalkeeper ? [["Encajados", app.conceded] as [string, number]] : [["Goles", goals] as [string, number], ["Asist.", assists] as [string, number]]),
   ];
   const cards = [app.yellows > 0 && `🟨${app.yellows > 1 ? ` ×${app.yellows}` : ""}`, app.red && "🟥"].filter(Boolean).join(" ");
@@ -301,7 +300,7 @@ function MyMatchCard({ app, report }: { app: ReportView["appearances"][number]; 
         <h2 className="sport flex items-center gap-2 text-lg font-black"><Shirt size={18} className="text-rojo" /> Tu partido</h2>
         <Jersey number={app.number} goalkeeper={app.goalkeeper || lineOf(app.position) === "GK"} size={30} />
       </div>
-      <dl className="grid grid-cols-3 gap-2 text-center">
+      <dl className="grid gap-2 text-center" style={{ gridTemplateColumns: `repeat(${facts.length}, minmax(0, 1fr))` }}>
         {facts.map(([k, v]) => (
           <div key={k} className="flex flex-col-reverse rounded-xl bg-gris px-1 py-2">
             <dt className="mt-1 text-[11px] font-bold uppercase tracking-wider text-negro/65">{k}</dt>
