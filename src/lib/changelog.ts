@@ -8,6 +8,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.15.0",
+    date: "2026-11-08",
+    title: "Nueva imagen del resultado",
+    changes: [
+      "La imagen del resultado para compartir estrena diseño: estadio de noche con focos, grada llena y el césped en perspectiva.",
+      "El marcador va en un videomarcador con los escudos y los goles del Rayo en dorado cuando ganamos. Con victoria, ¡confeti!",
+      "Debajo, los goleadores con un balón por gol y quién les dio la asistencia, y la tarjeta dorada del MVP con su foto (o su dorsal si no tiene).",
+      "Arriba, la competición y la jornada; abajo, la fecha, el campo y #AúpaRayo.",
+    ],
+  },
+  {
     version: "3.14.0",
     date: "2026-11-08",
     title: "Patrocinadores",
