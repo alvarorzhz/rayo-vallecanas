@@ -44,6 +44,8 @@ function campaignFromForm(f: FormData) {
     numbering_mode: str(f, "numbering_mode") || "auto",
     ref_prefix: (str(f, "ref_prefix") || "RV").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "RV",
     notes: str(f, "notes") || null,
+    prize_text: kind === "raffle" ? str(f, "prize_text").slice(0, 300) || null : null,
+    public_purpose: kind === "raffle" ? str(f, "public_purpose").slice(0, 600) || null : null,
   };
 }
 
@@ -114,6 +116,26 @@ export async function setCampaignStatus(id: string, status: string) {
   }
   revalidatePath(`/loteria/${id}`);
   revalidatePath("/loteria");
+}
+
+// ---------------------------------------------------------------- Página pública de la rifa
+const slugify = (t: string) =>
+  t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40).replace(/^-+|-+$/g, "") || "rifa";
+
+export async function setRafflePublic(id: string, enabled: boolean) {
+  const supabase = await createClient();
+  const { data: c, error: e1 } = await supabase.from("lottery_campaigns").select("name, kind, public_slug").eq("id", id).single();
+  if (e1 || !c) throw new Error(e1?.message ?? "Campaña no encontrada");
+  if (c.kind !== "raffle") throw new Error("Solo las rifas tienen página pública");
+  const patch: Record<string, unknown> = { public_enabled: enabled };
+  // Enlace estable: se crea la primera vez y no cambia aunque se apague y se vuelva a encender.
+  if (enabled && !c.public_slug) {
+    const rnd = Array.from(crypto.getRandomValues(new Uint8Array(3)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 5);
+    patch.public_slug = `${slugify(c.name)}-${rnd}`;
+  }
+  const { error } = await supabase.from("lottery_campaigns").update(patch).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/loteria/${id}`);
 }
 
 export async function setWinningPrize(id: string, f: FormData) {

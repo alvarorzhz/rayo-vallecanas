@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, ArchiveRestore, Download, Pencil, ShoppingCart, Users, Grid3x3, List, Trophy, ShieldAlert, Wallet } from "lucide-react";
+import { Archive, ArchiveRestore, Download, Pencil, ShoppingCart, Users, Grid3x3, List, Trophy, ShieldAlert, Wallet, Globe, ExternalLink, Fingerprint } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha, NUMBERING_MODE_LABEL } from "@/lib/format";
@@ -10,7 +10,9 @@ import { fetchNumbers, fetchSales, type NumberRow } from "@/lib/lottery/queries"
 import { DeleteCampaignForm, RaffleDrawForm } from "@/components/lottery/client-forms";
 import { ImportCampaignButton } from "@/components/finance/client-forms";
 import { importCampaign } from "@/app/(app)/finanzas/actions";
-import { archiveCampaign, deleteCampaign, drawRaffle, setCampaignStatus, setWinningPrize } from "../actions";
+import { archiveCampaign, deleteCampaign, drawRaffle, setCampaignStatus, setRafflePublic, setWinningPrize } from "../actions";
+import { CopyButton } from "@/components/lottery/public-raffle";
+import { publicRaffleUrl } from "@/lib/lottery/public";
 import type { Campaign, Summary } from "@/lib/types";
 
 type Rank = { seller_id: string; full_name: string; sales_count: number; shares: number; sold_cents: number; paid_cents: number; pending_cents: number };
@@ -50,6 +52,11 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   if (raffle && c.winning_number && isAdmin) {
     [winner] = await fetchNumbers(supabase, id, { only: c.winning_number });
   }
+
+  const lastClose = raffle && isAdmin
+    ? (await supabase.from("lottery_raffle_events").select("created_at, sold_count, fingerprint")
+        .eq("campaign_id", id).eq("kind", "closed").order("id", { ascending: false }).limit(1).maybeSingle()).data
+    : null;
 
   // Totales propios (vendedor)
   let mine = { count: 0, shares: 0, total: 0, paid: 0 };
@@ -222,6 +229,48 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
               <button className="btn-dark">Registrar resultado</button>
             </form>
           )}
+        </div>
+      )}
+
+      {raffle && isAdmin && (
+        <div className="card mb-6 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-2 font-bold"><Globe size={18} className="text-rojo" /> Página pública</h2>
+              <p className="text-sm text-negro/60">
+                {c.public_enabled
+                  ? "Cualquiera con el enlace ve los números vendidos (nunca a quién), comprueba el suyo con la referencia y consulta el acta del sorteo."
+                  : "Apagada. Al encenderla, cualquiera con el enlace podrá ver qué números están vendidos (sin nombres), comprobar el suyo y ver el acta del sorteo."}
+              </p>
+            </div>
+            {s.can("lottery_admin", "update") && (
+              <form action={setRafflePublic.bind(null, id, !c.public_enabled)}>
+                <button className={c.public_enabled ? "btn-ghost" : "btn-primary"}>{c.public_enabled ? "Apagar" : "Publicar"}</button>
+              </form>
+            )}
+          </div>
+          {c.public_enabled && c.public_slug && (
+            <div className="flex flex-wrap items-center gap-2">
+              <code className="min-w-0 max-w-full truncate rounded-lg bg-gris px-3 py-2 text-xs">{publicRaffleUrl(c.public_slug)}</code>
+              <CopyButton text={publicRaffleUrl(c.public_slug)} />
+              <a href={`/rifa/${c.public_slug}`} target="_blank" rel="noopener" className="btn-ghost"><ExternalLink size={16} /> Abrir</a>
+            </div>
+          )}
+          {c.public_enabled && c.status === "draft" && (
+            <p className="text-xs font-semibold text-rojo">La página se verá cuando actives las ventas.</p>
+          )}
+          {c.public_enabled && !c.public_purpose && (
+            <p className="text-xs text-negro/65">Consejo: en <Link href={`/loteria/${id}/editar`} className="font-semibold text-rojo">Editar</Link> puedes poner el premio y a qué se destina lo recaudado.</p>
+          )}
+          {lastClose?.fingerprint ? (
+            <div className="rounded-xl bg-gris p-3 text-sm">
+              <p className="flex items-center gap-2 font-semibold"><Fingerprint size={16} /> Huella del cierre ({lastClose.sold_count} vendidos, {fecha(lastClose.created_at, true)})</p>
+              <p className="mt-1 break-all font-mono text-xs text-negro/70">{lastClose.fingerprint}</p>
+              <p className="mt-1 text-xs text-negro/65">Compártela en el grupo al cerrar las ventas: así cualquiera puede comprobar después que la lista no ha cambiado.</p>
+            </div>
+          ) : c.status === "active" ? (
+            <p className="text-xs text-negro/65">Al pulsar «Cerrar ventas» se congela la lista de números vendidos y se guarda su huella en el acta.</p>
+          ) : null}
         </div>
       )}
 

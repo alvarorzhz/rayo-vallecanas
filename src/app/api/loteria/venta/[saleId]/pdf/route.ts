@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import QRCode from "qrcode";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { createClient } from "@/lib/supabase/server";
 import { loadReceipt } from "@/lib/lottery/receipt-data";
@@ -32,7 +33,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ saleId: st
   const pdf = await PDFDocument.create();
   pdf.setTitle(`Justificante ${d.reference}`);
   pdf.setAuthor("Rayo Vallecañas");
-  const W = 420, H = 640; // tamaño cercano a A5
+  const W = 420, H = d.publicUrl ? 750 : 640; // tamaño cercano a A5 (más alto con el QR de la rifa)
   const page = pdf.addPage([W, H]);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -89,6 +90,15 @@ export async function GET(_: Request, { params }: { params: Promise<{ saleId: st
   y -= 50;
   center("¡Muchísimas gracias por apoyar al Rayo Vallecañas y mucha suerte!", y, bold, 10);
   center("Guarda este justificante de compra.", y - 16, font, 9, GRIS);
+
+  // QR a la página pública de la rifa
+  if (d.publicUrl) {
+    const qr = await pdf.embedPng(await QRCode.toBuffer(d.publicUrl, { margin: 1, width: 300, color: { dark: "#121212", light: "#ffffff" } }));
+    const q = 86;
+    page.drawImage(qr, { x: (W - q) / 2, y: y - 40 - q, width: q, height: q });
+    center("Escanea para comprobar tu número y seguir el sorteo", y - 54 - q, bold, 9);
+    center(d.publicUrl.replace(/^https?:\/\//, ""), y - 68 - q, font, 8, GRIS);
+  }
   page.drawRectangle({ x: 0, y: 0, width: W, height: 8, color: ROJO });
   page.drawRectangle({ x: W / 2, y: 0, width: W / 2, height: 8, color: DORADO });
 

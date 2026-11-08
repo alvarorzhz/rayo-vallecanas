@@ -15,6 +15,8 @@ export type ReceiptData = {
   sellerName: string;
   createdAt: string;
   campaignName: string;
+  /** Página pública de la rifa, si está publicada. */
+  publicUrl?: string | null;
 };
 
 export const siteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
@@ -48,6 +50,7 @@ export function receiptText(d: ReceiptData) {
     `💶 ${euros(d.totalCents)}${pending > 0 ? ` · te queda por pagar ${euros(pending)}` : " · ¡pagado!"}`,
     `🔖 Referencia: ${d.reference}`,
     "",
+    ...(d.publicUrl ? [`🔎 Comprueba tu número y sigue el sorteo: ${d.publicUrl}`] : []),
     "Guarda este mensaje, es tu justificante de compra.",
     `Tus datos solo se usan para gestionar tu compra: ${CLUB.privacyUrl}`,
     "",
@@ -86,6 +89,7 @@ ${row("Fecha", fecha(d.createdAt, true))}
 ${row("Estado del pago", pending > 0 ? `Pendiente: ${euros(pending)}` : "Pagado")}
 ${row("Importe", euros(d.totalCents), true)}
 </table>
+${d.publicUrl ? `<p style="margin:16px 0 0;font-size:14px;color:#333;text-align:center">Comprueba tu número y sigue el sorteo en <a href="${esc(d.publicUrl)}" style="color:#D20D17;font-weight:700">la página de la rifa</a>.</p>` : ""}
 <p style="margin:20px 0 0;font-size:16px;color:#080808;text-align:center;font-weight:700">¡Mucha suerte! 🍀⚡</p>
 </td></tr>
 <tr><td style="padding:16px 24px;background:#F4F4F4;color:#888;font-size:11px;line-height:1.5">

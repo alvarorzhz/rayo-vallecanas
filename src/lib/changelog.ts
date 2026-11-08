@@ -7,6 +7,20 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.12.0",
+    date: "2026-11-08",
+    title: "Página pública de la rifa",
+    changes: [
+      "Cada rifa puede tener su página pública, que se abre sin iniciar sesión. Viene apagada: la enciende un gestor con «Publicar» en la ficha de la rifa.",
+      "La página enseña el premio, la fecha, el precio y la cuadrícula de números vendidos y libres. Nunca a quién se vendió cada número.",
+      "«Comprueba tu número»: el comprador escribe su número y la referencia del justificante y ve si está registrado, pagado y dentro del sorteo.",
+      "Al cerrar las ventas se congela la lista de números vendidos y se guarda su huella digital, que cambiaría si alguien añadiera o quitara una venta. Cualquiera puede comprobarla con un botón.",
+      "Acta del sorteo pública y en PDF: cierres, reaperturas, el número ganador, cómo se sorteó y quién lo registró. Una vez sorteada, el resultado ya no se puede cambiar.",
+      "En la rifa se puede poner el premio y a qué se destina lo recaudado. Lo recaudado se muestra cuando la rifa está sorteada.",
+      "El justificante en PDF lleva un QR a la página de la rifa, y el WhatsApp y el email llevan el enlace.",
+    ],
+  },
+  {
     version: "3.11.0",
     date: "2026-11-08",
     title: "Sincronización con la liga más vigilada",

@@ -1,13 +1,14 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ReceiptData } from "@/lib/receipt";
+import { publicRaffleUrl } from "@/lib/lottery/public";
 
 /** Carga los datos del justificante con el cliente del usuario (RLS decide si puede verla). */
 export async function loadReceipt(supabase: SupabaseClient, saleId: string) {
   const { data: sale, error } = await supabase
     .from("lottery_sales")
     .select(
-      "id, reference, quantity, total_cents, paid_cents, created_at, cancelled_at, seller_id, preferred_channel, buyer:buyers(full_name, email, phone), campaign:lottery_campaigns(name, kind, lottery_number, draw_type, draw_date)",
+      "id, reference, quantity, total_cents, paid_cents, created_at, cancelled_at, seller_id, preferred_channel, buyer:buyers(full_name, email, phone), campaign:lottery_campaigns(name, kind, lottery_number, draw_type, draw_date, public_enabled, public_slug)",
     )
     .eq("id", saleId)
     .single();
@@ -19,7 +20,7 @@ export async function loadReceipt(supabase: SupabaseClient, saleId: string) {
   ]);
 
   const buyer = sale.buyer as unknown as { full_name: string; email: string | null; phone: string | null };
-  const campaign = sale.campaign as unknown as { name: string; kind: "lottery" | "raffle"; lottery_number: string | null; draw_type: string; draw_date: string | null };
+  const campaign = sale.campaign as unknown as { name: string; kind: "lottery" | "raffle"; lottery_number: string | null; draw_type: string; draw_date: string | null; public_enabled: boolean; public_slug: string | null };
 
   const data: ReceiptData = {
     reference: sale.reference,
@@ -35,6 +36,7 @@ export async function loadReceipt(supabase: SupabaseClient, saleId: string) {
     sellerName: seller?.full_name ?? "—",
     createdAt: sale.created_at,
     campaignName: campaign.name,
+    publicUrl: campaign.kind === "raffle" && campaign.public_enabled && campaign.public_slug ? publicRaffleUrl(campaign.public_slug) : null,
   };
   return { data, buyer, cancelled: Boolean(sale.cancelled_at), preferredChannel: sale.preferred_channel as "email" | "whatsapp" | null };
 }
