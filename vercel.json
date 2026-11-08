@@ -8,6 +8,7 @@
     { "path": "/api/cron/resultado?vuelta=2", "schedule": "0 16 * * *" },
     { "path": "/api/cron/resultado?vuelta=3", "schedule": "0 19 * * *" },
     { "path": "/api/cron/resultado?vuelta=4", "schedule": "30 21 * * *" },
-    { "path": "/api/cron/resultado?vuelta=5", "schedule": "0 7 * * *" }
+    { "path": "/api/cron/resultado?vuelta=5", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/mvp", "schedule": "15 23 * * *" }
   ]
 }

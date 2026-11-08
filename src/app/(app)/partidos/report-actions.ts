@@ -2,12 +2,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/session";
 import { sendPush } from "@/lib/push";
 import { fetchSheet } from "@/lib/league-sync";
 import { CLUB_NAME, type MatchRow } from "@/lib/matches";
 import { shirtName, type Player } from "@/lib/squad";
+import { activeUsers, announceMvpOpen } from "@/lib/mvp-server";
+import { mvpClosesAt, untilLabel } from "@/lib/mvp";
 import { emptyApp, type DraftApp, type ReportDraft } from "@/lib/reports";
 
 export type ReportState = { error?: string; ok?: string } | undefined;
@@ -46,9 +47,7 @@ function cleanDraft(raw: unknown, goalsFor: number): ReportDraft {
     if (assist && assist === scorer) throw new Error("Un jugador no puede darse la asistencia a sí mismo");
     return { scorer, assist };
   });
-  const mvp = UUID.test(d.mvp ?? "") ? d.mvp : "";
-  if (mvp && !apps[mvp]) throw new Error("El MVP tiene que haber jugado");
-  return { apps, goals, mvp };
+  return { apps, goals };
 }
 
 /** Guarda el acta (sustituye la anterior). */
@@ -83,29 +82,35 @@ export async function saveReport(matchId: string, _: ReportState, f: FormData): 
       if (error) throw error;
     }
     const { error } = await supabase.from("matches")
-      .update({ mvp_player_id: draft.mvp || null, report_saved_at: new Date().toISOString(), report_by: s.user.id }).eq("id", matchId);
+      .update({ report_saved_at: new Date().toISOString(), report_by: s.user.id }).eq("id", matchId);
     if (error) throw error;
   } catch (e) {
     return { error: errMsg(e) };
   }
 
-  // Aviso al equipo la primera vez
-  if (m && !m.report_saved_at && f.get("notify") === "on") {
-    const ids = [...new Set([...draft.goals.map((g) => g.scorer).filter((x) => x && x !== "own"), draft.mvp].filter(Boolean))];
+  // Se abre la votación del MVP (o, si ya estaba abierta, se ponen al día los candidatos)
+  const closes = mvpClosesAt();
+  const { data: opened } = await supabase.rpc("mvp_open", { p_match: matchId, p_candidates: Object.keys(draft.apps), p_closes: closes.toISOString() });
+  const notify = !!m && !m.report_saved_at && f.get("notify") === "on";
+  if (m && (opened || notify)) {
+    const ids = [...new Set(draft.goals.map((g) => g.scorer).filter((x) => x && x !== "own"))];
     const { data: ps } = ids.length ? await supabase.from("players").select("*").in("id", ids).returns<Player[]>() : { data: [] as Player[] };
     const name = (id: string) => { const p = ps?.find((x) => x.id === id); return p ? shirtName(p) : "?"; };
     const count = new Map<string, number>();
     for (const g of draft.goals) if (g.scorer && g.scorer !== "own") count.set(g.scorer, (count.get(g.scorer) ?? 0) + 1);
     const scorers = [...count].map(([id, n]) => `${name(id)}${n > 1 ? ` (${n})` : ""}`).join(", ");
-    const score = m.is_home ? `${CLUB_NAME} ${m.goals_for}-${m.goals_against} ${m.rival.name}` : `${m.rival.name} ${m.goals_against}-${m.goals_for} ${CLUB_NAME}`;
-    const admin = createAdminClient();
-    const { data: profiles } = await admin.from("profiles").select("id").eq("active", true).neq("id", s.user.id);
-    await sendPush((profiles ?? []).map((p) => p.id), {
-      title: "📋 Acta del partido",
-      body: [score, scorers && `⚽ ${scorers}`, draft.mvp && `⭐ MVP: ${name(draft.mvp)}`].filter(Boolean).join(" · "),
-      url: `/partidos/${matchId}`,
-      tag: `acta-${matchId}`,
-    });
+    if (opened) {
+      // Un solo aviso: la votación (con el resumen del acta si se dejó marcado «Avisar»)
+      await announceMvpOpen(m, untilLabel(closes), { except: s.user.id, scorers: notify ? scorers : undefined });
+    } else {
+      const score = m.is_home ? `${CLUB_NAME} ${m.goals_for}-${m.goals_against} ${m.rival.name}` : `${m.rival.name} ${m.goals_against}-${m.goals_for} ${CLUB_NAME}`;
+      await sendPush(await activeUsers(s.user.id), {
+        title: "📋 Acta del partido",
+        body: [score, scorers && `⚽ ${scorers}`].filter(Boolean).join(" · "),
+        url: `/partidos/${matchId}`,
+        tag: `acta-${matchId}`,
+      });
+    }
   }
 
   revalidatePath(`/partidos/${matchId}`);
@@ -121,7 +126,9 @@ export async function deleteReport(matchId: string): Promise<ReportState> {
   const supabase = await createClient();
   const a = await supabase.from("match_goals").delete().eq("match_id", matchId);
   const b = await supabase.from("match_appearances").delete().eq("match_id", matchId);
-  const c = await supabase.from("matches").update({ mvp_player_id: null, report_saved_at: null, report_by: null }).eq("id", matchId);
+  // El MVP votado se queda aunque se borre el acta
+  const { data: poll } = await supabase.from("mvp_polls").select("match_id").eq("match_id", matchId).maybeSingle();
+  const c = await supabase.from("matches").update({ ...(poll ? {} : { mvp_player_id: null }), report_saved_at: null, report_by: null }).eq("id", matchId);
   const err = a.error ?? b.error ?? c.error;
   if (err) return { error: errMsg(err) };
   revalidatePath(`/partidos/${matchId}`);
@@ -135,7 +142,7 @@ export async function leaguePrefill(matchId: string): Promise<PrefillResult> {
   if (!s.can("matches", "update")) return { error: "No tienes permiso para hacer esto" };
   const supabase = await createClient();
   const [{ data: m }, { data: cfg }] = await Promise.all([
-    supabase.from("matches").select("id, ext_id, is_home, goals_for, mvp_player_id").eq("id", matchId).maybeSingle(),
+    supabase.from("matches").select("id, ext_id, is_home, goals_for").eq("id", matchId).maybeSingle(),
     supabase.from("league_sync").select("competition").eq("id", 1).maybeSingle(),
   ]);
   const ext = typeof m?.ext_id === "string" && m.ext_id.startsWith("futormes:") ? m.ext_id.slice(9) : null;
@@ -159,7 +166,7 @@ export async function leaguePrefill(matchId: string): Promise<PrefillResult> {
     while (goals.length < total) goals.push({ scorer: "", assist: "" });
     const withScorer = rows.reduce((n, r) => n + r.goals, 0);
     return {
-      draft: { apps, goals: goals.slice(0, total), mvp: (m.mvp_player_id as string | null) ?? "" },
+      draft: { apps, goals: goals.slice(0, total) },
       ok: `Traídos ${Object.keys(apps).length} jugadores de la liga${withScorer ? `, ${withScorer} goles con autor` : " (la liga no apunta los goleadores de este partido)"}${unknown.length ? `. No están en la plantilla: ${unknown.join(", ")}` : ""}. Revisa y guarda.`,
     };
   } catch (e) {

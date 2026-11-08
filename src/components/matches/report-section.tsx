@@ -7,7 +7,7 @@ import type { MatchRow } from "@/lib/matches";
 import type { ReportView } from "@/lib/reports";
 
 /** Acta en la página del partido. */
-export function ReportSection({ m, report, canEdit }: { m: MatchRow; report: ReportView; canEdit: boolean }) {
+export function ReportSection({ m, report, canEdit, hideMvp = false }: { m: MatchRow; report: ReportView; canEdit: boolean; hideMvp?: boolean }) {
   if (m.status !== "played") return null;
   if (!m.report_saved_at) {
     if (!canEdit) return null;
@@ -15,7 +15,7 @@ export function ReportSection({ m, report, canEdit }: { m: MatchRow; report: Rep
       <section id="acta" className="card scroll-mt-24 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2"><ClipboardCheck size={18} className="text-rojo" /> Acta</h2>
-          <p className="text-sm text-negro/65">Apunta quién jugó, los goles, las tarjetas y el MVP: las estadísticas de los cromos salen de aquí.</p>
+          <p className="text-sm text-negro/65">Apunta quién jugó, los goles y las tarjetas: las estadísticas de los cromos salen de aquí. Al guardarla se abre la votación del MVP.</p>
         </div>
         <Link href={`/partidos/${m.id}/acta`} prefetch className="btn-primary"><ClipboardCheck size={16} /> Rellenar acta</Link>
       </section>
@@ -37,7 +37,7 @@ export function ReportSection({ m, report, canEdit }: { m: MatchRow; report: Rep
         </div>
       </div>
 
-      {report.mvp && (
+      {report.mvp && !hideMvp && (
         <div className="franja relative flex items-center gap-3 overflow-hidden rounded-2xl bg-negro p-3 text-white">
           <span className="relative"><Jersey number={report.mvp.number} goalkeeper={lineOf(report.mvp.position) === "GK"} size={44} /></span>
           <div className="relative min-w-0">

@@ -19,7 +19,7 @@ export type ReportPlayer = { player_id: string; player: Player; number: number |
 /** Lo que edita el gestor (y lo que llega de la liga para rellenarlo). */
 export type DraftApp = { started: boolean; goalkeeper: boolean; conceded: number; yellows: number; red: boolean };
 export type DraftGoal = { scorer: string; assist: string };   // scorer: id, "own" (propia puerta del rival) o "" (sin apuntar)
-export type ReportDraft = { apps: Record<string, DraftApp>; goals: DraftGoal[]; mvp: string };
+export type ReportDraft = { apps: Record<string, DraftApp>; goals: DraftGoal[] };
 
 export const emptyApp = (): DraftApp => ({ started: false, goalkeeper: false, conceded: 0, yellows: 0, red: false });
 

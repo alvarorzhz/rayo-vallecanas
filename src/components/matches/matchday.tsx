@@ -8,6 +8,8 @@ import { PHASE_TITLE, type MatchdayPhase } from "@/lib/matchday";
 import { tally, type CallupRow } from "@/lib/callups";
 import { lineOf, shirtName, type Player } from "@/lib/squad";
 import type { ReportView } from "@/lib/reports";
+import type { MvpBoard } from "@/lib/mvp";
+import { timeLeft } from "@/lib/polls";
 import { skyOf, weatherTip, type MatchWeather } from "@/lib/weather";
 import { Crest } from "@/components/matches/crest";
 import { FormStrip, MatchLine } from "@/components/matches/match-bits";
@@ -200,9 +202,9 @@ function WeatherChip({ w, time }: { w: MatchWeather; time: string | null }) {
 type Scorer = { goals: number; number: number | null; position: string; player: Player };
 
 /** Debajo de la portada: tu convocatoria, los convocados y la previa (o el resumen si ya se jugó). */
-export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent, lastH2H, topScorer, report }: {
+export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent, lastH2H, topScorer, report, mvp = null }: {
   m: MatchRow; phase: MatchdayPhase; callups: CallupRow[]; myPlayerId: string | null; canEdit: boolean;
-  recent: MatchRow[]; lastH2H: MatchRow | null; topScorer: Scorer | null; report: ReportView | null;
+  recent: MatchRow[]; lastH2H: MatchRow | null; topScorer: Scorer | null; report: ReportView | null; mvp?: MvpBoard | null;
 }) {
   const formRows = [...recent].filter((x) => x.id !== m.id).slice(0, 5).reverse();
   const run = streak(recent);
@@ -217,7 +219,17 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
     }
     return (
       <div className={`mb-6 grid gap-4 md:grid-cols-2 ${myApp ? "lg:grid-cols-3" : ""}`}>
-        {report?.mvp ? (
+        {mvp?.open ? (
+          <Link href={`/partidos/${m.id}#mvp`} prefetch className="franja anim-rise relative flex items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:shadow-xl">
+            <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-dorado/15 ring-2 ring-dorado"><Star size={30} className="fill-dorado text-dorado" /></span>
+            <div className="relative min-w-0 flex-1">
+              <p className="sport flex items-center gap-1 text-xs font-black tracking-widest text-dorado">VOTACIÓN DEL MVP · {timeLeft(mvp.closes_at).toUpperCase()}</p>
+              <p className="sport text-2xl font-black leading-tight">{mvp.my_vote ? "Ya has votado ✓" : "¿Quién ha sido el mejor?"}</p>
+              <p className="text-xs text-white/75">{mvp.my_vote ? "Puedes cambiarlo hasta el cierre." : "Toca para votar, es secreto."} Han votado {mvp.voters} de {mvp.eligible}.</p>
+            </div>
+            <span className="relative btn-primary shrink-0 px-3 py-1.5 text-sm">{mvp.my_vote ? "Cambiar" : "Votar"}</span>
+          </Link>
+        ) : report?.mvp ? (
           <div className="franja cromo-shine anim-rise relative flex items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg">
             <span className="relative anim-trophy"><Jersey number={report.mvp.number} goalkeeper={lineOf(report.mvp.position) === "GK"} size={60} /></span>
             <div className="relative min-w-0">
@@ -228,7 +240,7 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
         ) : (
           <div className="card anim-rise flex items-center gap-3 text-sm text-negro/70">
             <ClipboardCheck size={22} className="shrink-0 text-rojo" />
-            <span className="flex-1">{m.report_saved_at ? "El acta ya está, pero sin MVP." : "Falta el acta: con ella salen los goleadores, el MVP y la imagen para compartir."}</span>
+            <span className="flex-1">{m.report_saved_at ? (mvp ? "La votación del MVP terminó sin ganador: lo decide un gestor." : "El acta ya está, pero sin MVP.") : "Falta el acta: con ella salen los goleadores, la votación del MVP y la imagen para compartir."}</span>
             {canEdit && !m.report_saved_at && <Link href={`/partidos/${m.id}/acta`} prefetch className="btn-primary shrink-0 px-3 py-1.5 text-sm">Rellenar</Link>}
           </div>
         )}

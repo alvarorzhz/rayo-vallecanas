@@ -26,7 +26,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     initial = {
       apps: Object.fromEntries(report.appearances.map((a) => [a.player_id, { started: a.started, goalkeeper: a.goalkeeper, conceded: a.conceded, yellows: a.yellows, red: a.red } satisfies DraftApp])),
       goals: report.goals.map((g) => ({ scorer: g.own_goal ? "own" : g.scorer_id ?? "", assist: g.assist_id ?? "" })),
-      mvp: m.mvp_player_id ?? "",
     };
   } else {
     const going = callups.filter((c) => c.reply === "yes" || c.slot != null);
@@ -35,7 +34,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         ...emptyApp(), started: c.slot != null, goalkeeper: c.slot === 1, conceded: c.slot === 1 ? m.goals_against ?? 0 : 0,
       }])),
       goals: [],
-      mvp: "",
     };
   }
   const score = m.is_home ? `${CLUB_NAME} ${m.goals_for}-${m.goals_against} ${m.rival.name}` : `${m.rival.name} ${m.goals_against}-${m.goals_for} ${CLUB_NAME}`;

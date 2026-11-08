@@ -55,7 +55,7 @@ export function buildTour(s: Session): TourStep[] {
     const p = [
       "El calendario de la temporada, los resultados y la racha del equipo.",
       "Si te convocan, contesta «Voy», «Duda» o «No voy» desde el partido.",
-      "Actas, goleadores, MVP y la página de estadísticas con el pichichi y el zamora.",
+      "Actas, goleadores, la votación del MVP y la página de estadísticas con el pichichi y el zamora.",
     ];
     if (s.can("matches", "update"))
       p.push("Como gestor: añade partidos, sincroniza con la liga, prepara la convocatoria con la alineación y rellena el acta.");
