@@ -28,6 +28,7 @@ const TABLES: [string, string][] = [
   ["squad_fee_plans", "Plantilla · cuotas"],
   ["squad_fee_overrides", "Plantilla · cuotas especiales"],
   ["audit_log", "Auditoría"],
+  ["access_log", "Auditoría · accesos"],
 ];
 
 /**

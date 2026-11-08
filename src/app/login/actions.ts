@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 import { siteUrl } from "@/lib/receipt";
+import { logAccess, sessionIdFromToken } from "@/lib/access-log";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -11,16 +12,21 @@ export async function signIn(_: FormState, formData: FormData): Promise<FormStat
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "/");
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    if (error.code === "user_banned") return { error: "Tu acceso a la app está deshabilitado. Habla con la directiva." };
+    const banned = error.code === "user_banned";
+    await logAccess({ event: "login_failed", email, detail: banned ? "Usuario deshabilitado" : "Email o contraseña incorrectos" });
+    if (banned) return { error: "Tu acceso a la app está deshabilitado. Habla con la directiva." };
     return { error: "Email o contraseña incorrectos" };
   }
+  await logAccess({ event: "login", userId: data.user.id, email, sessionId: sessionIdFromToken(data.session.access_token) });
   redirect(safeNext(next));
 }
 
 export async function signOut() {
   const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (data?.claims?.sub) await logAccess({ event: "logout", userId: data.claims.sub, email: (data.claims.email as string) ?? null, sessionId: (data.claims.session_id as string) ?? null });
   await supabase.auth.signOut();
   redirect("/login");
 }
@@ -46,5 +52,6 @@ export async function setPassword(_: FormState, formData: FormData): Promise<For
   const { data: u, error } = await supabase.auth.updateUser({ password });
   if (error) return { error: /different|same/i.test(error.message) ? "Elige una contraseña distinta de la provisional" : error.message };
   await supabase.from("profiles").update({ must_change_password: false }).eq("id", u.user.id);
+  await logAccess({ event: "password", userId: u.user.id, email: u.user.email ?? null });
   redirect("/");
 }
