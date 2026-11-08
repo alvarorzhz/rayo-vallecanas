@@ -10,6 +10,8 @@ export type Perms = Record<Module, Record<Action, boolean>>;
 
 export type Session = {
   user: { id: string; email: string | null };
+  /** Versión del tutorial de bienvenida que ya ha visto (se guarda en los metadatos de su cuenta). */
+  tutorialSeen: number;
   profile: { id: string; full_name: string; role: string; custom_role_id: string | null; role_label: string; email: string | null; phone: string | null; avatar_url: string | null; notify_sales: boolean };
   perms: Perms;
   can: (m: Module, a?: Action) => boolean;
@@ -41,8 +43,10 @@ export const getSession = cache(async (): Promise<Session> => {
   }
   const custom = profile.custom_role as { name: string } | { name: string }[] | null;
   const customName = Array.isArray(custom) ? custom[0]?.name : custom?.name;
+  const meta = (claims.user_metadata ?? {}) as { tutorial?: number };
   return {
     user,
+    tutorialSeen: Number(meta.tutorial) || 0,
     profile: { ...profile, role_label: customName ?? ROLE_LABEL[profile.role] ?? profile.role },
     perms,
     can: (m, a = "read") => Boolean(perms[m]?.[a]),

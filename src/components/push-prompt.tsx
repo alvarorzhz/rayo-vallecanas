@@ -27,8 +27,8 @@ export function PushPrompt() {
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
     const check = () => {
-      // Espera a que se cierre el aviso de novedades para no amontonar ventanas
-      if (document.getElementById("whats-new-title")) {
+      // Espera a que se cierren las novedades y el tutorial para no amontonar ventanas
+      if (document.getElementById("whats-new-title") || document.getElementById("rv-tour")) {
         t = setTimeout(check, 1500);
         return;
       }

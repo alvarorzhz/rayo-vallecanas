@@ -7,6 +7,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.4.0",
+    date: "2026-11-08",
+    title: "Tutorial de bienvenida",
+    changes: [
+      "La primera vez que alguien entra en la app, un tutorial le lleva página a página por todas las secciones y le resalta cada botón del menú.",
+      "Cada persona ve solo las secciones de su perfil: los jugadores no pasan por Finanzas y la Gestión sale solo a quien la tiene.",
+      "Se puede saltar en cualquier momento y repetir cuando quieras desde «Mi perfil» → «Ver el tutorial otra vez».",
+      "Se recuerda en tu cuenta: si ya lo has visto, no te vuelve a salir aunque entres desde otro móvil u ordenador.",
+    ],
+  },
+  {
     version: "3.3.0",
     date: "2026-11-07",
     title: "Permisos personalizables",

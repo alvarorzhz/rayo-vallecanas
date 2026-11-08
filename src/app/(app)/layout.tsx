@@ -10,6 +10,8 @@ import { WhatsNew } from "@/components/whats-new";
 import { NavProgress } from "@/components/nav-progress";
 import { RefreshOnVisit } from "@/components/refresh-on-visit";
 import { APP_VERSION } from "@/lib/changelog";
+import { Tour } from "@/components/tour";
+import { buildTour, TOUR_VERSION } from "@/lib/tour";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
@@ -37,7 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </span>
           </Link>
           <div className="relative flex shrink-0 items-center gap-2">
-            <Link href="/perfil" prefetch aria-label="Mi perfil">
+            <Link href="/perfil" prefetch aria-label="Mi perfil" data-tour="/perfil">
               <Avatar name={s.profile.full_name} url={s.profile.avatar_url} size={34} />
             </Link>
             <form action={signOut}>
@@ -56,7 +58,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </main>
       </div>
       <BottomNav items={items} />
-      <WhatsNew />
+      {/* El tutorial de bienvenida ya enseña la app: las novedades salen a partir de la siguiente versión */}
+      <WhatsNew skip={s.tutorialSeen < TOUR_VERSION} />
+      <Tour steps={buildTour(s)} version={TOUR_VERSION} seen={s.tutorialSeen} />
       <PushPrompt />
       <Suspense>
         <NavProgress />
