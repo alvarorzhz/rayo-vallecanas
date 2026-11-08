@@ -5,6 +5,7 @@ import { byKickoff, todayMadrid, type Match, type MatchRow, type Rival } from "@
 import { sortCallups, type Callup, type CallupRow } from "@/lib/callups";
 import { sortRoster, type Player, type SquadStatus } from "@/lib/squad";
 import type { Appearance, MatchGoal, ReportPlayer, ReportView } from "@/lib/reports";
+import { addDays, matchdayPhase, type MatchdayPhase } from "@/lib/matchday";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
 
@@ -32,6 +33,37 @@ export async function fetchMatchday(supabase: DB, last = 5) {
       .order("match_date", { ascending: false }).order("kickoff", { ascending: false, nullsFirst: false }).limit(last).returns<MatchRow[]>(),
   ]);
   return { next: next?.[0] ?? null, recent: recent ?? [] };
+}
+
+/** Partido del Matchday: el de hoy (pendiente o ya jugado) o, si no hay, el de mañana. */
+export async function fetchMatchdayFocus(supabase: DB): Promise<{ m: MatchRow; phase: MatchdayPhase } | null> {
+  const today = todayMadrid();
+  const { data } = await supabase.from("matches").select(SELECT).in("status", ["scheduled", "played"])
+    .gte("match_date", today).lte("match_date", addDays(today, 1)).returns<MatchRow[]>();
+  const now = new Date();
+  const rows = (data ?? []).sort(byKickoff).map((m) => ({ m, phase: matchdayPhase(m, now) })).filter((x): x is { m: MatchRow; phase: MatchdayPhase } => !!x.phase);
+  // Hoy manda sobre mañana; si hoy hay dos, el que aún no se ha jugado
+  return rows.find((x) => x.phase === "day" || x.phase === "live") ?? rows.find((x) => x.phase === "final") ?? rows[0] ?? null;
+}
+
+/** Previa: último partido contra el rival y nuestro máximo goleador de la temporada. */
+export async function fetchMatchdayPreview(supabase: DB, m: Pick<Match, "id" | "rival_id" | "season">) {
+  const [{ data: last }, { data: top }] = await Promise.all([
+    supabase.from("matches").select(SELECT).eq("rival_id", m.rival_id).eq("status", "played").neq("id", m.id)
+      .order("match_date", { ascending: false }).limit(1).returns<MatchRow[]>(),
+    supabase.from("squad_members_full").select("goals, number, position, status, player:players!inner(*)").eq("season", m.season)
+      .neq("status", "left").gt("goals", 0).order("goals", { ascending: false }).limit(1)
+      .returns<{ goals: number; number: number | null; position: string; status: SquadStatus; player: Player }[]>(),
+  ]);
+  return { lastH2H: last?.[0] ?? null, topScorer: top?.[0] ?? null };
+}
+
+/** Lo justo para la tira «Hoy jugamos» de todas las páginas. */
+export async function fetchTodayMatch(supabase: DB) {
+  const { data } = await supabase.from("matches").select("id, kickoff, status, is_home, goals_for, goals_against, match_date, rival:rivals!inner(name, short_name)")
+    .eq("match_date", todayMadrid()).in("status", ["scheduled", "played"]).order("kickoff", { nullsFirst: false }).limit(2)
+    .returns<(Pick<Match, "id" | "kickoff" | "status" | "is_home" | "goals_for" | "goals_against" | "match_date"> & { rival: Pick<Rival, "name" | "short_name"> })[]>();
+  return (data ?? []).find((x) => x.status === "scheduled") ?? data?.[0] ?? null;
 }
 
 export async function fetchRivals(supabase: DB): Promise<Rival[]> {

@@ -12,6 +12,10 @@ import { RefreshOnVisit } from "@/components/refresh-on-visit";
 import { APP_VERSION } from "@/lib/changelog";
 import { Tour } from "@/components/tour";
 import { buildTour, TOUR_VERSION } from "@/lib/tour";
+import { createClient } from "@/lib/supabase/server";
+import { fetchTodayMatch } from "@/lib/match-queries";
+import { TodayStrip } from "@/components/matches/matchday-fx";
+import { CLUB_SHORT, hhmm, rivalShort } from "@/lib/matches";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
@@ -24,6 +28,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Panel de gestión: usuarios, perfiles, avisos, auditoría y copias de seguridad
   if (s.can("users") || s.can("lottery_admin", "update") || s.profile.role === "superadmin")
     items.push({ href: "/admin", label: "Gestión", icon: "Settings" });
+
+  // Especial Matchday: el día del partido, una tira «Hoy jugamos» arriba en todas las páginas
+  const today = s.can("matches") ? await fetchTodayMatch(await createClient()) : null;
+  const strip = today && {
+    id: today.id,
+    time: hhmm(today.kickoff),
+    label: today.is_home ? `Rayo vs ${today.rival.name}` : `${today.rival.name} vs Rayo`,
+    final: today.status === "played" && today.goals_for != null
+      ? (today.is_home ? `${CLUB_SHORT} ${today.goals_for}-${today.goals_against} ${rivalShort(today.rival)}` : `${rivalShort(today.rival)} ${today.goals_against}-${today.goals_for} ${CLUB_SHORT}`)
+      : null,
+  };
 
   return (
     <div className="flex min-h-dvh">
@@ -49,6 +64,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </form>
           </div>
         </header>
+        {strip && <TodayStrip match={strip} />}
         <main id="contenido" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 outline-none px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-8">
           <div className="page-enter">{children}</div>
           <footer className="mt-10 text-center text-xs text-negro/60">

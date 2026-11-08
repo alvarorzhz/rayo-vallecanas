@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShoppingCart, Ticket, Wallet, CalendarDays, Shirt } from "lucide-react";
-import { fetchCallups, fetchMatchday, fetchMyPlayerId } from "@/lib/match-queries";
+import { fetchCallups, fetchMatchday, fetchMatchdayFocus, fetchMatchdayPreview, fetchMyPlayerId, fetchReport } from "@/lib/match-queries";
+import { MatchdayDetails, MatchdayHero } from "@/components/matches/matchday";
 import { MyCallupCard, callupOpen } from "@/components/matches/callup-section";
 import { FormStrip, MatchLine, NextMatchCard } from "@/components/matches/match-bits";
 import { getSession } from "@/lib/session";
@@ -70,13 +71,26 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const me = roster.find((r) => r.player.user_id === s.user.id) ?? null;
 
   // Partidos: el próximo y los últimos resultados
-  const matchday = s.can("matches") ? await fetchMatchday(supabase, 5) : null;
+  const [matchday, focus] = s.can("matches") ? await Promise.all([fetchMatchday(supabase, 6), fetchMatchdayFocus(supabase)]) : [null, null];
   // ¿Me han convocado para el próximo partido?
   let myCallup = null;
-  if (matchday?.next && callupOpen(matchday.next)) {
+  if (!focus && matchday?.next && callupOpen(matchday.next)) {
     const [rows, me] = await Promise.all([fetchCallups(supabase, matchday.next), fetchMyPlayerId(supabase, s.user.id)]);
     myCallup = rows.find((r) => r.player_id === me) ?? null;
   }
+  // Especial Matchday: la víspera y el día del partido, Inicio se convierte en la portada del partido
+  const md = focus
+    ? await (async () => {
+        const final = focus.phase === "final";
+        const [callups, myPlayerId, preview, report] = await Promise.all([
+          final ? Promise.resolve([]) : fetchCallups(supabase, focus.m),
+          fetchMyPlayerId(supabase, s.user.id),
+          final ? Promise.resolve({ lastH2H: null, topScorer: null }) : fetchMatchdayPreview(supabase, focus.m),
+          final && focus.m.report_saved_at ? fetchReport(supabase, focus.m) : Promise.resolve(null),
+        ]);
+        return { ...focus, callups, myPlayerId, ...preview, report };
+      })()
+    : null;
 
   const firstName = s.profile.full_name.split(" ")[0];
 
@@ -86,46 +100,61 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <div className="mb-4 rounded-xl bg-rojo/10 p-3 text-sm font-medium text-rojo">No tienes permiso para acceder a esa sección.</div>
       )}
 
-      <section className="franja relative mb-6 overflow-hidden rounded-3xl bg-negro p-6 text-white shadow-xl sm:p-8">
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.10),transparent_55%)]" />
-        <div className="relative flex items-center gap-4 sm:gap-6">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/escudo.png" alt="Escudo del Rayo Vallecañas" width={84} height={100} className="w-16 shrink-0 drop-shadow-2xl sm:w-20" />
-          <div className="min-w-0">
-            <p className="sport text-sm font-bold tracking-[0.15em] text-dorado">¡Hola, {firstName}! ⚡</p>
-            <h1 className="sport text-4xl leading-[0.9] font-black sm:text-5xl">Rayo<br className="sm:hidden" /> Vallecañas</h1>
-            <p className="mt-2 text-sm text-white/60">{fecha(new Date())}</p>
-          </div>
-        </div>
-        {campaign && campaign.status === "active" && canSell && (
-          <Link href={`/loteria/${campaign.id}/vender`} prefetch className="btn-primary relative mt-6 w-full py-3.5 text-lg sm:w-auto">
-            <ShoppingCart size={20} /> {campaign.kind === "raffle" ? "Nueva venta de rifa" : "Nueva venta de lotería"}
-          </Link>
-        )}
-      </section>
-
-      {matchday && (
-        <section className="mb-6">
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <h2 className="sport flex items-center gap-2 text-2xl font-black"><CalendarDays size={22} className="text-rojo" /> Próximo partido</h2>
-            <Link href="/partidos" prefetch className="shrink-0 text-sm font-bold text-rojo">Calendario →</Link>
-          </div>
-          <div className={`grid gap-4 ${matchday.recent.length ? "lg:grid-cols-[minmax(0,1fr)_24rem]" : ""}`}>
-            <div className="min-w-0 space-y-3">
-              <NextMatchCard m={matchday.next} />
-              {matchday.next && myCallup && <MyCallupCard m={matchday.next} mine={myCallup} />}
+      {md ? (
+        <>
+          <MatchdayHero m={md.m} phase={md.phase} greeting={`¡Hola, ${firstName}! ⚡`} />
+          <MatchdayDetails m={md.m} phase={md.phase} callups={md.callups} myPlayerId={md.myPlayerId} canEdit={s.can("matches", "update")}
+            recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} />
+          {campaign && campaign.status === "active" && canSell && (
+            <Link href={`/loteria/${campaign.id}/vender`} prefetch className="btn-primary mb-6 w-full py-3.5 text-lg sm:w-auto">
+              <ShoppingCart size={20} /> {campaign.kind === "raffle" ? "Nueva venta de rifa" : "Nueva venta de lotería"}
+            </Link>
+          )}
+        </>
+      ) : (
+        <>
+        <section className="franja relative mb-6 overflow-hidden rounded-3xl bg-negro p-6 text-white shadow-xl sm:p-8">
+          <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.10),transparent_55%)]" />
+          <div className="relative flex items-center gap-4 sm:gap-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/escudo.png" alt="Escudo del Rayo Vallecañas" width={84} height={100} className="w-16 shrink-0 drop-shadow-2xl sm:w-20" />
+            <div className="min-w-0">
+              <p className="sport text-sm font-bold tracking-[0.15em] text-dorado">¡Hola, {firstName}! ⚡</p>
+              <h1 className="sport text-4xl leading-[0.9] font-black sm:text-5xl">Rayo<br className="sm:hidden" /> Vallecañas</h1>
+              <p className="mt-2 text-sm text-white/60">{fecha(new Date())}</p>
             </div>
-            {matchday.recent.length > 0 && (
-              <div className="min-w-0">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <h3 className="sport text-lg font-black">Últimos resultados</h3>
-                  <FormStrip rows={[...matchday.recent].reverse()} label={false} />
-                </div>
-                <ol className="space-y-2">{matchday.recent.slice(0, 3).map((m) => <li key={m.id}><MatchLine m={m} /></li>)}</ol>
-              </div>
-            )}
           </div>
+          {campaign && campaign.status === "active" && canSell && (
+            <Link href={`/loteria/${campaign.id}/vender`} prefetch className="btn-primary relative mt-6 w-full py-3.5 text-lg sm:w-auto">
+              <ShoppingCart size={20} /> {campaign.kind === "raffle" ? "Nueva venta de rifa" : "Nueva venta de lotería"}
+            </Link>
+          )}
         </section>
+
+        {matchday && (
+          <section className="mb-6">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <h2 className="sport flex items-center gap-2 text-2xl font-black"><CalendarDays size={22} className="text-rojo" /> Próximo partido</h2>
+              <Link href="/partidos" prefetch className="shrink-0 text-sm font-bold text-rojo">Calendario →</Link>
+            </div>
+            <div className={`grid gap-4 ${matchday.recent.length ? "lg:grid-cols-[minmax(0,1fr)_24rem]" : ""}`}>
+              <div className="min-w-0 space-y-3">
+                <NextMatchCard m={matchday.next} />
+                {matchday.next && myCallup && <MyCallupCard m={matchday.next} mine={myCallup} />}
+              </div>
+              {matchday.recent.length > 0 && (
+                <div className="min-w-0">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <h3 className="sport text-lg font-black">Últimos resultados</h3>
+                    <FormStrip rows={matchday.recent.slice(0, 5).reverse()} label={false} />
+                  </div>
+                  <ol className="space-y-2">{matchday.recent.slice(0, 3).map((m) => <li key={m.id}><MatchLine m={m} /></li>)}</ol>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+        </>
       )}
 
       {campaign && summary ? (

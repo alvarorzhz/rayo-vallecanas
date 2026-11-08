@@ -322,3 +322,87 @@ input[type="file"] { overflow: hidden; text-overflow: ellipsis; white-space: now
 @keyframes rv-card-show { from { opacity: 0; transform: translateY(10px) rotate(-25deg); } to { opacity: 1; transform: rotate(-8deg); } }
 /* Pequeño golpeo al pulsar */
 .kick:active { transform: scale(0.94) rotate(-2deg); }
+
+/* =====================================================================
+   Especial Matchday (v3.5.0): portada del día de partido
+   ===================================================================== */
+/* Título dorado con un destello que lo recorre */
+.md-title {
+  background: linear-gradient(100deg, var(--color-dorado) 0 38%, #fff6d0 48%, #ffffff 50%, #fff6d0 52%, var(--color-dorado) 62% 100%);
+  background-size: 280% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 4px 18px rgba(213, 175, 50, 0.35));
+  animation: md-title-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both, md-shine 4s linear 0.7s infinite;
+}
+@keyframes md-title-in { from { opacity: 0; transform: scale(1.35) skewX(-10deg); letter-spacing: 0.2em; } to { opacity: 1; transform: none; } }
+@keyframes md-shine { from { background-position: 100% 0; } to { background-position: -180% 0; } }
+
+/* Los escudos entran desde los lados y chocan en el centro */
+.md-in-left { animation: md-in-left 1.1s linear 0.15s both; }
+.md-in-right { animation: md-in-right 1.1s linear 0.15s both; }
+@keyframes md-in-left {
+  0% { opacity: 0; transform: translateX(-140%) rotate(-30deg); animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0); }
+  65% { opacity: 1; transform: translateX(18%) rotate(4deg); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes md-in-right {
+  0% { opacity: 0; transform: translateX(140%) rotate(30deg); animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0); }
+  65% { opacity: 1; transform: translateX(-18%) rotate(-4deg); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  100% { opacity: 1; transform: none; }
+}
+.md-crest { display: inline-block; animation: md-float 3.2s ease-in-out 1.4s infinite; }
+.md-in-right .md-crest { animation-delay: 2.2s; }
+@keyframes md-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+/* El «VS» aparece con el golpe y deja una onda dorada */
+.md-vs { animation: md-vs 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.85s both; }
+@keyframes md-vs { from { opacity: 0; transform: scale(0.2) rotate(-12deg); } to { opacity: 1; transform: none; } }
+.md-impact {
+  position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 9999px; pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 246, 208, 0.9), rgba(213, 175, 50, 0.4) 35%, transparent 70%);
+  animation: md-impact 0.7s ease-out 0.85s both;
+}
+@keyframes md-impact { 0% { opacity: 0; transform: scale(0.1); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(2.6); } }
+.md-clash { animation: md-shake 0.35s ease-in-out 0.88s; }
+@keyframes md-shake { 0%, 100% { transform: none; } 20% { transform: translate(-3px, 1px); } 40% { transform: translate(3px, -1px); } 60% { transform: translate(-2px, 0); } 80% { transform: translate(2px, 1px); } }
+
+/* Focos del estadio que barren el cielo */
+.md-light {
+  position: absolute; top: -30%; width: 55%; height: 160%; pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04) 55%, transparent 80%);
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+}
+.md-light-l { left: -12%; transform-origin: 50% 0; animation: md-sweep-l 7s ease-in-out infinite alternate; }
+.md-light-r { right: -12%; transform-origin: 50% 0; animation: md-sweep-r 8s ease-in-out infinite alternate; }
+@keyframes md-sweep-l { from { transform: rotate(-28deg); } to { transform: rotate(-8deg); } }
+@keyframes md-sweep-r { from { transform: rotate(28deg); } to { transform: rotate(8deg); } }
+
+/* Cifras de la cuenta atrás: caen como en el videomarcador */
+.md-tick { animation: md-tick 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes md-tick { from { opacity: 0; transform: translateY(-55%); } to { opacity: 1; transform: none; } }
+.md-kickoff { animation: rv-score 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Marcador LED de la banda */
+.md-ticker { animation: md-marquee 32s linear infinite; }
+@keyframes md-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* Punto rojo de «en directo» */
+.md-live-dot { position: relative; display: inline-block; width: 10px; height: 10px; flex: none; border-radius: 9999px; background: #fff; box-shadow: 0 0 0 2px var(--color-rojo); }
+.md-live-dot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: #fff; animation: md-ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite; }
+@keyframes md-ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }
+
+/* Confeti de victoria */
+.md-confetti span { position: absolute; top: -24px; opacity: 0; animation-name: md-fall; animation-timing-function: cubic-bezier(0.25, 0.4, 0.6, 1); animation-iteration-count: 2; animation-fill-mode: both; }
+@keyframes md-fall {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--sway, 40px), 640px) rotate(var(--spin, 540deg)); }
+}
+
+/* Tira «Hoy jugamos» de todas las páginas */
+.md-strip-shine { position: absolute; inset: 0 auto 0 -40%; width: 30%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent); transform: skewX(-20deg); animation: md-strip 4.5s ease-in-out infinite; }
+@keyframes md-strip { 0%, 70% { left: -40%; } 100% { left: 130%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .md-title, .md-light, .md-ticker, .md-crest, .md-strip-shine, .md-live-dot::after { animation: none !important; }
+  .md-confetti, .md-impact { display: none; }
+}
