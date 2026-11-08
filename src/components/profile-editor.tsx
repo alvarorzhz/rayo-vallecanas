@@ -15,6 +15,7 @@ const GROUPS: { title: string; modules: string[] }[] = [
   { title: "Plantilla", modules: ["squad", "squad_private"] },
   { title: "Sorteos", modules: ["lottery_sell", "lottery_admin"] },
   { title: "Finanzas", modules: ["finances"] },
+  { title: "Patrocinadores", modules: ["sponsors"] },
   { title: "Gestión", modules: ["users"] },
 ];
 

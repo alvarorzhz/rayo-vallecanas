@@ -28,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (s.can("lottery_admin") || s.can("lottery_sell")) items.push({ href: "/loteria", label: "Sorteos", icon: "Ticket", also: ["/mis-ventas"] });
   if (s.can("finances")) items.push({ href: "/finanzas", label: "Finanzas", icon: "Wallet" });
   // Panel de gestión: usuarios, perfiles, avisos, auditoría y copias de seguridad
-  if (s.can("users") || s.can("lottery_admin", "update") || s.profile.role === "superadmin")
+  if (s.can("users") || s.can("lottery_admin", "update") || s.can("sponsors") || s.profile.role === "superadmin")
     items.push({ href: "/admin", label: "Gestión", icon: "Settings" });
 
   // Especial Matchday: el día del partido, una tira «Hoy jugamos» arriba en todas las páginas

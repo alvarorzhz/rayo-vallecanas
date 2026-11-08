@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
 import { replyButtons, usersOfPlayers } from "@/lib/callup-push";
 import { CLUB_NAME, hhmm, todayMadrid, type MatchRow } from "@/lib/matches";
+import { sponsorReminders } from "@/lib/sponsor-alerts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -12,6 +13,7 @@ export const maxDuration = 30;
  * · Víspera: a los convocados que no han contestado.
  * · Día del partido: a los que van o dudan, con la hora de quedada.
  * Cada partido recibe como mucho un recordatorio al día, así que repetir la llamada no molesta a nadie.
+ * De paso, avisa a los gestores de los plazos de patrocinio sin cobrar y de los acuerdos que vencen.
  */
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
@@ -41,5 +43,6 @@ export async function GET(req: Request) {
       : { title: "⏰ Mañana hay partido: ¿vas?", body: `${vs}${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}. Aún no has contestado a la convocatoria.`, url: `/partidos/${m.id}`, tag: `convocatoria-${m.id}` },
       isToday ? undefined : await replyButtons(m.id, m.match_date));
   }
-  return NextResponse.json({ ok: true, matches: matches?.length ?? 0, sent });
+  const sponsors = await sponsorReminders(today);
+  return NextResponse.json({ ok: true, matches: matches?.length ?? 0, sent, sponsors });
 }

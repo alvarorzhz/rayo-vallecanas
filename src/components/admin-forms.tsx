@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { MODULE_LABEL, phoneE164 } from "@/lib/format";
+import { PLAYER_BLOCKED } from "@/lib/roles";
 
 /** Perfil que se puede elegir para una persona (los de siempre y los creados a medida). */
 export type ProfileOption = { key: string; name: string; base: string; perms: Record<string, Partial<Record<"read" | "create" | "update" | "delete", boolean>>> };
@@ -159,7 +160,7 @@ export function UserEditForm({
           <Link href="/admin/perfiles" className="font-semibold text-rojo">¿Qué hace cada perfil?</Link>
         </p>
         {role === "player" && (
-          <p className="mb-2 text-xs text-negro/65">Los jugadores no pueden acceder a Finanzas ni a los datos personales de otros en ningún caso.</p>
+          <p className="mb-2 text-xs text-negro/65">Los jugadores no pueden acceder a Finanzas, a los patrocinios ni a los datos personales de otros en ningún caso.</p>
         )}
         {role === "superadmin" ? (
           <p className="rounded-xl bg-gris p-3 text-sm">El superadministrador tiene acceso completo a todo.</p>
@@ -170,7 +171,7 @@ export function UserEditForm({
                 <tr><th>Módulo</th><th>Personalizar</th>{ACTIONS.map(([, l]) => <th key={l} className="text-center">{l}</th>)}</tr>
               </thead>
               <tbody>
-                {modules.filter((m) => !((m === "finances" || m === "squad_private") && role === "player")).map((m) => {
+                {modules.filter((m) => !(PLAYER_BLOCKED.includes(m) && role === "player")).map((m) => {
                   const isCustom = Boolean(custom[m]);
                   const src = isCustom ? userPerms.find((p) => p.module === m) : base(m);
                   return (

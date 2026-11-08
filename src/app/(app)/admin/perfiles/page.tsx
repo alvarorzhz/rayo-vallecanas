@@ -45,7 +45,7 @@ export default async function ProfilesGuide({ searchParams }: { searchParams: Pr
       <div className="grid gap-4 lg:grid-cols-2">
         {defs.map(({ key: role, name, description, base, custom: isCustom }) => {
           const info = isCustom
-            ? { who: description || "Perfil creado a medida.", summary: `Perfil a medida basado en ${ROLE_LABEL[base]}.${base === "player" ? " Como jugador, nunca ve Finanzas ni los datos personales de otros." : ""}` }
+            ? { who: description || "Perfil creado a medida.", summary: `Perfil a medida basado en ${ROLE_LABEL[base]}.${base === "player" ? " Como jugador, nunca ve Finanzas, los patrocinios ni los datos personales de otros." : ""}` }
             : ROLE_INFO[role];
           const modules = Object.entries(MODULE_GUIDE).filter(([m, g]) => !g.soon && ACTS.some((a) => can(role, m, a)));
           const soon = Object.entries(MODULE_GUIDE).filter(([m, g]) => g.soon && ACTS.some((a) => can(role, m, a)));
@@ -107,7 +107,7 @@ export default async function ProfilesGuide({ searchParams }: { searchParams: Pr
                     <Lock size={14} className="mt-0.5 shrink-0" />
                     {base === "admin"
                       ? "No puede archivar ni eliminar campañas, ni ver la auditoría, ni tocar a los superadministradores."
-                      : "Nunca ve Finanzas, los datos personales de otros ni la auditoría."}
+                      : "Nunca ve Finanzas, los patrocinios, los datos personales de otros ni la auditoría."}
                   </p>
                 )}
               </div>

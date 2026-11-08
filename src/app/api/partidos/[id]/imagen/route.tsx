@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchMatch, fetchReport } from "@/lib/match-queries";
 import { CLUB_NAME, COMPETITION_LABEL, OUTCOME_LABEL, longDay, outcomeOf, rivalColor, rivalShort } from "@/lib/matches";
 import { shirtName } from "@/lib/squad";
+import { fetchDisplay, type Showcase } from "@/lib/sponsors";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,31 @@ const load = () =>
     readFile(join(process.cwd(), "public/escudo.png")),
   ]).then(([black, semi, crest]) => ({ black, semi, crest: `data:image/png;base64,${crest.toString("base64")}` })));
 
+/** Logo del patrocinador principal como data URI, con su proporción (PNG) para dibujarlo sin deformar. */
+async function sponsorLogo(url: string): Promise<{ src: string; ratio: number } | null> {
+  try {
+    let buf: Buffer;
+    if (url.startsWith("/")) {
+      if (!/^\/patrocinadores\/[\w.-]+\.(png|jpe?g)$/.test(url)) return null;
+      buf = await readFile(join(process.cwd(), "public", url));
+    } else {
+      // Solo logos subidos a nuestro almacenamiento
+      const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!base || !url.startsWith(`${base.replace(/\/$/, "")}/storage/v1/object/public/sponsor-logos/`)) return null;
+      const r = await fetch(url, { signal: AbortSignal.timeout(4000) });
+      if (!r.ok) return null;
+      buf = Buffer.from(await r.arrayBuffer());
+    }
+    const png = buf.subarray(1, 4).toString("ascii") === "PNG";
+    const jpg = buf[0] === 0xff && buf[1] === 0xd8;
+    if (!png && !jpg) return null;
+    const ratio = png ? buf.readUInt32BE(16) / Math.max(1, buf.readUInt32BE(20)) : 1.6;
+    return { src: `data:image/${png ? "png" : "jpeg"};base64,${buf.toString("base64")}`, ratio };
+  } catch {
+    return null;
+  }
+}
+
 /** Imagen del resultado (1080 × 1350) para compartir en WhatsApp o Instagram. */
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,7 +50,14 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!auth?.claims?.sub) return new Response("Sin sesión", { status: 401 });
   const m = await fetchMatch(supabase, id);
   if (!m || m.status !== "played") return new Response("No encontrado", { status: 404 });
-  const [report, { black, semi, crest }] = await Promise.all([fetchReport(supabase, m), load()]);
+  const [report, { black, semi, crest }, display, showcase] = await Promise.all([
+    fetchReport(supabase, m), load(), fetchDisplay(supabase), supabase.rpc("sponsor_showcase"),
+  ]);
+  // Patrocinador principal (si los gestores lo tienen activado): pequeño, encima del pie
+  const main = display.show_result ? ((showcase.data ?? []) as Showcase[]).find((x) => x.tier === "main" && x.logo_url) : undefined;
+  const sponsor = main ? await sponsorLogo(main.logo_url!) : null;
+  const logoH = 76;
+  const logoW = sponsor ? Math.round(Math.min(240, Math.max(60, logoH * sponsor.ratio))) : 0;
 
   const o = outcomeOf(m)!;
   const us = { name: CLUB_NAME, crest: crest as string | null, goals: m.goals_for ?? 0, short: "RVA", color: "#D20D17" };
@@ -93,6 +126,16 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
             </div>
           )}
         </div>
+
+        {sponsor && (
+          <div style={{ display: "flex", justifyContent: "center", paddingBottom: 24, position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.65)", borderRadius: 999, padding: "6px 26px 6px 30px" }}>
+            <span style={{ fontSize: 18, letterSpacing: 5, color: "rgba(255,255,255,0.55)", marginRight: 18 }}>CON EL APOYO DE</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={sponsor.src} width={logoW} height={logoH} style={{ objectFit: "contain" }} alt="" />
+            </div>
+          </div>
+        )}
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "34px 60px", background: "rgba(0,0,0,0.75)", borderTop: "4px solid #D5AF32", position: "relative" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>

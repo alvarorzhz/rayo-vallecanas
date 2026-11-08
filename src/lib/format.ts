@@ -106,4 +106,5 @@ export const MODULE_LABEL: Record<string, string> = {
   squad: "Plantilla",
   squad_private: "Plantilla · datos personales",
   matches: "Partidos",
+  sponsors: "Patrocinadores",
 };
