@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDays, LogOut, Settings } from "lucide-react";
 import { signOut } from "@/app/login/actions";
 import { Avatar } from "@/components/avatar";
+import { CrestEgg } from "@/components/easter-eggs";
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; soon?: boolean; mobile?: boolean; also?: string[] };
 
@@ -19,8 +20,7 @@ export function Sidebar({ items, name, role, version, avatar }: { items: NavItem
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-negro text-white lg:flex">
       <Link href="/" className="franja relative flex items-center gap-3 overflow-hidden border-b border-white/10 px-5 py-6">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/escudo.png" alt="" width={44} height={52} className="relative drop-shadow-lg" />
+        <CrestEgg width={44} height={52} />
         <div className="relative leading-none">
           <div className="sport text-2xl font-black">Rayo</div>
           <div className="sport text-sm font-bold tracking-[0.2em] text-dorado">Vallecañas</div>
