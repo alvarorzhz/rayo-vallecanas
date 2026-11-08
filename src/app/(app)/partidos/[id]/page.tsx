@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { CalendarPlus, MapPin, Pencil, StickyNote, Swords } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fetchCallups, fetchMatch, fetchMyPlayerId, fetchReport } from "@/lib/match-queries";
+import { fetchCallups, fetchMatch, fetchMyPlayerId, fetchReport, fetchReportPool } from "@/lib/match-queries";
+import { fetchMvpBoard } from "@/lib/mvp-server";
 import {
   COMPETITION_LABEL, MATCH_STATUS_LABEL, hhmm, longDay, mapsLink, matchShareText, record, todayMadrid,
   type MatchRow,
@@ -16,6 +17,7 @@ import { ShareButton } from "@/components/matches/share-button";
 import { Crest } from "@/components/matches/crest";
 import { CallupSection } from "@/components/matches/callup-section";
 import { ReportSection } from "@/components/matches/report-section";
+import { MvpSection } from "@/components/matches/mvp-section";
 import { CallupHistory } from "@/components/matches/callup-history";
 import { callupClosed } from "@/lib/callups";
 import { deleteMatch, saveResult, setMatchStatus } from "../actions";
@@ -35,6 +37,9 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   if (!m) notFound();
 
   // Historial contra este rival
+  // La votación del MVP primero: si ya toca, hace el recuento y el MVP sale al día en el acta
+  const mvp = m.status === "played" ? await fetchMvpBoard(supabase, m.id) : null;
+  if (mvp?.winner_id && m.mvp_player_id !== mvp.winner_id) m.mvp_player_id = mvp.winner_id;
   const [{ data: h2hData }, callups, myPlayerId, report] = await Promise.all([
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("rival_id", m.rival_id).neq("id", m.id)
       .order("match_date", { ascending: false }).limit(20).returns<MatchRow[]>(),
@@ -43,6 +48,9 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
     m.status === "played" ? fetchReport(supabase, m) : null,
   ]);
   const h2h = h2hData ?? [];
+  const mvpPool = report && mvp && mvp.candidates.some((id) => !report.pool.some((p) => p.player_id === id))
+    ? await fetchReportPool(supabase, m.season, mvp.candidates)
+    : report?.pool ?? [];
   const h2hRec = record(h2h);
 
   const canEdit = s.can("matches", "update");
@@ -71,7 +79,9 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
         <div className="min-w-0 space-y-6">
           <Scoreboard m={m} />
 
-          {report && <ReportSection m={m} report={report} canEdit={canEdit} />}
+          {m.status === "played" && <MvpSection m={m} board={mvp} pool={mvpPool} canEdit={canEdit} />}
+
+          {report && <ReportSection m={m} report={report} canEdit={canEdit} hideMvp={!!mvp} />}
 
           {callupClosed(m)
             ? <CallupHistory m={m} rows={callups} report={report} myPlayerId={myPlayerId} />

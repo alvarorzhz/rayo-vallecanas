@@ -8,6 +8,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.20.0",
+    date: "2026-11-08",
+    title: "El MVP lo vota el equipo",
+    changes: [
+      "Al guardar el acta se abre sola la votación del MVP del partido y llega un aviso a todos: «⭐ Vota al MVP del partido». Se puede votar hasta las 23:59 de ese día (si el acta se guarda muy tarde, hasta las 23:59 del día siguiente).",
+      "Se vota a uno de los que jugaron, desde la ficha del partido o desde Inicio. Cada persona tiene un voto, lo puede cambiar hasta el cierre y no puede votarse a sí misma.",
+      "El voto es secreto: nadie ve a quién has votado y el recuento no sale hasta el cierre.",
+      "Al cerrar gana el más votado y llega el aviso con el ganador. Si hay empate, gana el que más goles marcó en el partido; si sigue el empate, lo decide un gestor.",
+      "El ganador es el MVP oficial: sale en el acta, en la imagen del resultado, en las estadísticas y en los cromos. El acta ya no pide elegir MVP.",
+      "En los partidos sin acta, un gestor puede abrir la votación a mano con los convocados que dijeron «Voy».",
+    ],
+  },
+  {
     version: "3.19.0",
     date: "2026-11-08",
     title: "Aviso con los datos del partido",

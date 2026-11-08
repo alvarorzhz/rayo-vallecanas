@@ -19,7 +19,7 @@ function Toggle({ on, onClick, children, tone = "bg-negro text-white ring-negro"
   );
 }
 
-/** El acta: quién jugó, goles con asistencia, tarjetas, encajados y MVP. */
+/** El acta: quién jugó, goles con asistencia, tarjetas y encajados. El MVP lo vota el equipo. */
 export function ReportEditor({ action, prefill, match, pool, initial }: {
   action: A;
   prefill: (() => Promise<PrefillResult>) | null;
@@ -34,7 +34,6 @@ export function ReportEditor({ action, prefill, match, pool, initial }: {
   const [apps, setApps] = useState<Record<string, DraftApp>>(initial.apps);
   const goalsFor = match.goals_for ?? 0;
   const [goals, setGoals] = useState(() => Array.from({ length: goalsFor }, (_, i) => initial.goals[i] ?? { scorer: "", assist: "" }));
-  const [mvp, setMvp] = useState(initial.mvp);
 
   const played = useMemo(() => pool.filter((p) => apps[p.player_id]), [pool, apps]);
   const starters = played.filter((p) => apps[p.player_id].started).length;
@@ -50,7 +49,6 @@ export function ReportEditor({ action, prefill, match, pool, initial }: {
       delete next[id];
       setApps(next);
       setGoals((gs) => gs.map((g) => ({ scorer: g.scorer === id ? "" : g.scorer, assist: g.assist === id ? "" : g.assist })));
-      if (mvp === id) setMvp("");
     } else {
       const gk = lineOf(p.position) === "GK" && !Object.values(apps).some((a) => a.goalkeeper);
       setApps({ ...apps, [id]: { ...emptyApp(), goalkeeper: gk, conceded: gk ? match.goals_against ?? 0 : 0 } });
@@ -59,7 +57,7 @@ export function ReportEditor({ action, prefill, match, pool, initial }: {
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    fd.set("payload", JSON.stringify({ apps, goals, mvp } satisfies ReportDraft));
+    fd.set("payload", JSON.stringify({ apps, goals } satisfies ReportDraft));
     start(() => formAction(fd));
   }
   function loadLeague() {
@@ -71,7 +69,6 @@ export function ReportEditor({ action, prefill, match, pool, initial }: {
       if (r.draft) {
         setApps(r.draft.apps);
         setGoals(Array.from({ length: goalsFor }, (_, i) => r.draft!.goals[i] ?? { scorer: "", assist: "" }));
-        if (r.draft.mvp && r.draft.apps[r.draft.mvp]) setMvp(r.draft.mvp);
       }
     });
   }
@@ -179,26 +176,17 @@ export function ReportEditor({ action, prefill, match, pool, initial }: {
       </div>
 
       <aside className="space-y-4">
-        <section className="card space-y-3">
-          <h2 className="flex items-center gap-2"><Star size={18} className="fill-dorado text-dorado" /> MVP</h2>
-          {played.length === 0 ? <p className="text-sm text-negro/65">Marca quién jugó para elegir al mejor.</p> : (
-            <div role="radiogroup" aria-label="Mejor jugador del partido" className="grid grid-cols-2 gap-2">
-              {played.map((p) => (
-                <label key={p.player_id} className={`flex cursor-pointer items-center gap-2 rounded-xl p-2 text-sm font-bold ring-1 ${mvp === p.player_id ? "bg-negro text-white ring-dorado ring-2" : "bg-white ring-black/10"}`}>
-                  <input type="radio" name="mvp" value={p.player_id} checked={mvp === p.player_id} onChange={() => setMvp(p.player_id)} className="sr-only" />
-                  {mvp === p.player_id ? <Star size={16} className="shrink-0 fill-dorado text-dorado" /> : <span className="sport w-4 shrink-0 text-center text-xs text-negro/50">{p.number ?? ""}</span>}
-                  <span className="truncate">{shirtName(p.player)}</span>
-                </label>
-              ))}
-              {mvp && <button type="button" className="col-span-2 text-xs font-bold text-negro/65 underline" onClick={() => setMvp("")}>Quitar MVP</button>}
-            </div>
-          )}
+        <section className="franja relative overflow-hidden rounded-2xl bg-negro p-4 text-white">
+          <div className="relative space-y-1.5">
+            <h2 className="flex items-center gap-2 text-white"><Star size={18} className="fill-dorado text-dorado" /> MVP</h2>
+            <p className="text-sm text-white/80">Lo vota el equipo. Al guardar el acta se abre la votación entre los que jugaron, hasta las 23:59 de hoy, y le llega un aviso a todos.</p>
+          </div>
         </section>
 
         {prefill && (
           <section className="card space-y-2">
             <h2>Desde la liga</h2>
-            <p className="text-xs text-negro/65">Trae quién jugó, los goles que tenga apuntados, lo que encajó el portero y las tarjetas. Titulares, asistencias y MVP los pones tú.</p>
+            <p className="text-xs text-negro/65">Trae quién jugó, los goles que tenga apuntados, lo que encajó el portero y las tarjetas. Titulares y asistencias los pones tú.</p>
             <button type="button" onClick={loadLeague} disabled={loading} className="btn-ghost w-full"><DownloadCloud size={16} className="text-rojo" /> {loading ? "Leyendo la liga…" : "Rellenar con la liga"}</button>
             <FormMessage state={info} />
           </section>
@@ -208,7 +196,7 @@ export function ReportEditor({ action, prefill, match, pool, initial }: {
           {!match.report_saved_at && (
             <label className="flex items-center gap-2 text-sm font-semibold">
               <input type="checkbox" name="notify" defaultChecked className="h-4 w-4 accent-[var(--color-rojo)]" />
-              <Bell size={15} className="text-rojo" /> Avisar al equipo (goleadores y MVP)
+              <Bell size={15} className="text-rojo" /> Avisar al equipo (resultado y goleadores)
             </label>
           )}
           <FormMessage state={state} />

@@ -17,6 +17,7 @@ import { SponsorStrip } from "@/components/sponsors/showcase";
 import { fetchDisplay, type Showcase } from "@/lib/sponsors";
 import { PollCard } from "@/components/polls/poll-card";
 import type { Poll } from "@/lib/polls";
+import { fetchMvpBoard } from "@/lib/mvp-server";
 
 const LG_COLS: Record<number, string> = { 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" };
 
@@ -79,6 +80,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const md = focus
     ? await (async () => {
         const final = focus.phase === "final" || focus.phase === "post";
+        // Votación del MVP (si ya toca, hace el recuento antes de leer el acta)
+        const mvp = final ? await fetchMvpBoard(supabase, focus.m.id) : null;
+        if (mvp?.winner_id) focus.m.mvp_player_id = mvp.winner_id;
         const [callups, myPlayerId, preview, report, weather] = await Promise.all([
           final ? Promise.resolve([]) : fetchCallups(supabase, focus.m),
           fetchMyPlayerId(supabase, s.user.id),
@@ -87,7 +91,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           // El tiempo en Salamanca a la hora del partido: la víspera y el mismo día
           focus.phase === "eve" || focus.phase === "day" ? fetchMatchWeather(focus.m.match_date, focus.m.kickoff) : Promise.resolve(null),
         ]);
-        return { ...focus, callups, myPlayerId, ...preview, report, weather };
+        return { ...focus, callups, myPlayerId, ...preview, report, weather, mvp };
       })()
     : null;
 
@@ -125,7 +129,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <>
           <MatchdayHero m={md.m} phase={md.phase} greeting={greeting} form={recentForm} next={md.phase === "post" ? matchday?.next ?? null : null} weather={md.weather} />
           <MatchdayDetails m={md.m} phase={md.phase} callups={md.callups} myPlayerId={md.myPlayerId} canEdit={s.can("matches", "update")}
-            recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} />
+            recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} mvp={md.mvp} />
         </>
       ) : matchday?.next ? (
         <>
