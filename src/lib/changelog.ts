@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.20.1",
+    date: "2026-11-08",
+    title: "Arreglos: imagen del resultado y convocatoria en Inicio",
+    changes: [
+      "La imagen del resultado vuelve a salir. Ahora se prepara mucho más rápido y se enseña en grande con dos botones: «Compartir» (WhatsApp, Instagram…) y «Descargar». Antes tardaba tanto que el móvil ya no dejaba abrir el menú de compartir y no salía nada.",
+      "Si se publica la convocatoria del siguiente partido mientras Inicio todavía enseña el resultado del anterior, ahora también sale: la tarjeta «¡Estás convocado!» con el partido y los botones para responder.",
+      "En la portada del post partido, el aviso del siguiente partido dice «convocatoria publicada» cuando ya está.",
+    ],
+  },
+  {
     version: "3.20.0",
     date: "2026-11-08",
     title: "El MVP lo vota el equipo",
