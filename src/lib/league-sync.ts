@@ -3,6 +3,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
 import { CLUB_NAME, hhmm, longDay } from "@/lib/matches";
 import { seasonOf } from "@/lib/finance";
+import {
+  inspectCalendar, inspectPlayer, inspectSheet, inspectTable, inspectTeam, parseCompetitionName, parseSheet, prettyTeam,
+  type LeaguePlayer, type LeagueRow, type SheetRow,
+} from "@/lib/league-parse";
+import { alertLeagueProblem, recordLeagueFailure, type LeagueStatus } from "@/lib/league-alerts";
+
+// Los lectores de páginas viven en league-parse.ts (sin dependencias, con pruebas propias)
+export { competitionFromUrl, decode, parseCalendar, parsePlayer, parseSheet, parseTable, prettyTeam, titleCase } from "@/lib/league-parse";
+export type { LeaguePlayer, LeagueRow, SheetRow } from "@/lib/league-parse";
 
 const finance_season = (date: string) => seasonOf(new Date(`${date}T12:00:00Z`));
 
@@ -10,48 +19,16 @@ const finance_season = (date: string) => seasonOf(new Date(`${date}T12:00:00Z`))
  * Sincronización con la web de la liga (futormes.com, gestionada con ServerSports).
  * Se leen las páginas públicas de la competición: equipos, escudos, calendario,
  * campos y resultados. Solo se tocan los partidos de nuestro equipo.
+ *
+ * Si algo no se puede leer (la liga ha cambiado su web, falla una ficha…), la
+ * sincronización sigue con lo que sí ha leído, apunta cada incidencia y avisa a
+ * quienes gestionan los partidos (ver league-alerts.ts).
  */
 
 const BASE = "https://www.futormes.com/mod/soccer";
 const UA = "Mozilla/5.0 (compatible; RayoVallecanasApp/3.0; +https://rayo-vallecanas.vercel.app)";
 
-export type LeagueRow = {
-  extId: string;
-  round: string;
-  date: string;          // "2026-11-08"
-  time: string | null;   // "18:00"
-  venue: string | null;  // "La Aldehuela A1"
-  address: string | null;
-  homeId: string;
-  homeName: string;
-  awayId: string;
-  awayName: string;
-  goalsHome: number | null;
-  goalsAway: number | null;
-  status: "played" | "scheduled" | "postponed" | "cancelled";
-};
-
-export type LeagueData = { competitionName: string | null; teams: { id: string; name: string }[]; rows: LeagueRow[] };
-
-export const decode = (s: string) =>
-  s.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/&([a-z]+);/gi, (m, n) => ({ aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú", ntilde: "ñ", Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú", Ntilde: "Ñ", ordf: "ª", ordm: "º", middot: "·" } as Record<string, string>)[n] ?? m)
-    .replace(/\s+/g, " ").trim();
-
-/** Número de competición a partir de la dirección que se pega ("…situation.aspx?itm=15868") o del número suelto. */
-export function competitionFromUrl(input: string): string | null {
-  const s = input.trim();
-  if (/^\d{1,9}$/.test(s)) return s;
-  try {
-    const u = new URL(s);
-    if (!/(^|\.)futormes\.com$/i.test(u.hostname)) return null;
-    const itm = u.searchParams.get("itm");
-    return itm && /^\d{1,9}$/.test(itm) ? itm : null;
-  } catch {
-    return null;
-  }
-}
+export type LeagueData = { competitionName: string | null; teams: { id: string; name: string }[]; rows: LeagueRow[]; issues: string[] };
 
 /** La web guarda la competición elegida en la sesión: primero se abre su portada y luego el resto con la misma cookie. */
 export async function openSession(competition: string) {
@@ -75,116 +52,27 @@ export async function openSession(competition: string) {
   return { get, situation };
 }
 
-const field = (row: string, key: string) => row.match(new RegExp(`_${key}"[^>]*>([^<]*)<`))?.[1];
-
-export function parseCalendar(calendar: string): LeagueRow[] {
-  const rows: LeagueRow[] = [];
-  const sections = calendar.split(/rptCalendarioJornada_ctl\d+_lblJornada"[^>]*>/).slice(1);
-  for (const sec of sections) {
-    const round = decode(sec.slice(0, sec.indexOf("<")));
-    for (const tr of sec.split(/<tr[\s>]/).slice(1)) {
-      if (!tr.includes("_lblFecha")) continue;
-      const fecha = field(tr, "lblFecha");
-      const local = tr.match(/_hlkLocal" title="([^"]*)" href="team\.aspx\?itm=(\d+)"/);
-      const visit = tr.match(/_hlkVisitante" title="([^"]*)" href="team\.aspx\?itm=(\d+)"/);
-      const id = tr.match(/_hlkPartido"[^>]*href="match\.aspx\?itm=(\d+)"/)?.[1];
-      if (!fecha || !local || !visit || !id) continue;
-      const [d, m, y] = fecha.trim().split(".");
-      const time = field(tr, "lblHora")?.trim() || null;
-      const campo = tr.match(/_lblCampo" title="([^"]*)"/)?.[1];
-      const parts = campo ? decode(campo).split(" · ") : [];
-      const score = field(tr, "lblMarcador")?.match(/(\d+)\s*-\s*(\d+)/);
-      const state = (tr.match(/_imgFinalizado" title="([^"]*)"/)?.[1] ?? "").toLowerCase();
-      rows.push({
-        extId: id,
-        round: round || "Jornada",
-        date: `${y}-${m}-${d}`,
-        time: time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : null,
-        venue: parts[0] || null,
-        address: parts.length > 1 ? parts.slice(1).join(", ") : null,
-        homeId: local[2],
-        homeName: decode(local[1]),
-        awayId: visit[2],
-        awayName: decode(visit[1]),
-        goalsHome: score ? Number(score[1]) : null,
-        goalsAway: score ? Number(score[2]) : null,
-        status: state.includes("aplazado") ? "postponed" : state.includes("suspendido") ? "cancelled" : state.includes("finalizado") && score ? "played" : "scheduled",
-      });
-    }
-  }
-  return rows;
-}
-
 export async function fetchLeague(competition: string, sess?: Awaited<ReturnType<typeof openSession>>): Promise<LeagueData> {
   const { get, situation } = sess ?? (await openSession(competition));
   const calendar = await get("calendar.aspx");
-  const rows = parseCalendar(calendar);
-  if (!rows.length) throw new Error("No se ha encontrado el calendario. Revisa la dirección de la competición.");
+  const cal = inspectCalendar(calendar);
+  const rows = cal.items;
+  if (!rows.length) throw new Error(cal.issues[0] ?? "No se ha encontrado el calendario. Revisa la dirección de la competición.");
   const teams = new Map<string, string>();
   for (const r of rows) {
     teams.set(r.homeId, r.homeName);
     teams.set(r.awayId, r.awayName);
   }
-  const comp = decode(situation).match(/Campeonato:(?:<\/b>)?\s*([^"<]{3,160})/)?.[1]?.trim() ?? null;
-  return { competitionName: comp, teams: [...teams].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "es")), rows };
+  const comp = parseCompetitionName(situation);
+  const issues = [...cal.issues];
+  if (!comp) issues.push("Portada: no aparece el nombre de la competición.");
+  return { competitionName: comp, teams: [...teams].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "es")), rows, issues };
 }
 
 /** Escudo grande y, si no hay, el pequeño. */
 const crestUrls = (teamId: string) => ["shields_g", "shields_p"].map((d) => `https://www.futormes.com/storage/soccer/${d}/${teamId}.png`);
 
-/** "PIZA 1904-BAR KFETÍN" -> "Piza 1904-Bar Kfetín"; las siglas (CF, FC, CB…) se quedan en mayúsculas. */
-export function prettyTeam(name: string) {
-  const keep = /^(CF|FC|CD|UD|AD|SD|CB|RL|BZ|CP|SAD|UDS|AT|II|III|IV|F7)\.?$/i;
-  return titleCase(name, keep);
-}
-
-/** Mayúscula inicial en cada palabra, salvo las partículas ("de", "del", "la") y las siglas. */
-export function titleCase(name: string, keep = /^$/) {
-  const small = /^(de|del|la|las|los|y|e)$/;
-  return name
-    .toLowerCase()
-    .replace(/(^|[\s\-/(.])([\p{L}\d]+)/gu, (m, sep: string, w: string, off: number) =>
-      sep + (keep.test(w) ? w.toUpperCase() : off > 0 && sep === " " && small.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
-    .replace(/\bC\.b\b/g, "C.B");
-}
-
 // ---------------------------------------------------------------- Plantilla
-
-export type LeaguePlayer = {
-  extId: string; name: string; number: number | null; nickname: string | null; line: "POR" | "DFC" | "MCD" | "DC";
-  foot: "right" | "left" | "both" | null; birth: string | null; height: number | null;
-  apps: number; goals: number; conceded: number; yellows: number; reds: number;
-};
-
-const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-const lbl = (html: string, id: string) => {
-  const m = html.match(new RegExp(`id="ctl00_ContentPlaceHolder1_${id}"[^>]*>([^<]*)<`));
-  return m ? decode(m[1]) : "";
-};
-const num = (v: string) => (/^\d+$/.test(v) ? Number(v) : null);
-
-export function parsePlayer(extId: string, html: string): LeaguePlayer | null {
-  const name = lbl(html, "lblJugadorInfoNombre");
-  if (!name) return null;
-  const nick = lbl(html, "lblApodo");
-  const line = ({ portero: "POR", defensa: "DFC", centrocampista: "MCD", delantero: "DC" } as const)[lbl(html, "lblDemaracion").toLowerCase() as "portero"] ?? "MCD";
-  const foot = ({ diestro: "right", zurdo: "left", ambidiestro: "both" } as const)[lbl(html, "lblLateralidad").toLowerCase() as "diestro"] ?? null;
-  const b = lbl(html, "lblFechaNacimiento").match(/(\d{1,2}) de (\p{L}+) de (\d{4})/u);
-  const mi = b ? MONTHS.indexOf(b[2].toLowerCase()) : -1;
-  const height = num(lbl(html, "lblAltura"));
-  return {
-    extId, name: titleCase(name), number: num(lbl(html, "lblDorsal")),
-    nickname: nick && !/^sin (definir|apodo)$/i.test(nick) ? nick.slice(0, 24) : null,
-    line, foot,
-    birth: b && mi >= 0 ? `${b[3]}-${String(mi + 1).padStart(2, "0")}-${b[1].padStart(2, "0")}` : null,
-    height: height && height >= 120 && height <= 230 ? height : null,
-    apps: num(lbl(html, "lblEstadisticasPartidosJugados")) ?? 0,
-    goals: num(lbl(html, "lblEstadisticasGolesMarcados")) ?? 0,
-    conceded: num(lbl(html, "lblEstadisticasGolesRecibidos")) ?? 0,
-    yellows: num(lbl(html, "lblEstadisticasTarjetasAmarillas")) ?? 0,
-    reds: num(lbl(html, "lblEstadisticasTarjetasRojas")) ?? 0,
-  };
-}
 
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 
@@ -194,14 +82,30 @@ const splitName = (full: string) => {
   return w.length <= 2 ? { first_name: w[0], last_name: w.slice(1).join(" ") } : { first_name: w.slice(0, -2).join(" "), last_name: w.slice(-2).join(" ") };
 };
 
-async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: string) => Promise<string>, team: string, season: string) {
+async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: string) => Promise<string>, team: string, season: string, issues: string[]) {
   const html = await get(`team.aspx?itm=${team}`);
-  const ids = [...new Set([...html.matchAll(/dgrJugadores_ctl\d+_hlkJugador"[^>]*href="player\.aspx\?itm=(\d+)"/g)].map((m) => m[1]))];
+  const roster = inspectTeam(html);
+  issues.push(...roster.issues);
+  const ids = roster.items;
   const list: LeaguePlayer[] = [];
+  const unread: string[] = [];
+  const failed: string[] = [];
   for (let i = 0; i < ids.length; i += 5) {
-    const batch = await Promise.all(ids.slice(i, i + 5).map(async (id) => parsePlayer(id, await get(`player.aspx?itm=${id}`))));
+    const batch = await Promise.all(ids.slice(i, i + 5).map(async (id) => {
+      try {
+        const r = inspectPlayer(id, await get(`player.aspx?itm=${id}`));
+        if (r.issues.length) unread.push(...r.issues);
+        return r.player;
+      } catch {
+        failed.push(id);
+        return null;
+      }
+    }));
     list.push(...batch.filter((p): p is LeaguePlayer => !!p));
   }
+  // Una ficha que no se lee no tumba el resto: se apunta y se sigue
+  if (failed.length) issues.push(`Plantilla: ${failed.length} de ${ids.length} fichas de jugador no se han podido descargar.`);
+  for (const msg of new Set(unread)) issues.push(`${msg} (${unread.filter((m) => m === msg).length} de ${ids.length})`);
   const [{ data: players }, { data: members }] = await Promise.all([
     admin.from("players").select("id, first_name, last_name, nickname, foot, height_cm, ext_id"),
     admin.from("squad_members").select("id, player_id, number, status").eq("season", season),
@@ -250,18 +154,41 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
   return { playersNew, playersUpdated, players: list.length };
 }
 
-export type SyncSummary = { playersNew: number; players: number; squadError?: string; rivalsNew: number; matchesNew: number; matchesUpdated: number; results: number; competition: string | null; at: string };
+export type SyncSummary = {
+  playersNew: number; players: number; squadError?: string; rivalsNew: number; matchesNew: number; matchesUpdated: number; results: number;
+  competition: string | null; at: string;
+  /** ok: todo leído · partial: guardado lo que se pudo leer, con incidencias · failed: no se guardó nada */
+  status: LeagueStatus;
+  issues: string[];
+};
 
 /**
  * Trae los partidos de nuestro equipo y los guarda. Los cambios que haga un gestor
  * a mano (observaciones, enlace de mapa, resultado puesto antes que la liga) no se pisan.
+ * Si falla o queda a medias, se avisa a los gestores (menos a quien la lanzó, que lo ve en pantalla).
  */
 export async function syncLeague(opts: { notifyExcept?: string } = {}): Promise<SyncSummary> {
   const admin = createAdminClient();
   const { data: cfg } = await admin.from("league_sync").select("*").eq("id", 1).maybeSingle();
   if (!cfg) throw new Error("Primero configura la liga");
+  try {
+    const summary = await runSync(admin, cfg, opts);
+    if (summary.status !== "ok") await alertLeagueProblem({ status: summary.status, issues: summary.issues, source: "sync", except: opts.notifyExcept });
+    return summary;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    await recordLeagueFailure(msg);
+    await alertLeagueProblem({ status: "failed", issues: [msg], source: "sync", except: opts.notifyExcept });
+    throw e;
+  }
+}
+
+type Cfg = { competition: string; team: string; competition_name: string | null; last_summary: Record<string, unknown> | null };
+
+async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, opts: { notifyExcept?: string }): Promise<SyncSummary> {
   const sess = await openSession(cfg.competition);
   const league = await fetchLeague(cfg.competition, sess);
+  const issues = [...league.issues];
   const ours = league.rows.filter((r) => r.homeId === cfg.team || r.awayId === cfg.team);
   if (!ours.length) throw new Error("No aparece nuestro equipo en esa competición");
 
@@ -376,47 +303,89 @@ export async function syncLeague(opts: { notifyExcept?: string } = {}): Promise<
   let squad = { playersNew: 0, players: 0 } as { playersNew: number; players: number; squadError?: string };
   try {
     const season = finance_season(ours[0].date);
-    const r = await syncSquad(admin, sess.get, cfg.team, season);
+    const r = await syncSquad(admin, sess.get, cfg.team, season, issues);
     squad = { playersNew: r.playersNew, players: r.players };
   } catch (e) {
     squad.squadError = e instanceof Error ? e.message : String(e);
+    issues.push(`Plantilla: no se ha podido leer (${squad.squadError}).`);
   }
 
-  const summary: SyncSummary = { ...squad, rivalsNew, matchesNew, matchesUpdated, results, competition: league.competitionName, at: new Date().toISOString() };
-  await admin.from("league_sync").update({ last_synced_at: summary.at, last_summary: summary, competition_name: league.competitionName?.slice(0, 160) ?? cfg.competition_name }).eq("id", 1);
+  // ---- Clasificación: no se guarda, pero se comprueba que se sigue leyendo bien
+  try {
+    issues.push(...inspectTable(await sess.get("table.aspx")).issues);
+  } catch (e) {
+    issues.push(`Clasificación: no se ha podido descargar (${e instanceof Error ? e.message : String(e)}).`);
+  }
+
+  const summary: SyncSummary = {
+    ...squad, rivalsNew, matchesNew, matchesUpdated, results, competition: league.competitionName, at: new Date().toISOString(),
+    status: issues.length ? "partial" : "ok", issues,
+  };
+  // Se conservan la última revisión semanal y el último aviso enviado
+  const keep = Object.fromEntries(Object.entries(cfg.last_summary ?? {}).filter(([k]) => k === "health" || k === "alert"));
+  await admin.from("league_sync").update({ last_synced_at: summary.at, last_summary: { ...keep, ...summary }, competition_name: league.competitionName?.slice(0, 160) ?? cfg.competition_name }).eq("id", 1);
   return summary;
+}
+
+// ---------------------------------------------------------------------
+// Revisión semanal (solo lectura): ¿se sigue entendiendo la web de la liga?
+// ---------------------------------------------------------------------
+export type HealthReport = { status: LeagueStatus; issues: string[]; at: string; checked: string[] };
+
+/**
+ * Abre las mismas páginas que la sincronización (portada, calendario, clasificación,
+ * plantilla, una ficha de jugador y la ficha de nuestro último partido) y comprueba que
+ * se leen. No guarda partidos ni jugadores: la sincronización sigue siendo con el botón.
+ */
+export async function checkLeagueHealth(competition: string, team: string): Promise<HealthReport> {
+  const issues: string[] = [];
+  const checked: string[] = [];
+  const at = new Date().toISOString();
+  const step = async (name: string, fn: () => Promise<void>) => {
+    try {
+      await fn();
+      checked.push(name);
+    } catch (e) {
+      issues.push(`${name}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+  let sess: Awaited<ReturnType<typeof openSession>>;
+  try {
+    sess = await openSession(competition);
+  } catch (e) {
+    return { status: "failed", issues: [`Portada: ${e instanceof Error ? e.message : String(e)}`], at, checked };
+  }
+  let rows: LeagueRow[] = [];
+  await step("Calendario", async () => {
+    const league = await fetchLeague(competition, sess);
+    rows = league.rows;
+    issues.push(...league.issues);
+    if (!rows.some((r) => r.homeId === team || r.awayId === team)) issues.push("Calendario: no aparece nuestro equipo.");
+  });
+  await step("Clasificación", async () => {
+    const t = inspectTable(await sess.get("table.aspx"));
+    issues.push(...t.issues);
+    if (t.items.length && !t.items.some((r) => r.teamId === team)) issues.push("Clasificación: no aparece nuestro equipo.");
+  });
+  await step("Plantilla", async () => {
+    const roster = inspectTeam(await sess.get(`team.aspx?itm=${team}`));
+    issues.push(...roster.issues);
+    if (roster.items[0]) issues.push(...inspectPlayer(roster.items[0], await sess.get(`player.aspx?itm=${roster.items[0]}`)).issues);
+  });
+  const last = rows.filter((r) => r.status === "played" && (r.homeId === team || r.awayId === team)).at(-1);
+  if (last) {
+    await step("Ficha del partido", async () => {
+      const sheet = inspectSheet(await sess.get(`match.aspx?itm=${last.extId}`), last.homeId === team ? "L" : "V");
+      issues.push(...sheet.issues);
+    });
+  }
+  const status: LeagueStatus = !checked.length ? "failed" : issues.length ? "partial" : "ok";
+  return { status, issues, at, checked };
 }
 
 // ---------------------------------------------------------------------
 // Ficha de un partido (match.aspx): quién jugó, goles, encajados y tarjetas
 // ---------------------------------------------------------------------
-export type SheetRow = { extId: string; name: string; number: number | null; goals: number; conceded: number | null; yellows: number; red: boolean };
-
-/** Jugadores de un lado de la ficha: «L» local, «V» visitante. */
-export function parseSheet(html: string, side: "L" | "V"): SheetRow[] {
-  const rows: SheetRow[] = [];
-  const re = new RegExp(
-    `dgrJugadores${side}_ctl\\d+_lblDorsal"[^>]*>([^<]*)<[\\s\\S]*?hlkJugador" title="([^"]*)" href="player\\.aspx\\?itm=(\\d+)"[\\s\\S]*?lblGoles">([^<]*)<[\\s\\S]*?lblGolesRecibidos"[^>]*>([^<]*)<[\\s\\S]*?pnlAmonestaciones">([\\s\\S]*?)</div>`,
-    "g",
-  );
-  for (const m of html.matchAll(re)) {
-    const cards = m[6];
-    const yr = (cards.match(/card_(?:yellow_?red|double)/gi) ?? []).length;
-    const reds = (cards.match(/card_red/gi) ?? []).length;
-    const yellows = Math.min(2, (cards.match(/card_yellow(?!_?red)/gi) ?? []).length + yr * 2);
-    rows.push({
-      extId: m[3],
-      name: decode(m[2]).trim(),
-      number: /^\d+$/.test(m[1].trim()) ? Number(m[1].trim()) : null,
-      goals: /^\d+$/.test(m[4].trim()) ? Number(m[4].trim()) : 0,
-      conceded: /^\d+$/.test(m[5].trim()) ? Number(m[5].trim()) : null,
-      yellows,
-      red: reds > 0 || yr > 0,
-    });
-  }
-  return rows;
-}
-
 /** Ficha de uno de nuestros partidos en la web de la liga. */
 export async function fetchSheet(competition: string, matchExt: string, home: boolean): Promise<SheetRow[]> {
   if (!/^\d{1,9}$/.test(matchExt)) throw new Error("Partido de la liga no válido");

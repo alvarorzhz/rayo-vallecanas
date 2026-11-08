@@ -7,6 +7,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.11.0",
+    date: "2026-11-08",
+    title: "Sincronización con la liga más vigilada",
+    changes: [
+      "Si la sincronización con la liga falla o se queda a medias, los gestores reciben un aviso en el móvil con lo que no se ha podido leer (el mismo problema, como mucho una vez al día).",
+      "En Partidos y en Partidos → Liga aparece un aviso con el detalle hasta que la siguiente sincronización vaya bien. Cuando todo está en orden, se ve la última comprobación buena.",
+      "Si una parte falla (una ficha de jugador, la clasificación…), se guarda todo lo demás en vez de quedarse a medias sin decir nada.",
+      "Cada lunes por la mañana la app revisa sola que la web de la liga se siga entendiendo: calendario, clasificación, plantilla y fichas. No guarda nada, solo avisa si la liga ha cambiado su web.",
+      "Arreglado: al traer el acta de la liga se perdían los goleadores (y a veces el jugador de al lado). Ahora llegan todos los goles con su autor cuando la liga los apunta.",
+      "Batería de pruebas con páginas reales de la liga guardadas, que detecta si cambia la estructura de su web.",
+    ],
+  },
+  {
     version: "3.10.0",
     date: "2026-11-08",
     title: "Contesta a la convocatoria desde el aviso",
