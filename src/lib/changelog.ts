@@ -7,6 +7,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.5.0",
+    date: "2026-11-08",
+    title: "Especial Matchday ⚡",
+    changes: [
+      "La víspera y el día del partido, Inicio se convierte en la portada del partido: «Mañana jugamos» y «Matchday» con los escudos que chocan en el centro, focos de estadio y un marcador LED que corre por abajo.",
+      "Cuenta atrás grande hasta el pitido inicial, con el campo, la hora de quedada y los botones «Cómo llegar», calendario y WhatsApp.",
+      "Debajo, tu convocatoria para contestar Voy / Duda / No voy, los convocados (o el once en el campo si ya hay alineación) y la previa: racha, última vez contra el rival y nuestro pichichi.",
+      "Cuando el partido empieza sale «En juego», y con el resultado guardado la portada pasa a «Final» con el marcador, el MVP, los goleadores y la imagen para compartir. Si ganamos, ¡confeti!",
+      "El día del partido, una tira «Hoy jugamos» arriba en todas las páginas lleva directo al partido.",
+      "Si en el móvil tienes activado «Reducir movimiento», las animaciones se quedan quietas.",
+    ],
+  },
+  {
     version: "3.4.0",
     date: "2026-11-08",
     title: "Tutorial de bienvenida",
