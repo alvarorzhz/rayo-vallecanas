@@ -70,9 +70,11 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   // Partidos: el próximo y los últimos resultados
   const [matchday, focus] = s.can("matches") ? await Promise.all([fetchMatchday(supabase, 40), fetchMatchdayFocus(supabase)]) : [null, null];
-  // ¿Me han convocado para el próximo partido?
+  // ¿Me han convocado para el próximo partido? También durante el final y el post partido del anterior:
+  // la convocatoria de la semana siguiente se publica antes de que se quite el resultado de la portada.
+  const afterMatch = !!focus && (focus.phase === "final" || focus.phase === "post") && matchday?.next?.id !== focus.m.id;
   let myCallup = null;
-  if (!focus && matchday?.next && callupOpen(matchday.next)) {
+  if ((!focus || afterMatch) && matchday?.next && callupOpen(matchday.next)) {
     const [rows, me] = await Promise.all([fetchCallups(supabase, matchday.next), fetchMyPlayerId(supabase, s.user.id)]);
     myCallup = rows.find((r) => r.player_id === me) ?? null;
   }
@@ -127,7 +129,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       {/* 1 · El partido: siempre en portada, según el momento */}
       {md ? (
         <>
-          <MatchdayHero m={md.m} phase={md.phase} greeting={greeting} form={recentForm} next={md.phase === "post" ? matchday?.next ?? null : null} weather={md.weather} />
+          <MatchdayHero m={md.m} phase={md.phase} greeting={greeting} form={recentForm} next={afterMatch ? matchday?.next ?? null : null} weather={md.weather} />
+          {myCallup && matchday?.next && <div className="mb-6"><MyCallupCard m={matchday.next} mine={myCallup} withMatch /></div>}
           <MatchdayDetails m={md.m} phase={md.phase} callups={md.callups} myPlayerId={md.myPlayerId} canEdit={s.can("matches", "update")}
             recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} mvp={md.mvp} />
         </>

@@ -33,7 +33,7 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null, weath
   weather?: MatchWeather | null;
   /** Últimos resultados (el más reciente al final), para la racha de la portada en semana normal. */
   form?: MatchRow[];
-  /** En el post partido, el siguiente partido. */
+  /** En el final y el post partido, el siguiente partido (con su convocatoria, si ya está publicada). */
   next?: MatchRow | null;
 }) {
   const [a, b] = sides(m, m.rival);
@@ -139,12 +139,12 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null, weath
             {(phase === "eve" || phase === "week") && <a href={`/api/partidos/${m.id}/calendario`} className={darkBtn}><CalendarPlus size={17} /> Calendario</a>}
             <ShareButton text={matchShareText(m)} label="WhatsApp" className={darkBtn} />
           </div>
-          {phase === "post" && next && (
+          {done && next && next.id !== m.id && (
             <Link href={`/partidos/${next.id}`} prefetch={false}
               className="group mt-1 flex w-full max-w-md items-center gap-3 rounded-2xl bg-white/[0.08] px-3 py-2 text-left ring-1 ring-white/15 transition hover:bg-white/15">
               <Crest rival={next.rival} size={30} />
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-dorado">Siguiente partido</span>
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-dorado">Siguiente partido{callupOpen(next) ? " · convocatoria publicada" : ""}</span>
                 <span className="block truncate text-sm font-bold">{next.is_home ? "vs" : "en casa de"} {next.rival.name} · {shortDay(next.match_date)}{next.kickoff ? ` · ${hhmm(next.kickoff)}` : ""}</span>
               </span>
               <ArrowRight size={18} className="shrink-0 text-white/70 transition group-hover:translate-x-0.5" />

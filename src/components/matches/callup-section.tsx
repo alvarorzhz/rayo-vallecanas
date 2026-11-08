@@ -6,7 +6,7 @@ import { ShareButton } from "@/components/matches/share-button";
 import { RemindButton, ReplyBox, ReplyForSelect } from "@/components/matches/callup-forms";
 import { remindPending, replyCallup, setReplyFor } from "@/app/(app)/partidos/callup-actions";
 import { REPLY_LABEL, REPLY_TONE, callupShareText, tally, type CallupRow, type Reply } from "@/lib/callups";
-import { hhmm, type MatchRow } from "@/lib/matches";
+import { hhmm, shortDay, type MatchRow } from "@/lib/matches";
 import { lineOf, shirtName } from "@/lib/squad";
 
 const GROUPS: { key: Reply; title: string }[] = [
@@ -29,8 +29,11 @@ export function MeetLine({ m, className = "" }: { m: MatchRow; className?: strin
   );
 }
 
-/** Tarjeta negra «Estás convocado» con los botones de respuesta. */
-export function MyCallupCard({ m, mine, meet = true }: { m: MatchRow; mine: CallupRow; meet?: boolean }) {
+/**
+ * Tarjeta negra «Estás convocado» con los botones de respuesta.
+ * `withMatch`: dice para qué partido es (cuando la portada enseña otro, como en el post partido).
+ */
+export function MyCallupCard({ m, mine, meet = true, withMatch = false }: { m: MatchRow; mine: CallupRow; meet?: boolean; withMatch?: boolean }) {
   return (
     <div className="franja relative overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg">
       <div className="relative space-y-3">
@@ -38,6 +41,13 @@ export function MyCallupCard({ m, mine, meet = true }: { m: MatchRow; mine: Call
           <Jersey number={mine.number} goalkeeper={lineOf(mine.position) === "GK"} size={40} />
           <div className="min-w-0">
             <p className="sport text-xl font-black leading-tight text-dorado">¡Estás convocado!</p>
+            {withMatch && (
+              <p className="text-sm font-bold text-white">
+                <Link href={`/partidos/${m.id}`} prefetch={false} className="hover:underline">
+                  {m.is_home ? "vs" : "en casa de"} {m.rival.name} · {shortDay(m.match_date)}{m.kickoff ? ` · ${hhmm(m.kickoff)}` : ""}
+                </Link>
+              </p>
+            )}
             <p className="text-sm text-white/80">{mine.reply === "pending" ? "¿Vas al partido? Contesta para que contemos contigo." : `Tu respuesta: ${REPLY_LABEL[mine.reply].toLowerCase()}. Puedes cambiarla.`}</p>
           </div>
         </div>

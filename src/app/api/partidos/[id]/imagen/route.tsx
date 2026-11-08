@@ -185,7 +185,11 @@ const BallIcon = ({ size = 30 }: { size?: number }) => (
   </svg>
 );
 
-/** Imagen del resultado (1080 × 1350) para compartir en WhatsApp o Instagram. */
+/**
+ * Imagen del resultado (1080 × 1350) para compartir en WhatsApp o Instagram.
+ * Sin sombras difuminadas (boxShadow/textShadow): cada una costaba segundos de dibujo y la imagen tardaba
+ * tanto que el móvil ya no dejaba abrir el menú de compartir (v3.20.1).
+ */
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -245,7 +249,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   );
 
   const digit = (n: number, win: boolean) => (
-    <div style={{ display: "flex", width: 150, height: 196, alignItems: "center", justifyContent: "center", borderRadius: 22, background: "linear-gradient(180deg, #1b1f27 0%, #0b0d11 50%, #15181f 50%, #07080b 100%)", border: `3px solid ${win ? ORO : "rgba(255,255,255,0.16)"}`, boxShadow: win ? "0 0 40px rgba(213,175,50,0.45)" : "0 12px 30px rgba(0,0,0,0.6)", fontFamily: "Display", fontSize: 176, lineHeight: 1, color: win ? ORO : "white" }}>{n}</div>
+    <div style={{ display: "flex", width: 150, height: 196, alignItems: "center", justifyContent: "center", borderRadius: 22, background: "linear-gradient(180deg, #1b1f27 0%, #0b0d11 50%, #15181f 50%, #07080b 100%)", border: win ? `5px solid ${ORO}` : "3px solid rgba(255,255,255,0.16)", fontFamily: "Display", fontSize: 176, lineHeight: 1, color: win ? ORO : "white" }}>{n}</div>
   );
 
   const hasCards = scorerList.length > 0 || !!mvp;
@@ -267,13 +271,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
           </div>
           <div style={{ display: "flex", alignItems: "center", marginTop: 14 }}>
             <div style={{ display: "flex", height: 6, width: 90, background: `linear-gradient(90deg, rgba(213,175,50,0), ${ORO})`, marginRight: 22 }} />
-            <span style={{ fontFamily: "Display", fontSize: 92, lineHeight: 1, letterSpacing: 10, textShadow: "0 6px 30px rgba(0,0,0,0.8)" }}>FINAL</span>
+            <span style={{ fontFamily: "Display", fontSize: 92, lineHeight: 1, letterSpacing: 10 }}>FINAL</span>
             <div style={{ display: "flex", height: 6, width: 90, background: `linear-gradient(90deg, ${ORO}, rgba(213,175,50,0))`, marginLeft: 22 }} />
           </div>
         </div>
 
         {/* Videomarcador */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "34px 46px 0", padding: "34px 20px 30px", borderRadius: 40, background: "linear-gradient(180deg, rgba(10,12,18,0.88), rgba(10,12,18,0.72))", border: "2px solid rgba(255,255,255,0.12)", boxShadow: "0 30px 80px rgba(0,0,0,0.7)", position: "relative" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "34px 46px 0", padding: "34px 20px 30px", borderRadius: 40, background: "linear-gradient(180deg, rgba(10,12,18,0.88), rgba(10,12,18,0.72))", border: "2px solid rgba(255,255,255,0.12)", position: "relative" }}>
           <div style={{ position: "absolute", top: 0, left: 80, right: 80, height: 5, display: "flex", background: `linear-gradient(90deg, rgba(0,0,0,0), ${ROJO}, ${ORO}, ${ROJO}, rgba(0,0,0,0))` }} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
             {team(a)}
@@ -287,7 +291,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
             </div>
             {team(b)}
           </div>
-          <div style={{ display: "flex", alignItems: "center", marginTop: 26, background: tone, color: o === "D" ? "#080808" : "white", borderRadius: 999, padding: "10px 40px", fontFamily: "Display", fontSize: 44, letterSpacing: 6, boxShadow: `0 0 36px ${o === "W" ? "rgba(22,163,74,0.55)" : "rgba(0,0,0,0.4)"}` }}>
+          <div style={{ display: "flex", alignItems: "center", marginTop: 26, background: tone, color: o === "D" ? "#080808" : "white", borderRadius: 999, padding: "10px 40px", fontFamily: "Display", fontSize: 44, letterSpacing: 6 }}>
             {o === "W" && <div style={{ display: "flex", marginRight: 12 }}><Bolt size={36} color="#ffffff" /></div>}
             {headline}
             {tagline && <span style={{ fontSize: 28, letterSpacing: 3, marginLeft: 16, opacity: 0.8 }}>· {tagline}</span>}
@@ -316,7 +320,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
                 </div>
               )}
               {mvp && (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: scorerList.length ? 330 : 420, background: `linear-gradient(160deg, ${ORO} 0%, #b8901c 100%)`, borderRadius: 30, padding: "22px 20px", color: "#0b0b0b", boxShadow: "0 18px 50px rgba(0,0,0,0.6)" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: scorerList.length ? 330 : 420, background: `linear-gradient(160deg, ${ORO} 0%, #b8901c 100%)`, borderRadius: 30, padding: "22px 20px", color: "#0b0b0b" }}>
                   <div style={{ display: "flex", alignItems: "center", fontFamily: "Display", fontSize: 28, letterSpacing: 3 }}>
                     <svg width="26" height="26" viewBox="0 0 24 24" style={{ marginRight: 8 }}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#0b0b0b" /></svg>
                     MVP DEL PARTIDO
