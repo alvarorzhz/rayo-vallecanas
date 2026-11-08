@@ -34,7 +34,7 @@ export async function removePushSubscription(endpoint: string) {
 
 export async function sendTestPush() {
   const s = await getSession();
-  const n = await sendPush([s.user.id], { title: "¡Avisos activados! ⚡", body: "Así te llegarán los avisos del Rayo Vallecañas.", url: "/perfil" });
+  const n = await sendPush([s.user.id], { title: "¡Avisos activados! ⚡", body: "Así te llegarán los avisos del Rayo Vallecañas.", url: "/perfil", tag: "prueba" });
   return n > 0 ? { ok: "Aviso de prueba enviado" } : { error: "No se pudo enviar. Activa los avisos en este dispositivo primero." };
 }
 

@@ -14,6 +14,8 @@ import { form, record } from "@/lib/matches";
 import { MySeason } from "@/components/squad/my-season";
 import { SponsorStrip } from "@/components/sponsors/showcase";
 import { fetchDisplay, type Showcase } from "@/lib/sponsors";
+import { PollCard } from "@/components/polls/poll-card";
+import type { Poll } from "@/lib/polls";
 
 const LG_COLS: Record<number, string> = { 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" };
 
@@ -86,8 +88,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       })()
     : null;
 
-  // Patrocinadores: una línea discreta al final, si los gestores lo tienen activado
-  const [display, showcase] = await Promise.all([fetchDisplay(supabase), supabase.rpc("sponsor_showcase")]);
+  // Patrocinadores (una línea discreta al final) y votaciones abiertas en las que puede votar (las que aún no ha votado, primero)
+  const [display, showcase, board] = await Promise.all([fetchDisplay(supabase), supabase.rpc("sponsor_showcase"), supabase.rpc("poll_board", { p_limit: 10 })]);
+  const polls = ((board.data ?? []) as Poll[])
+    .filter((p) => p.open && p.can_vote)
+    .sort((a, b) => Number(a.my_vote !== null) - Number(b.my_vote !== null));
+  const canManagePolls = s.can("users", "update") || s.can("lottery_admin", "update");
+
   const sponsors = display.show_home ? ((showcase.data ?? []) as Showcase[]) : [];
 
   const firstName = s.profile.full_name.split(" ")[0];
@@ -134,6 +141,18 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <p className="mt-2 text-sm text-white/60">{fecha(new Date())}{s.can("matches") ? " · Sin partidos programados" : ""}</p>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* Votaciones abiertas */}
+      {polls.length > 0 && (
+        <section aria-label="Votaciones" className="mb-6 space-y-3">
+          <div className={`grid gap-3 ${polls.length > 1 ? "lg:grid-cols-2" : ""}`}>
+            {polls.slice(0, 2).map((p) => <PollCard key={p.id} p={p} canManage={canManagePolls} compact />)}
+          </div>
+          <Link href="/votaciones" prefetch className="inline-block text-sm font-bold text-rojo hover:underline">
+            {polls.length > 2 ? `Ver las ${polls.length} votaciones abiertas →` : "Ver votaciones →"}
+          </Link>
         </section>
       )}
 

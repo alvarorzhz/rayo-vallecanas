@@ -54,6 +54,8 @@ export default function PrivacyPage() {
             una cuota, el pago queda apuntado en las cuentas del club con tu nombre. No guardamos tu dirección.</p>
           <p><b>Notificaciones:</b> si activas los avisos en tu dispositivo, guardamos el identificador técnico que da tu navegador
             para poder enviártelos. Puedes desactivarlos cuando quieras.</p>
+          <p><b>Votaciones:</b> si votas en una votación del equipo, guardamos tu voto (sí o no) y cuándo votaste. En las votaciones
+            abiertas, quienes pueden votar ven qué ha votado cada uno; en las de voto secreto, nadie lo ve, ni los gestores: solo el recuento.</p>
         </S>
 
         <S title="3. Por qué podemos tratarlos (base jurídica)">

@@ -1,0 +1,63 @@
+/**
+ * Catálogo de los avisos al móvil que manda la app, para enseñarlo en Gestión → Avisos.
+ * Al añadir un aviso nuevo en el código (sendPush), añádelo aquí también.
+ */
+
+export type NoticeArea = "manual" | "polls" | "matches" | "lottery" | "sponsors" | "league";
+
+export const AREA_LABEL: Record<NoticeArea, string> = {
+  manual: "Avisos y votaciones",
+  polls: "Votaciones",
+  matches: "Partidos y convocatorias",
+  lottery: "Sorteos",
+  sponsors: "Patrocinadores",
+  league: "Liga",
+};
+
+export type NoticeKind = {
+  area: NoticeArea;
+  title: string;
+  /** Cuándo sale. */
+  when: string;
+  /** A quién le llega. */
+  who: string;
+  /** auto = sale sola; manual = la lanza alguien con un botón; opt = sale si se deja marcada la casilla. */
+  how: "auto" | "manual" | "opt";
+};
+
+export const NOTICE_CATALOG: NoticeKind[] = [
+  { area: "manual", title: "Aviso al equipo", when: "Cuando lo mandas desde esta pantalla.", who: "Todo el equipo, solo jugadores o solo gestores.", how: "manual" },
+  { area: "manual", title: "🗳️ Nueva votación", when: "Al lanzar una votación sí/no. Lleva los botones «Sí» y «No».", who: "Las personas a las que va dirigida.", how: "manual" },
+  { area: "manual", title: "⏰ Recordatorio de votación", when: "Con «Recordar» en una votación abierta.", who: "Solo a los que aún no han votado.", how: "manual" },
+
+  { area: "matches", title: "📅 Nuevo partido en el calendario", when: "Al crear un partido a mano, si se deja marcado «Avisar».", who: "Todo el equipo (menos quien lo crea).", how: "opt" },
+  { area: "matches", title: "🔁 Cambio en el partido", when: "Si cambia la fecha o la hora: desde la liga, siempre; a mano, si se deja marcado «Avisar».", who: "Todo el equipo.", how: "auto" },
+  { area: "matches", title: "⏸️ Aplazado · ⛔ Suspendido · 📅 Nueva fecha", when: "Al cambiar el estado del partido, si se deja marcado «Avisar».", who: "Todo el equipo.", how: "opt" },
+  { area: "matches", title: "✅ ¡Victoria! · 🤝 Empate · Resultado final", when: "Al importar el resultado de la liga, siempre; a mano, si se deja marcado «Avisar».", who: "Todo el equipo.", how: "auto" },
+  { area: "matches", title: "📋 Acta del partido", when: "La primera vez que se guarda el acta, si se deja marcado «Avisar».", who: "Todo el equipo.", how: "opt" },
+  { area: "matches", title: "⚽ ¡Estás convocado!", when: "Al publicar la convocatoria (o al añadir a alguien después). Con botones «Voy» y «No voy».", who: "Los convocados.", how: "opt" },
+  { area: "matches", title: "⏰ ¿Vas al partido?", when: "Con «Recordar» en la convocatoria.", who: "Los convocados que no han contestado.", how: "manual" },
+  { area: "matches", title: "⏰ Mañana hay partido: ¿vas?", when: "Cada mañana a las 9:00 (10:00 en verano), la víspera del partido.", who: "Los convocados que no han contestado.", how: "auto" },
+  { area: "matches", title: "⚽ ¡Hoy jugamos!", when: "La mañana del partido, con la hora y el sitio de quedada.", who: "Los convocados que van o dudan.", how: "auto" },
+
+  { area: "lottery", title: "¡Ya puedes vender! 🎟️", when: "Al abrir un sorteo.", who: "Sus vendedores.", how: "auto" },
+  { area: "lottery", title: "Nueva venta 💶", when: "Con cada venta.", who: "Los gestores de sorteos que lo tienen activado en Mi perfil.", how: "auto" },
+  { area: "lottery", title: "🏆 Número ganador", when: "Al registrar el número ganador.", who: "Vendedores y gestores de sorteos.", how: "auto" },
+
+  { area: "sponsors", title: "🤝 Patrocinadores", when: "Cada mañana, si un plazo pasa de fecha sin cobrar (como mucho uno a la semana) o falta un mes para que venza un acuerdo.", who: "Quien puede editar Patrocinadores.", how: "auto" },
+
+  { area: "league", title: "Problema con la liga", when: "Si la importación de la liga falla o se queda a medias (como mucho uno al día por el mismo problema).", who: "Quien puede editar Partidos.", how: "auto" },
+];
+
+export const HOW_LABEL: Record<NoticeKind["how"], string> = { auto: "Automático", manual: "Con un botón", opt: "Si se marca «Avisar»" };
+
+/** Sección de un aviso ya enviado, según adónde lleva al tocarlo. */
+export function areaOf(url: string | null, tag: string | null): NoticeArea {
+  const u = url ?? "/";
+  if (u.startsWith("/votaciones")) return "polls";
+  if (tag === "liga-sincronizacion" || u.startsWith("/partidos/liga")) return "league";
+  if (u.startsWith("/partidos")) return "matches";
+  if (u.startsWith("/loteria")) return "lottery";
+  if (u.startsWith("/admin/patrocinadores")) return "sponsors";
+  return "manual";
+}
