@@ -37,10 +37,10 @@ export function buildTour(s: Session): TourStep[] {
 
   const home: string[] = [];
   if (s.can("matches")) home.push("El próximo partido con su cuenta atrás y tu convocatoria para contestar.");
-  if (s.can("matches")) home.push("La víspera y el día del partido, Inicio se convierte en el Especial Matchday: cuenta atrás, convocados, la previa y el resultado final.");
+  if (s.can("matches")) home.push("La víspera y el día del partido, Inicio se convierte en el Especial Matchday, y después el resultado se queda dos días en portada con el MVP y lo que hiciste tú.");
   if (s.can("lottery_admin") || s.can("lottery_sell")) home.push("El sorteo que está abierto y cómo va la venta.");
   if (s.can("finances")) home.push("El saldo del club de un vistazo.");
-  if (s.can("squad")) home.push("La plantilla de la temporada y tu cromo.");
+  if (s.can("squad")) home.push("Tu temporada: tu cromo, tus goles, tus rachas y tus últimos partidos.");
   steps.push({
     key: "inicio",
     href: "/",

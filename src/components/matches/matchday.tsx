@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { CalendarPlus, ClipboardCheck, ClipboardList, Flame, MapPin, Megaphone, Star, Swords, Trophy } from "lucide-react";
+import { ArrowRight, CalendarPlus, ClipboardCheck, ClipboardList, Flame, MapPin, Megaphone, Shirt, Star, Swords, Trophy } from "lucide-react";
 import {
-  CLUB_SHORT, COMPETITION_LABEL, hhmm, kickoffDate, longDay, mapsLink, matchShareText, outcomeOf, rivalShort, sides, streak,
+  CLUB_SHORT, COMPETITION_LABEL, hhmm, kickoffDate, longDay, mapsLink, matchShareText, outcomeOf, relativeDay, rivalShort, shortDay, sides, streak,
   type MatchRow,
 } from "@/lib/matches";
 import { PHASE_TITLE, type MatchdayPhase } from "@/lib/matchday";
@@ -20,16 +20,32 @@ import { Ball } from "@/components/squad/ball";
 
 const darkBtn = "btn bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20";
 
-/** Portada del día de partido (y de la víspera) en Inicio. */
-export function MatchdayHero({ m, phase, greeting }: { m: MatchRow; phase: MatchdayPhase; greeting: string }) {
+/**
+ * Portada de Inicio, siempre dedicada al partido: el próximo en una semana normal (week),
+ * la víspera, el día de partido, en juego, el final y el post partido de los dos días siguientes.
+ */
+export function MatchdayHero({ m, phase, greeting, form = [], next = null }: {
+  m: MatchRow; phase: MatchdayPhase; greeting: string;
+  /** Últimos resultados (el más reciente al final), para la racha de la portada en semana normal. */
+  form?: MatchRow[];
+  /** En el post partido, el siguiente partido. */
+  next?: MatchRow | null;
+}) {
   const [a, b] = sides(m, m.rival);
   const o = outcomeOf(m);
   const link = mapsLink(m);
   const time = hhmm(m.kickoff);
+  const done = phase === "final" || phase === "post";
+  const ahead = phase === "week" || phase === "eve" || phase === "day";
+  const run = phase === "week" ? streak(form) : null;
+  const when = relativeDay(m.match_date);
   const ticker = [
     PHASE_TITLE[phase],
     m.is_home ? `${m.rival.name} visita nuestro campo` : `Visitamos a ${m.rival.name}`,
-    phase === "final" ? `${a.name} ${a.goals} - ${b.goals} ${b.name}` : time ? `Pitido inicial ${time}` : longDay(m.match_date),
+    done ? `${a.name} ${a.goals} - ${b.goals} ${b.name}` : time ? `Pitido inicial ${time}` : longDay(m.match_date),
+    phase === "week" && when ? when : null,
+    run ? `Racha: ${run}` : null,
+    next ? `Siguiente: ${next.rival.name}` : null,
     m.venue,
     "¡Aúpa Rayo! ⚡",
   ].filter(Boolean) as string[];
@@ -58,7 +74,7 @@ export function MatchdayHero({ m, phase, greeting }: { m: MatchRow; phase: Match
         </svg>
         <div className="franja anim-sweep absolute inset-0 opacity-60" />
       </div>
-      {phase === "final" && o === "W" && <Confetti />}
+      {done && o === "W" && <Confetti />}
 
       <div className="relative px-5 pb-4 pt-5 sm:px-8 sm:pt-7">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -69,7 +85,7 @@ export function MatchdayHero({ m, phase, greeting }: { m: MatchRow; phase: Match
           </p>
         </div>
         <h1 className="mt-2 text-center">
-          <span className={`md-title sport block font-black leading-[0.85] ${phase === "eve" ? "text-5xl sm:text-7xl" : "text-6xl sm:text-8xl"}`}>{PHASE_TITLE[phase]}</span>
+          <span className={`md-title sport block font-black leading-[0.85] ${phase === "day" || phase === "live" || phase === "final" ? "text-6xl sm:text-8xl" : "text-5xl sm:text-7xl"}`}>{PHASE_TITLE[phase]}</span>
           <span className="sr-only"> · {a.name} contra {b.name}</span>
         </h1>
 
@@ -77,7 +93,7 @@ export function MatchdayHero({ m, phase, greeting }: { m: MatchRow; phase: Match
           {team(a, "left")}
           <div className="relative flex shrink-0 flex-col items-center">
             <span aria-hidden className="md-impact" />
-            {phase === "final" ? (
+            {done ? (
               <div className="anim-score md-vs flex items-center gap-1.5 rounded-2xl bg-black/70 px-3 py-2 ring-1 ring-dorado/40 sm:px-5">
                 <span className={`sport text-5xl font-black tabular-nums leading-none sm:text-7xl ${a.us && o === "W" ? "text-dorado" : ""}`}>{a.goals}</span>
                 <span className="sport text-3xl font-black text-white/40 sm:text-5xl">-</span>
@@ -86,34 +102,47 @@ export function MatchdayHero({ m, phase, greeting }: { m: MatchRow; phase: Match
             ) : (
               <span className="md-vs sport text-4xl font-black italic text-white sm:text-6xl">VS</span>
             )}
-            {phase !== "final" && time && <span className="sport md-vs mt-1 rounded-md bg-rojo px-2 py-0.5 text-xl font-black leading-none shadow-lg">{time}</span>}
+            {!done && time && <span className="sport md-vs mt-1 rounded-md bg-rojo px-2 py-0.5 text-xl font-black leading-none shadow-lg">{time}</span>}
           </div>
           {team(b, "right")}
         </div>
 
         <div className="mt-5 flex flex-col items-center gap-3">
-          {(phase === "day" || phase === "eve") && m.kickoff && <MatchdayCountdown to={kickoffDate(m).toISOString()} />}
-          {(phase === "day" || phase === "eve") && !m.kickoff && <p className="text-sm text-white/70">Hora por confirmar</p>}
+          {ahead && m.kickoff && <MatchdayCountdown to={kickoffDate(m).toISOString()} />}
+          {ahead && !m.kickoff && <p className="text-sm text-white/70">{phase === "week" && when ? `${when} · ` : ""}Hora por confirmar</p>}
           {phase === "live" && (
             <p className="sport flex items-center gap-2 text-2xl font-black text-white"><span className="md-live-dot" aria-hidden /> Partido en juego · ¡vamos Rayo!</p>
           )}
-          {phase === "final" && o && (
+          {done && o && (
             <p className={`sport text-2xl font-black sm:text-3xl ${o === "W" ? "text-dorado" : "text-white/90"}`}>
               {o === "W" ? <><Trophy size={26} className="anim-trophy mr-1 inline" /> ¡Victoria del Rayo!</> : o === "D" ? "Empate. ¡A por la próxima!" : "Derrota. ¡Levantaremos la cabeza!"}
             </p>
           )}
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-white/85">
-            <span className="first-letter:uppercase">{longDay(m.match_date)}</span>
+            <span className="first-letter:uppercase">{phase === "post" && when ? `${when}, ` : ""}{longDay(m.match_date)}</span>
             {m.venue && <span className="inline-flex items-center gap-1.5"><MapPin size={15} className="text-dorado" /> {m.venue}</span>}
           </div>
-          {phase !== "final" && <MeetLine m={m} className="text-white/90" />}
+          {run && <div className="flex items-center gap-2 text-sm font-bold text-white/90"><FormStrip rows={form} label={false} /> <span>🔥 {run}</span></div>}
+          {!run && phase === "week" && form.length > 0 && <FormStrip rows={form} />}
+          {!done && <MeetLine m={m} className="text-white/90" />}
           <div className="flex flex-wrap justify-center gap-2 pt-1">
-            {phase !== "final" && link && <a href={link} target="_blank" rel="noopener" className="btn-primary"><MapPin size={17} /> Cómo llegar</a>}
-            {phase === "final" && m.report_saved_at && <ShareImageButton url={`/api/partidos/${m.id}/imagen`} name={`resultado-${m.match_date}.png`} />}
-            <Link href={`/partidos/${m.id}`} prefetch className={darkBtn}>{phase === "final" ? <><ClipboardCheck size={17} /> Ver acta</> : <>Ver partido</>}</Link>
-            {phase === "eve" && <a href={`/api/partidos/${m.id}/calendario`} className={darkBtn}><CalendarPlus size={17} /> Calendario</a>}
+            {!done && link && <a href={link} target="_blank" rel="noopener" className="btn-primary"><MapPin size={17} /> Cómo llegar</a>}
+            {done && m.report_saved_at && <ShareImageButton url={`/api/partidos/${m.id}/imagen`} name={`resultado-${m.match_date}.png`} />}
+            <Link href={`/partidos/${m.id}`} prefetch className={darkBtn}>{done ? <><ClipboardCheck size={17} /> Ver acta</> : <>Ver partido</>}</Link>
+            {(phase === "eve" || phase === "week") && <a href={`/api/partidos/${m.id}/calendario`} className={darkBtn}><CalendarPlus size={17} /> Calendario</a>}
             <ShareButton text={matchShareText(m)} label="WhatsApp" className={darkBtn} />
           </div>
+          {phase === "post" && next && (
+            <Link href={`/partidos/${next.id}`} prefetch={false}
+              className="group mt-1 flex w-full max-w-md items-center gap-3 rounded-2xl bg-white/[0.08] px-3 py-2 text-left ring-1 ring-white/15 transition hover:bg-white/15">
+              <Crest rival={next.rival} size={30} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-dorado">Siguiente partido</span>
+                <span className="block truncate text-sm font-bold">{next.is_home ? "vs" : "en casa de"} {next.rival.name} · {shortDay(next.match_date)}{next.kickoff ? ` · ${hhmm(next.kickoff)}` : ""}</span>
+              </span>
+              <ArrowRight size={18} className="shrink-0 text-white/70 transition group-hover:translate-x-0.5" />
+            </Link>
+          )}
         </div>
       </div>
 
@@ -141,15 +170,16 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
   const formRows = [...recent].filter((x) => x.id !== m.id).slice(0, 5).reverse();
   const run = streak(recent);
 
-  if (phase === "final") {
+  if (phase === "final" || phase === "post") {
     const ours = report?.goals.filter((g) => g.scorer) ?? [];
+    const myApp = myPlayerId ? report?.appearances.find((x) => x.player_id === myPlayerId) ?? null : null;
     const byScorer = new Map<string, { name: string; n: number }>();
     for (const g of ours) {
       const k = g.scorer!.player_id;
       byScorer.set(k, { name: shirtName(g.scorer!.player), n: (byScorer.get(k)?.n ?? 0) + 1 });
     }
     return (
-      <div className="mb-6 grid gap-4 md:grid-cols-2">
+      <div className={`mb-6 grid gap-4 md:grid-cols-2 ${myApp ? "lg:grid-cols-3" : ""}`}>
         {report?.mvp ? (
           <div className="franja cromo-shine anim-rise relative flex items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg">
             <span className="relative anim-trophy"><Jersey number={report.mvp.number} goalkeeper={lineOf(report.mvp.position) === "GK"} size={60} /></span>
@@ -178,6 +208,7 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
           )}
           {formRows.length > 0 && <div className="mt-3 text-negro"><FormStrip rows={[...formRows, m]} /></div>}
         </div>
+        {myApp && report && <MyMatchCard app={myApp} report={report} />}
       </div>
     );
   }
@@ -249,3 +280,36 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
   );
 }
 
+
+/** «Tu partido»: lo que hizo el usuario según el acta. */
+function MyMatchCard({ app, report }: { app: ReportView["appearances"][number]; report: ReportView }) {
+  const goals = report.goals.filter((g) => g.scorer_id === app.player_id).length;
+  const assists = report.goals.filter((g) => g.assist_id === app.player_id).length;
+  const mvp = report.mvp?.player_id === app.player_id;
+  const facts: [string, string | number][] = [
+    ["Rol", app.started ? "Titular" : "Suplente"],
+    ...(app.goalkeeper ? [["Encajados", app.conceded] as [string, number]] : [["Goles", goals] as [string, number], ["Asist.", assists] as [string, number]]),
+  ];
+  const cards = [app.yellows > 0 && `🟨${app.yellows > 1 ? ` ×${app.yellows}` : ""}`, app.red && "🟥"].filter(Boolean).join(" ");
+  const line = mvp ? "¡Fuiste el MVP! 🌟"
+    : goals > 1 ? `¡${goals} goles tuyos! ⚽` : goals === 1 ? "¡Marcaste! ⚽"
+    : assists ? "Diste una asistencia 🎯"
+    : app.goalkeeper && app.conceded === 0 ? "¡Portería a cero! 🧤" : "Gracias por dejarte la piel 💪";
+  return (
+    <div className="card anim-rise md:col-span-2 lg:col-span-1" style={{ animationDelay: "160ms" }}>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="sport flex items-center gap-2 text-lg font-black"><Shirt size={18} className="text-rojo" /> Tu partido</h2>
+        <Jersey number={app.number} goalkeeper={app.goalkeeper || lineOf(app.position) === "GK"} size={30} />
+      </div>
+      <dl className="grid grid-cols-3 gap-2 text-center">
+        {facts.map(([k, v]) => (
+          <div key={k} className="flex flex-col-reverse rounded-xl bg-gris px-1 py-2">
+            <dt className="mt-1 text-[11px] font-bold uppercase tracking-wider text-negro/65">{k}</dt>
+            <dd className="sport truncate text-2xl font-black leading-none tabular-nums">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2 text-sm font-bold">{line}{cards ? <span className="ml-2 font-normal">{cards}</span> : null}</p>
+    </div>
+  );
+}

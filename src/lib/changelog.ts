@@ -7,6 +7,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.7.0",
+    date: "2026-11-08",
+    title: "Nuevo Inicio, centrado en el partido",
+    changes: [
+      "Inicio es más limpio: arriba siempre el partido, debajo tu ficha y al final unos accesos rápidos con un solo dato cada uno.",
+      "En una semana normal, la portada es el «Próximo partido» con los escudos, la cuenta atrás, la racha y los botones de cómo llegar, calendario y WhatsApp. Si estás convocado, contestas justo debajo.",
+      "La víspera, el día de partido y en juego sigue el Especial Matchday. Y llega el «Post partido»: el resultado se queda dos días en portada con el MVP, los goleadores, la imagen para compartir y el siguiente partido.",
+      "Nuevo «Tu partido» en el final y el post partido: si jugaste, ves si fuiste titular, tus goles, asistencias, tarjetas y si fuiste el MVP.",
+      "Nuevo «Tu temporada»: tu cromo con partidos, titularidades, goles, asistencias y MVP, tu puesto entre los goleadores del equipo, tus rachas, tus últimos partidos y el último en detalle.",
+      "Sorteo activo, saldo, plantilla disponible y balance de la temporada pasan a tarjetas pequeñas. Las ventas, el ranking y las cuentas completas siguen en su pestaña.",
+    ],
+  },
+  {
     version: "3.6.0",
     date: "2026-11-08",
     title: "Clasificación de la liga",
