@@ -8,6 +8,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.19.0",
+    date: "2026-11-08",
+    title: "Aviso con los datos del partido",
+    changes: [
+      "El día del partido ya no hace falta pulsar «Sincronizar»: la app mira sola la web de la liga por la tarde y la noche, empezando hora y media después del pitido, y otra vez a la mañana siguiente.",
+      "En cuanto aparece el resultado, se guarda y llega a todo el equipo el aviso «Ya están los datos del partido» con el marcador. Al tocarlo se abre el partido.",
+      "Si el resultado ya se había puesto a mano, no se manda otra vez.",
+      "Los días sin partido no se toca la web de la liga.",
+    ],
+  },
+  {
     version: "3.18.0",
     date: "2026-11-08",
     title: "El tiempo en la previa",

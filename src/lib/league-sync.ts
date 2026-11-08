@@ -7,6 +7,7 @@ import {
   inspectCalendar, inspectPlayer, inspectSheet, inspectTable, inspectTeam, parseCompetitionName, parseSheet, prettyTeam,
   type LeaguePlayer, type LeagueRow, type SheetRow,
 } from "@/lib/league-parse";
+import { resultNotice } from "@/lib/result-watch";
 import { alertLeagueProblem, recordLeagueFailure, type LeagueStatus } from "@/lib/league-alerts";
 
 // Los lectores de páginas viven en league-parse.ts (sin dependencias, con pruebas propias)
@@ -286,7 +287,7 @@ async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, op
     if (score && old.status !== "played") {
       results++;
       const [gf, ga] = [score.goals_for!, score.goals_against!];
-      pushes.push({ id: old.id, title: gf > ga ? "✅ ¡Victoria!" : gf < ga ? "Resultado final" : "🤝 Empate", body: home ? `${CLUB_NAME} ${gf} - ${ga} ${oppName}` : `${oppName} ${ga} - ${gf} ${CLUB_NAME}` });
+      pushes.push({ id: old.id, ...resultNotice({ gf, ga, home, club: CLUB_NAME, rival: oppName }) });
     } else if (!score && (old.match_date !== base.match_date || hhmm(old.kickoff) !== base.kickoff) && r.date >= new Date().toISOString().slice(0, 10)) {
       pushes.push({ id: old.id, title: "🔁 Cambio en el partido", body: `${vs} · ahora el ${longDay(r.date)}${r.time ? ` a las ${r.time}` : ""}` });
     }
