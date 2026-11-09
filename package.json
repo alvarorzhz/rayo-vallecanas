@@ -1,6 +1,6 @@
 {
   "name": "rayo-vallecanas",
-  "version": "3.21.0",
+  "version": "3.22.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -21,7 +21,9 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "resend": "^6.37.0",
+    "satori": "^0.15.2",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
     "web-push": "^3.6.7",
     "zod": "^4.6.7"
   },

@@ -8,6 +8,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.22.0",
+    date: "2026-11-09",
+    title: "Nueva imagen del resultado",
+    changes: [
+      "La imagen para compartir después de cada partido es nueva: estilo póster, en negro con la franja roja y dorada de la camiseta, el titular («¡VICTORIA!», «EMPATE» o «DERROTA») y el marcador en grande.",
+      "El MVP sale en un cromo dorado como los de la plantilla, con su foto (ahora valen todas las fotos), dorsal, posición y sus goles y asistencias del partido. Mientras el equipo vota, sale «Lo está votando el equipo».",
+      "Goleadores con sus asistencias, portería a cero con el portero y las tarjetas del partido.",
+      "Abajo, la racha de los últimos cinco partidos, nuestra posición y puntos en la liga y el próximo partido.",
+      "Dos formatos: «Publicación» (para WhatsApp e Instagram) e «Historia» (alargada, para estados e historias, con la lista de los que jugaron). Se cambia desde la vista previa.",
+      "Se prepara en menos de un segundo y pesa unas cinco veces menos, así se comparte antes con poca cobertura.",
+    ],
+  },
+  {
     version: "3.21.0",
     date: "2026-11-08",
     title: "Auditoría más detallada: cambios, accesos y sesiones",
