@@ -19,13 +19,16 @@ import { ShareButton } from "@/components/matches/share-button";
 import { ShareImageButton } from "@/components/matches/share-image";
 import { Confetti, MatchdayCountdown } from "@/components/matches/matchday-fx";
 import { Jersey } from "@/components/squad/jersey";
+import { InForm, PreviaTable, Stake } from "@/components/matches/previa";
+import type { HotPlayer } from "@/lib/match-queries";
+import type { MatchRanks } from "@/lib/standings";
 import { Ball } from "@/components/squad/ball";
 
 const darkBtn = "btn bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20";
 
 /**
  * Portada de Inicio, siempre dedicada al partido: el próximo en una semana normal (week),
- * la víspera, el día de partido, en juego, el final y el post partido de los dos días siguientes.
+ * la víspera, el día de partido, en juego, el final y el post partido (hasta 24 horas después de acabar).
  */
 export function MatchdayHero({ m, phase, greeting, form = [], next = null, weather = null }: {
   m: MatchRow; phase: MatchdayPhase; greeting: string;
@@ -202,9 +205,11 @@ function WeatherChip({ w, time }: { w: MatchWeather; time: string | null }) {
 type Scorer = { goals: number; number: number | null; position: string; player: Player };
 
 /** Debajo de la portada: tu convocatoria, los convocados y la previa (o el resumen si ya se jugó). */
-export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent, lastH2H, topScorer, report, mvp = null }: {
+export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent, lastH2H, topScorer, report, mvp = null, hot = [], ranks = null, stake = null }: {
   m: MatchRow; phase: MatchdayPhase; callups: CallupRow[]; myPlayerId: string | null; canEdit: boolean;
   recent: MatchRow[]; lastH2H: MatchRow | null; topScorer: Scorer | null; report: ReportView | null; mvp?: MvpBoard | null;
+  /** La previa: jugadores en forma, posición de los dos equipos y qué nos jugamos. */
+  hot?: HotPlayer[]; ranks?: MatchRanks | null; stake?: string | null;
 }) {
   const formRows = [...recent].filter((x) => x.id !== m.id).slice(0, 5).reverse();
   const run = streak(recent);
@@ -304,7 +309,8 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
 
       <section className="card anim-rise min-w-0 space-y-4" style={{ animationDelay: "80ms" }}>
         <h2 className="sport flex items-center gap-2 text-xl font-black"><Flame size={20} className="text-rojo" /> La previa</h2>
-        {formRows.length > 0 && (
+        {stake && <Stake text={stake} />}
+        {ranks ? <PreviaTable ranks={ranks} m={m} /> : formRows.length > 0 && (
           <div>
             <FormStrip rows={formRows} />
             {run && <p className="mt-1 text-sm font-bold text-negro/75">🔥 {run}</p>}
@@ -314,16 +320,7 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
           <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-negro/65"><Swords size={14} /> Última vez contra {m.rival.name}</h3>
           {lastH2H ? <MatchLine m={lastH2H} /> : <p className="text-sm text-negro/65">Primer enfrentamiento (en la app). ¡A estrenarnos con victoria!</p>}
         </div>
-        {topScorer && (
-          <div className="franja relative flex items-center gap-3 overflow-hidden rounded-2xl bg-negro p-3 text-white">
-            <span className="relative"><Jersey number={topScorer.number} goalkeeper={lineOf(topScorer.position) === "GK"} size={44} /></span>
-            <div className="relative min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-dorado">Nuestro pichichi</p>
-              <p className="sport truncate text-xl font-black leading-tight">{shirtName(topScorer.player)}</p>
-              <p className="text-xs text-white/70">{topScorer.goals} {topScorer.goals === 1 ? "gol" : "goles"} esta temporada</p>
-            </div>
-          </div>
-        )}
+        <InForm hot={hot} top={topScorer} />
       </section>
     </div>
   );

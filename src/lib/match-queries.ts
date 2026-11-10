@@ -5,6 +5,8 @@ import { byKickoff, todayMadrid, type Match, type MatchRow, type Rival } from "@
 import { sortCallups, type Callup, type CallupRow } from "@/lib/callups";
 import { sortRoster, type Player, type SquadStatus } from "@/lib/squad";
 import type { Appearance, MatchGoal, ReportPlayer, ReportView } from "@/lib/reports";
+import { getStandings } from "@/lib/league-table";
+import { matchRanks, stakes } from "@/lib/standings";
 import { POST_DAYS, addDays, matchdayPhase, type MatchdayPhase } from "@/lib/matchday";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
@@ -49,16 +51,45 @@ export async function fetchMatchdayFocus(supabase: DB): Promise<{ m: MatchRow; p
 }
 
 /** Previa: último partido contra el rival y nuestro máximo goleador de la temporada. */
-export async function fetchMatchdayPreview(supabase: DB, m: Pick<Match, "id" | "rival_id" | "season">) {
-  const [{ data: last }, { data: top }] = await Promise.all([
+export type HotPlayer = { player: Player; number: number | null; position: string; goals: number; mvp: boolean };
+
+export async function fetchMatchdayPreview(supabase: DB, m: MatchRow) {
+  const [{ data: last }, { data: top }, { data: prev }, standings] = await Promise.all([
     supabase.from("matches").select(SELECT).eq("rival_id", m.rival_id).eq("status", "played").neq("id", m.id)
       .order("match_date", { ascending: false }).limit(1).returns<MatchRow[]>(),
     supabase.from("squad_members_full").select("goals, number, position, status, player:players!inner(*)").eq("season", m.season)
       .neq("status", "left").gt("goals", 0).order("goals", { ascending: false }).limit(1)
       .returns<{ goals: number; number: number | null; position: string; status: SquadStatus; player: Player }[]>(),
+    // Los dos últimos partidos jugados de la temporada: quién marcó y el MVP del último
+    supabase.from("matches").select("id, mvp_player_id").eq("season", m.season).eq("status", "played").neq("id", m.id)
+      .order("match_date", { ascending: false }).order("kickoff", { ascending: false, nullsFirst: false }).limit(2)
+      .returns<{ id: string; mvp_player_id: string | null }[]>(),
+    // Posición y puntos de los dos equipos (solo partidos de liga de esta temporada)
+    m.competition === "league" && m.season === seasonOf() ? getStandings(supabase) : Promise.resolve(null),
   ]);
-  return { lastH2H: last?.[0] ?? null, topScorer: top?.[0] ?? null };
+
+  let hot: HotPlayer[] = [];
+  if (prev?.length) {
+    const { data: goals } = await supabase.from("match_goals").select("scorer_id").in("match_id", prev.map((x) => x.id)).not("scorer_id", "is", null)
+      .returns<{ scorer_id: string }[]>();
+    const count = new Map<string, number>();
+    for (const g of goals ?? []) count.set(g.scorer_id, (count.get(g.scorer_id) ?? 0) + 1);
+    const mvpId = prev[0].mvp_player_id;
+    const ids = [...new Set([...(mvpId ? [mvpId] : []), ...count.keys()])];
+    if (ids.length) {
+      const { data: rows } = await supabase.from("squad_members_full").select("number, position, player:players!inner(*)").eq("season", m.season).in("player_id", ids)
+        .returns<{ number: number | null; position: string; player: Player }[]>();
+      hot = (rows ?? []).map((r) => ({ ...r, goals: count.get(r.player.id) ?? 0, mvp: r.player.id === mvpId }))
+        .sort((a, b) => Number(b.mvp) - Number(a.mvp) || b.goals - a.goals).slice(0, 3);
+    }
+  }
+
+  const ranks = standings ? matchRanks(standings.table.rows, standings.us, [m], m.season).get(m.id) ?? null : null;
+  const stake = standings && ranks ? stakes(standings.table.rows, standings.us, ranks.rival, m.rival.name) : null;
+  return { lastH2H: last?.[0] ?? null, topScorer: top?.[0] ?? null, hot, ranks, stake };
 }
+
+export type MatchdayPreview = Awaited<ReturnType<typeof fetchMatchdayPreview>>;
 
 /** Lo justo para la tira «Hoy jugamos» de todas las páginas. */
 export async function fetchTodayMatch(supabase: DB) {

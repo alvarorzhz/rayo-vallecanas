@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.24.0",
+    date: "2026-11-10",
+    title: "Una previa más completa",
+    changes: [
+      "La previa de Inicio (la víspera y el día del partido) trae más datos sin ocupar más: arriba, en dorado, qué nos jugamos (por ejemplo «Si ganamos, podemos subir al 7º» o «Una victoria nos puede sacar del descenso»).",
+      "«Así llegan»: los dos equipos con su puesto, su racha y sus puntos. Debajo del rival, sus tres últimos resultados y cuántos goles mete y encaja por partido.",
+      "«En forma» sustituye al recuadro del pichichi: el MVP del último partido, los que marcaron en los dos últimos y el pichichi, como mucho tres jugadores.",
+      "Los datos de la liga salen de la web de la liga. En amistosos o si la web no responde, la previa se queda como antes.",
+      "El post partido dura menos en Inicio: el resultado se queda como mucho 24 horas después de acabar el partido (antes, dos días), y luego deja sitio al resto.",
+    ],
+  },
+  {
     version: "3.23.0",
     date: "2026-11-10",
     title: "Posición y puntos del rival",
