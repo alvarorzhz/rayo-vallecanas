@@ -21,7 +21,7 @@ async function signIn(email, viewport = PHONE) {
   const ctx = await browser.newContext({ viewport, reducedMotion: "reduce", locale: "es-ES", timezoneId: "Europe/Madrid" });
   const page = await ctx.newPage();
   const errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("pageerror", (e) => errors.push(`${e.message} (en ${new URL(page.url()).pathname})`));
   await page.goto(`${BASE}/login`);
   await page.fill("#email", email);
   await page.fill("#password", PASSWORD);
@@ -50,7 +50,38 @@ async function visit(s, path, { width = PHONE.width } = {}) {
   assert.ok(await s.page.locator("main h1, main h2, main .sport").first().isVisible(), `${path} no tiene contenido`);
   const scrollWidth = await s.page.evaluate(() => document.documentElement.scrollWidth);
   assert.ok(scrollWidth <= width, `${path} se sale de la pantalla (${scrollWidth}px en un móvil de ${width}px)`);
-  assert.deepEqual(s.errors, [], `${path} tiene errores de JavaScript`);
+  const errors = s.errors.splice(0); // se vacía para que un error no arrastre a las pantallas siguientes
+  if (errors.length) assert.fail(`${path} tiene errores de JavaScript: ${errors.join(" | ")}${await serverVsScreen(s.page, res)}`);
+}
+
+/**
+ * Pista para los errores de hidratación: el primer texto en que se diferencian lo que
+ * mandó el servidor y lo que acabó pintando el navegador.
+ */
+async function serverVsScreen(page, res) {
+  try {
+    const html = await res.text();
+    const diff = await page.evaluate((html) => {
+      const words = (root) => {
+        const out = [];
+        const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+          if (n.parentElement?.closest("script, style, template, noscript")) continue;
+          const t = n.nodeValue.replace(/\s+/g, " ").trim();
+          if (t) out.push(t);
+        }
+        return out;
+      };
+      const server = words(new DOMParser().parseFromString(html, "text/html").body);
+      const screen = words(document.body);
+      const i = server.findIndex((w, k) => w !== screen[k]);
+      if (i < 0) return server.length === screen.length ? null : { server: "(fin)", screen: screen.slice(server.length, server.length + 8) };
+      return { server: server.slice(Math.max(0, i - 3), i + 5), screen: screen.slice(Math.max(0, i - 3), i + 5) };
+    }, html);
+    return diff ? `\n  servidor: ${JSON.stringify(diff.server)}\n  pantalla: ${JSON.stringify(diff.screen)}` : "";
+  } catch {
+    return "";
+  }
 }
 
 /** Primer enlace de la página que apunta a una ficha (ruta con un identificador). */
