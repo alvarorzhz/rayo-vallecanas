@@ -88,7 +88,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         const [callups, myPlayerId, preview, report, weather] = await Promise.all([
           final ? Promise.resolve([]) : fetchCallups(supabase, focus.m),
           fetchMyPlayerId(supabase, s.user.id),
-          final ? Promise.resolve({ lastH2H: null, topScorer: null }) : fetchMatchdayPreview(supabase, focus.m),
+          final ? Promise.resolve({ lastH2H: null, topScorer: null, hot: [], ranks: null, stake: null }) : fetchMatchdayPreview(supabase, focus.m),
           final && focus.m.report_saved_at ? fetchReport(supabase, focus.m) : Promise.resolve(null),
           // El tiempo en Salamanca a la hora del partido: la víspera y el mismo día
           focus.phase === "eve" || focus.phase === "day" ? fetchMatchWeather(focus.m.match_date, focus.m.kickoff) : Promise.resolve(null),
@@ -132,7 +132,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <MatchdayHero m={md.m} phase={md.phase} greeting={greeting} form={recentForm} next={afterMatch ? matchday?.next ?? null : null} weather={md.weather} />
           {myCallup && matchday?.next && <div className="mb-6"><MyCallupCard m={matchday.next} mine={myCallup} withMatch /></div>}
           <MatchdayDetails m={md.m} phase={md.phase} callups={md.callups} myPlayerId={md.myPlayerId} canEdit={s.can("matches", "update")}
-            recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} mvp={md.mvp} />
+            recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} mvp={md.mvp}
+            hot={md.hot} ranks={md.ranks} stake={md.stake} />
         </>
       ) : matchday?.next ? (
         <>

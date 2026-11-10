@@ -1,18 +1,27 @@
 /** Especial Matchday (v3.5.0, ampliado en v3.6.0): la portada de Inicio según el momento del partido. Sin dependencias del servidor. */
-import { kickoffDate, todayMadrid, type MatchRow } from "@/lib/matches";
+import { kickoffDate, todayMadrid, type MatchRow } from "./matches.ts";
 
 /**
  * - eve: la víspera («Mañana jugamos»).
  * - day: el día del partido, antes del pitido inicial.
  * - live: ya ha empezado y aún no hay resultado.
  * - final: el partido de hoy ya tiene resultado.
- * - post: post partido, el resultado se queda en portada los dos días siguientes.
+ * - post: post partido, el resultado se queda en portada hasta 24 horas después de acabar el partido.
  * - week: semana normal, falta más de un día para el próximo partido (no la devuelve matchdayPhase).
  */
 export type MatchdayPhase = "eve" | "day" | "live" | "final" | "post" | "week";
 
-/** Días que el resultado se queda en portada después del partido. */
-export const POST_DAYS = 2;
+/** Días hacia atrás en los que puede caer un post partido (para la consulta). */
+export const POST_DAYS = 1;
+/** Horas que el resultado se queda en portada después de acabar el partido (v3.24.0). */
+export const POST_HOURS = 24;
+/** Lo que damos por duración del partido, desde el pitido inicial, para saber cuándo acabó. */
+const MATCH_MS = 2 * 3600_000;
+
+/** Hasta cuándo se queda el resultado en portada: 24 horas después de acabar (sin hora, se cuenta desde las 14:00). */
+export function postUntil(m: Pick<MatchRow, "match_date" | "kickoff">): Date {
+  return new Date(kickoffDate(m).getTime() + MATCH_MS + POST_HOURS * 3600_000);
+}
 
 /** "2026-11-08" + n días */
 export function addDays(date: string, n: number) {
@@ -25,7 +34,7 @@ export function matchdayPhase(m: Pick<MatchRow, "match_date" | "kickoff" | "stat
   const today = todayMadrid(now);
   if (m.status === "played") {
     if (m.match_date === today) return "final";
-    return m.match_date < today && m.match_date >= addDays(today, -POST_DAYS) ? "post" : null;
+    return m.match_date < today && now.getTime() < postUntil(m).getTime() ? "post" : null;
   }
   if (m.status !== "scheduled") return null;
   if (m.match_date === addDays(today, 1)) return "eve";

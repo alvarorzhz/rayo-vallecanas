@@ -164,7 +164,11 @@ export type StandingRow = {
   move: number;              // + sube, − baja, 0 mantiene
   zone: { label: string; color: string } | null;
   form: Outcome[];           // últimos 5, del más antiguo al más reciente
+  last?: TeamGame[];         // últimos 3 partidos, del más reciente al más antiguo
 };
+
+/** Un partido de un equipo visto desde su lado. */
+export type TeamGame = { date: string; round: string; home: boolean; oppId: string; oppName: string; gf: number; ga: number; outcome: Outcome };
 
 const n = (v: string | undefined) => (v && /^-?\d+$/.test(v.trim()) ? Number(v.trim()) : 0);
 const isInt = (v: string | undefined) => !!v && /^-?\d+$/.test(v.trim());

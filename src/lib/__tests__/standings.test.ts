@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { gapLabel, matchRanks, rivalRow } from "../standings.ts";
+import { gapLabel, matchRanks, perGame, rivalRow, stakes, teamGames } from "../standings.ts";
+import { parseCalendar, parseTable } from "../league-parse.ts";
+import { readFileSync } from "node:fs";
 import type { StandingRow } from "../league-parse.ts";
 
 const row = (pos: number, teamId: string, name: string, points: number, played = 6): StandingRow => ({
@@ -37,4 +39,45 @@ test("la diferencia de puntos se cuenta desde nuestro lado", () => {
   assert.equal(gapLabel(r.get("a")!.us, r.get("a")!.rival), "Nos sacan 3 puntos");
   assert.equal(gapLabel(r.get("b")!.us, r.get("b")!.rival), "Empatados a puntos");
   assert.equal(gapLabel(r.get("c")!.us, r.get("c")!.rival), "Les sacamos 6 puntos");
+});
+
+const page = (name: string) => readFileSync(new URL(`./fixtures/futormes/${name}.html`, import.meta.url), "utf8");
+
+test("los últimos partidos de cada equipo salen del calendario, el más reciente primero", () => {
+  const { byTeam, round } = teamGames(parseCalendar(page("calendar")));
+  assert.ok(round);
+  const table = parseTable(page("table"));
+  for (const r of table) {
+    const t = byTeam.get(r.teamId);
+    if (!r.played) continue;
+    assert.ok(t, `sin partidos para ${r.name}`);
+    assert.ok(t.last.length <= 3 && t.form.length <= 5);
+    assert.ok(t.last.every((g, i) => i === 0 || g.date <= t.last[i - 1].date));
+    // La racha acaba con el último partido
+    assert.equal(t.form.at(-1), t.last[0].outcome);
+  }
+});
+
+test("goles por partido con coma decimal", () => {
+  assert.equal(perGame(15, 7), "2,1");
+  assert.equal(perGame(0, 0), "0");
+});
+
+const zone = (label: string, color = "#000") => ({ label, color });
+const z = (rows: StandingRow[], top: number, bottomFrom: number) =>
+  rows.map((r) => ({ ...r, zone: r.pos <= top ? zone("Ascenso") : r.pos >= bottomFrom ? zone("Descenso") : null }));
+const T = (pts: number[]) => z(pts.map((p, i) => row(i + 1, String(i + 1), `Equipo ${i + 1}`, p)), 2, 7);
+
+test("qué nos jugamos: una frase según la tabla", () => {
+  const rows = T([20, 18, 15, 13, 12, 10, 9, 8]);
+  // Líderes que siguen líderes
+  assert.equal(stakes(rows, "1", rows[1], "B"), "Si ganamos, seguimos líderes");
+  // En descenso (7º, 9 pts): con 12 podemos salir
+  assert.equal(stakes(rows, "7", rows[0], "A"), "Una victoria nos puede sacar del descenso");
+  // 3º a 3 del 2º: entramos en zona de ascenso
+  assert.equal(stakes(rows, "3", rows[7], "H"), "Una victoria nos puede meter en zona de ascenso");
+  // 5º (12) contra el 4º (13): le adelantamos
+  assert.equal(stakes(T([30, 28, 26, 13, 12, 10, 9, 8]), "5", rows[3], "D"), "Si ganamos, adelantamos a D");
+  // 5º (12) contra el último: subimos de puesto
+  assert.equal(stakes(T([30, 28, 26, 13, 12, 10, 9, 8]), "5", rows[7], "H"), "Si ganamos, podemos subir al 4º");
 });
