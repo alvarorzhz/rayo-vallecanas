@@ -32,7 +32,7 @@ const T_SPIN = 1100;
  * «Nuevo fichaje», tres pistas (posición, pierna y dorsal), el cromo girando
  * y, con un fogonazo, el jugador con confeti. Se salta tocando la pantalla.
  */
-export function SigningShow({ list, me, onClose }: { list: RosterEntry[]; me: string; onClose: () => void }) {
+function SigningShow({ list, me, onClose }: { list: RosterEntry[]; me: string; onClose: () => void }) {
   const [idx, setIdx] = useState(0);
   // fase: intro → pistas (0..n-1) → giro → presentado
   const [phase, setPhase] = useState<"intro" | "clue" | "spin" | "done">("intro");

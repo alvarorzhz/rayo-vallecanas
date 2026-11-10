@@ -3,7 +3,7 @@
  * Adorno del escudo y, algunos días, un saludo al entrar (una vez al día por dispositivo).
  */
 export type Fiesta = "navidad" | "nochevieja" | "anonuevo";
-export type Adorno = "gorro" | "purpurina";
+type Adorno = "gorro" | "purpurina";
 export type DiaFiesta = { adorno: Adorno | null; saludo: Fiesta | null; year: number };
 
 /** Mes (1-12), día y año en Madrid. */

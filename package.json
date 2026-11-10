@@ -1,6 +1,6 @@
 {
   "name": "rayo-vallecanas",
-  "version": "3.25.0",
+  "version": "3.26.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test --test-reporter=spec \"src/lib/__tests__/*.test.ts\"",
+    "test:e2e": "node --test --test-concurrency=1 --test-reporter=spec e2e/smoke.test.mjs",
     "test:live": "LEAGUE_LIVE=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test --test-reporter=spec src/lib/__tests__/league-live.test.ts"
   },
   "dependencies": {
@@ -24,8 +25,7 @@
     "satori": "^0.15.2",
     "server-only": "^0.0.1",
     "sharp": "^0.35.5",
-    "web-push": "^3.6.7",
-    "zod": "^4.6.7"
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -37,6 +37,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "15.5.29",
+    "playwright": "^1.63.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

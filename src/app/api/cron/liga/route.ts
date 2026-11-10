@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cronDenied } from "@/lib/cron";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkLeagueHealth } from "@/lib/league-sync";
 import { alertLeagueProblem, recordLeagueHealth } from "@/lib/league-alerts";
@@ -13,10 +14,8 @@ export const maxDuration = 60;
  * nadie pulse «Sincronizar» y se encuentre el problema.
  */
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const denied = cronDenied(req);
+  if (denied) return denied;
   const admin = createAdminClient();
   const { data: cfg } = await admin.from("league_sync").select("competition, team").eq("id", 1).maybeSingle();
   if (!cfg) return NextResponse.json({ status: "sin-liga" });

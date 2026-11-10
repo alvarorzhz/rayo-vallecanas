@@ -14,12 +14,12 @@ export type MatchdayPhase = "eve" | "day" | "live" | "final" | "post" | "week";
 /** Días hacia atrás en los que puede caer un post partido (para la consulta). */
 export const POST_DAYS = 1;
 /** Horas que el resultado se queda en portada después de acabar el partido (v3.24.0). */
-export const POST_HOURS = 24;
+const POST_HOURS = 24;
 /** Lo que damos por duración del partido, desde el pitido inicial, para saber cuándo acabó. */
 const MATCH_MS = 2 * 3600_000;
 
 /** Hasta cuándo se queda el resultado en portada: 24 horas después de acabar (sin hora, se cuenta desde las 14:00). */
-export function postUntil(m: Pick<MatchRow, "match_date" | "kickoff">): Date {
+function postUntil(m: Pick<MatchRow, "match_date" | "kickoff">): Date {
   return new Date(kickoffDate(m).getTime() + MATCH_MS + POST_HOURS * 3600_000);
 }
 

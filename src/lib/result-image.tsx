@@ -17,7 +17,7 @@ import type { Outcome } from "@/lib/matches";
  */
 
 export type Format = "post" | "story";
-export const SIZES: Record<Format, { w: number; h: number }> = { post: { w: 1080, h: 1350 }, story: { w: 1080, h: 1920 } };
+const SIZES: Record<Format, { w: number; h: number }> = { post: { w: 1080, h: 1350 }, story: { w: 1080, h: 1920 } };
 
 const ROJO = "#D20D17";
 const ORO = "#D5AF32";
@@ -25,7 +25,7 @@ const ORO_CLARO = "#F3D774";
 const NEGRO = "#080808";
 
 export type Pic = { src: string; ratio: number };
-export type Side = { name: string; short: string; color: string; crest: Pic | string | null; goals: number; isUs: boolean };
+type Side = { name: string; short: string; color: string; crest: Pic | string | null; goals: number; isUs: boolean };
 export type PosterData = {
   outcome: Outcome;
   competition: string;           // «LIGA · JORNADA 7»
@@ -325,7 +325,7 @@ function MvpPending({ w, crest }: { w: number; crest: Pic }) {
 
 // ---------------------------------------------------------------- Póster
 
-export function renderPoster(d: PosterData, format: Format) {
+function renderPoster(d: PosterData, format: Format) {
   const { w: W, h: H } = SIZES[format];
   const story = format === "story";
   const o = d.outcome;

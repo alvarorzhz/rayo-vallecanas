@@ -19,8 +19,8 @@ export type Sponsor = {
   sort: number;
 };
 
-export type Payment = { installment_id: string; movement_id: string; op_date: string; amount_cents: number; method: string };
-export type Installment = { id: string; agreement_id: string; due_on: string; amount_cents: number; payment: Payment | null };
+type Payment = { installment_id: string; movement_id: string; op_date: string; amount_cents: number; method: string };
+type Installment = { id: string; agreement_id: string; due_on: string; amount_cents: number; payment: Payment | null };
 
 export type Agreement = {
   id: string;

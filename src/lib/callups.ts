@@ -1,5 +1,5 @@
-import { CLUB_NAME, hhmm, longDay, type MatchRow } from "@/lib/matches";
-import { lineOf, shirtName, type Line, type Player, type SquadStatus } from "@/lib/squad";
+import { CLUB_NAME, hhmm, longDay, type MatchRow } from "./matches.ts";
+import { lineOf, shirtName, type Line, type Player, type SquadStatus } from "./squad.ts";
 
 export type Reply = "pending" | "yes" | "no" | "maybe";
 

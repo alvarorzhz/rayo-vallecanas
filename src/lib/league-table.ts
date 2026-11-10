@@ -6,8 +6,7 @@ import { parseCalendar, parseCompetitionName, parseTable } from "@/lib/league-pa
 import { teamGames } from "@/lib/standings";
 import type { StandingRow } from "@/lib/league-parse";
 
-export type { Outcome, StandingRow } from "@/lib/league-parse";
-export { parseTable } from "@/lib/league-parse";
+export type { StandingRow } from "@/lib/league-parse";
 
 /**
  * Clasificación de la liga (futormes · table.aspx). Solo se lee: no se guarda en
@@ -16,7 +15,7 @@ export { parseTable } from "@/lib/league-parse";
 
 export type LeagueTable = { competition: string | null; rows: StandingRow[]; round: string | null; fetchedAt: string };
 
-export const TABLE_TAG = "league-table";
+const TABLE_TAG = "league-table";
 
 async function load(competition: string): Promise<LeagueTable> {
   const sess = await openSession(competition);

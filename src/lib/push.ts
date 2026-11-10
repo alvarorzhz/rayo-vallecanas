@@ -33,7 +33,7 @@ export async function vapidKeys() {
   return keys;
 }
 
-export type PushAction = { action: string; title: string };
+type PushAction = { action: string; title: string };
 export type PushPayload = {
   title: string;
   body: string;

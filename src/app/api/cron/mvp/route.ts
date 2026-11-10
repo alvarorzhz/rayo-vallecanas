@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cronDenied } from "@/lib/cron";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { finishMvp } from "@/lib/mvp-server";
 
@@ -11,10 +12,8 @@ export const maxDuration = 30;
  * antes la página del partido o Inicio, el recuento ya se habrá hecho allí: nunca sale dos veces.
  */
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const denied = cronDenied(req);
+  if (denied) return denied;
   const admin = createAdminClient();
   const { data } = await admin.from("mvp_polls").select("match_id").is("closed_at", null).lte("closes_at", new Date().toISOString());
   let closed = 0;

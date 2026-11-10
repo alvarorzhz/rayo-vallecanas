@@ -89,8 +89,6 @@ export async function fetchMatchdayPreview(supabase: DB, m: MatchRow) {
   return { lastH2H: last?.[0] ?? null, topScorer: top?.[0] ?? null, hot, ranks, stake };
 }
 
-export type MatchdayPreview = Awaited<ReturnType<typeof fetchMatchdayPreview>>;
-
 /** Lo justo para la tira «Hoy jugamos» de todas las páginas. */
 export async function fetchTodayMatch(supabase: DB) {
   const { data } = await supabase.from("matches").select("id, kickoff, status, is_home, goals_for, goals_against, match_date, rival:rivals!inner(name, short_name)")

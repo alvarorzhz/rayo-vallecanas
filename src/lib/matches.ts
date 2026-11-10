@@ -1,3 +1,4 @@
+import { madridDay } from "./dates.ts";
 /** Fase 4 · Partidos: tipos, etiquetas y utilidades (sin dependencias del servidor). */
 
 export type MatchStatus = "scheduled" | "played" | "postponed" | "cancelled";
@@ -48,7 +49,7 @@ export type Match = {
 };
 export type MatchRow = Match & { rival: Rival };
 
-export const STATUS: { key: MatchStatus; label: string }[] = [
+const STATUS: { key: MatchStatus; label: string }[] = [
   { key: "scheduled", label: "Pendiente" },
   { key: "played", label: "Finalizado" },
   { key: "postponed", label: "Aplazado" },
@@ -130,7 +131,7 @@ export function kickoffDate(m: Pick<Match, "match_date" | "kickoff">): Date {
 }
 
 /** Hoy en Madrid, "2026-11-06". */
-export const todayMadrid = (at: Date = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(at);
+export const todayMadrid = madridDay;
 
 const dayFmt = new Intl.DateTimeFormat("es-ES", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 const dayLongFmt = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });

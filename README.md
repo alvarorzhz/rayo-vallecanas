@@ -93,11 +93,21 @@ Recordatorio de convocatorias (cada mañana), comprobación de la liga (lunes), 
 ### 4. Desarrollo local
 ```bash
 npm install
-npx supabase start          # Postgres + Auth locales (requiere Docker)
+npx supabase start          # Postgres + Auth locales (requiere Docker); carga los datos de ejemplo
 cp .env.example .env.local  # con las claves que imprime supabase start
 npm run dev
-npm test                    # pruebas de la lógica (node --test)
 ```
+`supabase start` (y `supabase db reset`) cargan `supabase/seed.sql`: un equipo inventado con plantilla, partidos, cuentas, sorteos y votaciones. Usuarios de ejemplo, todos con contraseña `Rayo1234!`: `alvaro@rayo.test` (superadministrador), `ruben@rayo.test` (gestor), `dani@rayo.test` y `javi@rayo.test` (jugadores). Esos datos nunca llegan a producción.
+
+### Pruebas
+```bash
+npm test             # lógica de cada módulo (node --test), sin base de datos
+npm run test:live    # la web de la liga de verdad: comprueba que se sigue leyendo bien
+npm run build && npm start &
+npm run test:e2e     # prueba de humo: entra como superadministrador y como jugador y recorre la app
+npx tsc --noEmit && npm run lint
+```
+En cada PR, GitHub Actions pasa las pruebas de lógica, los tipos, el lint y la prueba de humo contra un Supabase local.
 
 ### 5. Despliegue
 Cada cambio que entra en `main` se despliega en Vercel. Si un cambio trae SQL nuevo, se ejecuta primero en el *SQL Editor* de Supabase y después se fusiona.
@@ -111,6 +121,7 @@ src/app/rifa/          Página pública de las rifas
 src/app/api/           Exportaciones, copia de seguridad, respuestas desde avisos y tareas automáticas
 src/lib/               Sesión y permisos, lógica de cada módulo, liga, avisos, formatos
 src/components/        Componentes de pantalla compartidos
+e2e/                   Prueba de humo de la app entera (Playwright)
 public/                Escudo, iconos de la PWA, logos y service worker
 ```
 
