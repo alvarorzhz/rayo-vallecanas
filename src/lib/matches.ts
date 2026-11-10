@@ -13,6 +13,7 @@ export type Rival = {
   home_venue: string | null;
   home_maps_url: string | null;
   notes: string | null;
+  ext_id?: string | null; // «futormes:123» si viene de la web de la liga
 };
 
 export type Match = {

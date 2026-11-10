@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, ChevronRight, Minus, Trophy } from "lucide-react";
 import { CLUB_NAME, OUTCOME_LABEL, OUTCOME_TONE, type Rival } from "@/lib/matches";
 import type { LeagueTable, StandingRow } from "@/lib/league-table";
+import { gapLabel, type MatchRanks, type Rank } from "@/lib/standings";
 import { Crest } from "./crest";
 
 export type TableRival = Pick<Rival, "name" | "short_name" | "color" | "crest_url"> & { ext_id: string | null };
@@ -19,10 +20,10 @@ function Move({ v }: { v: number }) {
   return <span title="Mantiene la posición" className="text-negro/30"><Minus size={12} strokeWidth={3} /></span>;
 }
 
-function Form({ form }: { form: StandingRow["form"] }) {
+function Form({ form, start = false }: { form: StandingRow["form"]; start?: boolean }) {
   if (!form.length) return <span className="text-negro/30">—</span>;
   return (
-    <ol className="flex justify-end gap-0.5" aria-label="Últimos partidos">
+    <ol className={`flex gap-0.5 ${start ? "justify-start" : "justify-end"}`} aria-label="Últimos partidos">
       {form.map((o, i) => (
         <li key={i} title={OUTCOME_LABEL[o].long}
           className={`sport inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black ${OUTCOME_TONE[o]}`}>
@@ -196,5 +197,57 @@ export function StandingsMini({ table, us, rivals, href }: Props & { href: strin
         })}
       </ol>
     </Link>
+  );
+}
+
+/** « · ellos con un partido menos» si no llevamos los mismos partidos jugados. */
+function played({ us, rival }: MatchRanks) {
+  if (!us || !rival || us.played === rival.played) return "";
+  const d = rival.played - us.played;
+  const n = Math.abs(d);
+  return ` · ellos con ${n === 1 ? "un" : n} ${n === 1 ? "partido" : "partidos"} ${d > 0 ? "más" : "menos"}`;
+}
+
+/** «Así llegan»: nosotros y el rival en la clasificación, para la ficha de un partido de liga pendiente. */
+export function RankDuel({ ranks, rival, href }: { ranks: MatchRanks; rival: Pick<Rival, "name" | "short_name" | "color" | "crest_url">; href: string }) {
+  const rows = [
+    ranks.us && { key: "us", r: ranks.us, name: CLUB_NAME, mine: true },
+    ranks.rival && { key: "rival", r: ranks.rival, name: rival.name, mine: false },
+  ].filter((x): x is { key: string; r: Rank; name: string; mine: boolean } => !!x).sort((a, b) => a.r.pos - b.r.pos);
+  if (!rows.length) return null;
+  const gap = gapLabel(ranks.us, ranks.rival);
+  return (
+    <section className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-black/5">
+      <div className="flex items-center justify-between gap-3 bg-negro px-4 py-2.5 text-white">
+        <h2 className="sport inline-flex items-center gap-2 text-lg font-black text-white"><Trophy size={16} className="text-dorado" /> Así llegan</h2>
+        <Link href={href} prefetch className="inline-flex items-center gap-1 text-xs font-bold text-dorado hover:underline">Clasificación <ChevronRight size={14} /></Link>
+      </div>
+      <ol>
+        {rows.map(({ key, r, name, mine }) => (
+          <li key={key} className={`relative flex items-center gap-3 border-t border-black/5 px-4 py-3 first:border-t-0 ${mine ? "bg-rojo/10" : ""}`}>
+            {r.zone && <span aria-hidden title={r.zone.label} className="absolute inset-y-2 left-0 w-1 rounded-r" style={{ background: r.zone.color }} />}
+            <div className="w-10 shrink-0 text-center leading-none">
+              <div className="sport text-3xl font-black">{ord(r.pos)}</div>
+              <div className="mt-0.5 text-[10px] font-bold uppercase text-negro/55">de {r.total}</div>
+            </div>
+            <Crest us={mine} rival={mine ? null : rival} size={30} className="shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className={`truncate font-bold ${mine ? "text-rojo" : ""}`}>{name}</div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-negro/65">
+                <span title="Ganados, empatados y perdidos">{r.won}G {r.drawn}E {r.lost}P</span>
+                <span title="Goles a favor y en contra">· Goles {r.gf}-{r.ga}</span>
+                {r.zone && <span className="font-semibold" style={{ color: r.zone.color }}>· {r.zone.label}</span>}
+              </div>
+              {r.form?.length > 0 && <div className="mt-1.5"><Form form={r.form} start /></div>}
+            </div>
+            <div className="shrink-0 text-right leading-none">
+              <div className="sport text-3xl font-black tabular-nums">{r.points}</div>
+              <div className="mt-0.5 text-[10px] font-bold uppercase text-negro/55">{r.points === 1 ? "punto" : "puntos"}</div>
+            </div>
+          </li>
+        ))}
+      </ol>
+      {gap && <p className="border-t border-black/5 bg-gris/60 px-4 py-2 text-sm font-semibold">{gap}{played(ranks)}</p>}
+    </section>
   );
 }

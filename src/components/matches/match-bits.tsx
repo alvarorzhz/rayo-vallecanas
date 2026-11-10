@@ -8,6 +8,21 @@ import {
 import { Crest } from "@/components/matches/crest";
 import { Countdown } from "@/components/matches/countdown";
 import { Ball } from "@/components/squad/ball";
+import { ordinal, pts, type MatchRanks, type Rank } from "@/lib/standings";
+
+/** «5º · 9 pts»: posición y puntos en la liga. */
+export function RankChip({ r, dark = false, className = "" }: { r: Rank; dark?: boolean; className?: string }) {
+  const zone = r.zone?.color;
+  return (
+    <span title={`${ordinal(r.pos)} de ${r.total} en la liga con ${pts(r.points)}${r.zone ? ` · zona de ${r.zone.label}` : ""}`}
+      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums ${dark ? "bg-black/60 text-white ring-1 ring-white/20" : "bg-dorado/20 text-negro ring-1 ring-dorado/40"} ${className}`}>
+      {zone && <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: zone }} />}
+      <span className="sport font-black">{ordinal(r.pos)}</span>
+      <span aria-hidden className="opacity-50">·</span>
+      <span>{pts(r.points)}</span>
+    </span>
+  );
+}
 
 /** Bolita V/E/D. */
 export function OutcomeDot({ m, size = "md", title = true }: { m: MatchRow; size?: "sm" | "md"; title?: boolean }) {
@@ -46,7 +61,7 @@ export function StatusBadge({ m }: { m: MatchRow }) {
 }
 
 /** Videomarcador: escudos, nombres, marcador o cuenta atrás. */
-export function Scoreboard({ m, countdown = true, compact = false }: { m: MatchRow; countdown?: boolean; compact?: boolean }) {
+export function Scoreboard({ m, countdown = true, compact = false, ranks }: { m: MatchRow; countdown?: boolean; compact?: boolean; ranks?: MatchRanks | null }) {
   const [a, b] = sides(m, m.rival);
   const played = m.status === "played";
   const o = outcomeOf(m);
@@ -58,6 +73,7 @@ export function Scoreboard({ m, countdown = true, compact = false }: { m: MatchR
         <span className="sm:hidden">{t.us ? CLUB_SHORT : rivalShort(m.rival)}</span>
         <span className="hidden sm:inline">{t.name}</span>
       </span>
+      {(() => { const r = t.us ? ranks?.us : ranks?.rival; return r ? <RankChip r={r} dark /> : null; })()}
     </div>
   );
   return (
@@ -100,7 +116,7 @@ export function Scoreboard({ m, countdown = true, compact = false }: { m: MatchR
 }
 
 /** Fila del calendario: fecha, escudo, rival, marcador o hora. */
-export function MatchLine({ m }: { m: MatchRow }) {
+export function MatchLine({ m, rank }: { m: MatchRow; rank?: Rank | null }) {
   const played = m.status === "played";
   const off = m.status === "postponed" || m.status === "cancelled";
   const time = hhmm(m.kickoff);
@@ -121,6 +137,7 @@ export function MatchLine({ m }: { m: MatchRow }) {
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-negro/65">
           <span className={`rounded px-1 font-bold ${m.is_home ? "bg-negro text-white" : "bg-gris text-negro"}`}>{m.is_home ? "Casa" : "Fuera"}</span>
           <span>{COMPETITION_LABEL[m.competition]}{m.round ? ` · ${m.round}` : ""}</span>
+          {rank && <RankChip r={rank} />}
           <StatusBadge m={m} />
         </div>
       </div>

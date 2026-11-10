@@ -8,6 +8,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.23.0",
+    date: "2026-11-10",
+    title: "Posición y puntos del rival",
+    changes: [
+      "En Partidos, cada partido de liga pendiente enseña al lado del rival su posición en la clasificación y sus puntos (por ejemplo «5º · 9 pts»). Si el equipo está en zona de ascenso o descenso, sale un puntito con el color de la zona.",
+      "En el marcador del próximo partido sale la posición y los puntos de los dos equipos.",
+      "Dentro de cada partido de liga pendiente hay un recuadro nuevo, «Así llegan»: los dos equipos con su posición, puntos, victorias, empates y derrotas, goles, racha de los últimos cinco y cuántos puntos nos separan.",
+      "Los datos salen de la clasificación de la web de la liga, la misma de la pestaña «Clasificación».",
+    ],
+  },
+  {
     version: "3.22.0",
     date: "2026-11-09",
     title: "Nueva imagen del resultado",

@@ -20,6 +20,10 @@ import { ReportSection } from "@/components/matches/report-section";
 import { MvpSection } from "@/components/matches/mvp-section";
 import { CallupHistory } from "@/components/matches/callup-history";
 import { callupClosed } from "@/lib/callups";
+import { seasonOf } from "@/lib/finance";
+import { getStandings } from "@/lib/league-table";
+import { matchRanks } from "@/lib/standings";
+import { RankDuel } from "@/components/matches/league-table";
 import { deleteMatch, saveResult, setMatchStatus } from "../actions";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -40,13 +44,17 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   // La votación del MVP primero: si ya toca, hace el recuento y el MVP sale al día en el acta
   const mvp = m.status === "played" ? await fetchMvpBoard(supabase, m.id) : null;
   if (mvp?.winner_id && m.mvp_player_id !== mvp.winner_id) m.mvp_player_id = mvp.winner_id;
-  const [{ data: h2hData }, callups, myPlayerId, report] = await Promise.all([
+  // Posición y puntos de los dos equipos (solo partidos de liga de esta temporada aún sin jugar)
+  const rankable = m.competition === "league" && m.season === seasonOf() && m.status !== "played" && m.status !== "cancelled";
+  const [{ data: h2hData }, callups, myPlayerId, report, standings] = await Promise.all([
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("rival_id", m.rival_id).neq("id", m.id)
       .order("match_date", { ascending: false }).limit(20).returns<MatchRow[]>(),
     fetchCallups(supabase, m),
     fetchMyPlayerId(supabase, s.user.id),
     m.status === "played" ? fetchReport(supabase, m) : null,
+    rankable ? getStandings(supabase) : null,
   ]);
+  const ranks = standings ? matchRanks(standings.table.rows, standings.us, [m], m.season).get(m.id) ?? null : null;
   const h2h = h2hData ?? [];
   const mvpPool = report && mvp && mvp.candidates.some((id) => !report.pool.some((p) => p.player_id === id))
     ? await fetchReportPool(supabase, m.season, mvp.candidates)
@@ -77,7 +85,9 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-6">
-          <Scoreboard m={m} />
+          <Scoreboard m={m} ranks={ranks} />
+
+          {ranks && <RankDuel ranks={ranks} rival={m.rival} href={`/partidos?ver=clasificacion`} />}
 
           {m.status === "played" && <MvpSection m={m} board={mvp} pool={mvpPool} canEdit={canEdit} />}
 
