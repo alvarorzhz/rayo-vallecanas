@@ -66,7 +66,7 @@ export default async function DocsPage({ searchParams }: { searchParams: Promise
       <div className="-mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 [scrollbar-width:none]">
         {([["todos", "Todos"], ["faltan", "Les falta algo"], ["caducan", "Caducan pronto"]] as const).map(([k, label]) => (
           <Link key={k} href={k === "todos" ? "/plantilla/documentos" : `/plantilla/documentos?filtro=${k}`} prefetch
-            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold transition ${filter === k ? "bg-negro text-white" : "bg-white text-negro/70 ring-1 ring-black/10 hover:ring-negro/30"}`}>{label}</Link>
+            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold transition ${filter === k ? "tab-on bg-negro text-white" : "bg-white text-negro/70 ring-1 ring-black/10 hover:ring-negro/30"}`}>{label}</Link>
         ))}
       </div>
 

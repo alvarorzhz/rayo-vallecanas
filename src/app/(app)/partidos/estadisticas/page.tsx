@@ -64,7 +64,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
         <nav aria-label="Temporadas" className="mb-4 flex flex-wrap gap-2">
           {seasons.map((x) => (
             <Link key={x} href={`/partidos/estadisticas?temporada=${seasonSlug(x)}`} prefetch
-              className={`sport rounded-full px-3 py-1 text-sm font-black ring-1 ${x === season ? "bg-negro text-white ring-negro" : "bg-white ring-black/10"}`}>{x}</Link>
+              className={`sport rounded-full px-3 py-1 text-sm font-black ring-1 ${x === season ? "tab-on bg-negro text-white ring-negro" : "bg-white ring-black/10"}`}>{x}</Link>
           ))}
         </nav>
       )}

@@ -10,7 +10,12 @@ export function SubmitButton({
   const { pending } = useFormStatus();
   return (
     <button type="submit" disabled={pending || rest.disabled} className={className} {...rest}>
-      {pending ? pendingText : children}
+      {pending ? (
+        <>
+          <span aria-hidden className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" />
+          {pendingText}
+        </>
+      ) : children}
     </button>
   );
 }

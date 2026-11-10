@@ -109,7 +109,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
       <div className="-mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0 [scrollbar-width:none]">
         {FILTERS.map((f) => (
           <Link key={f.key} href={link({ filtro: f.key })} prefetch
-            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold transition ${filter === f.key ? "bg-negro text-white" : "bg-white text-negro/70 ring-1 ring-black/10 hover:ring-negro/30"}`}>
+            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold transition ${filter === f.key ? "tab-on bg-negro text-white" : "bg-white text-negro/70 ring-1 ring-black/10 hover:ring-negro/30"}`}>
             {f.label}{f.key === "debe" ? ` · ${owing.length}` : ""}
           </Link>
         ))}

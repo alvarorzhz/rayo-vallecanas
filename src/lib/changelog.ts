@@ -8,6 +8,21 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.25.0",
+    date: "2026-11-10",
+    title: "Diseño renovado y con más movimiento",
+    changes: [
+      "La app estrena aspecto: mismo rojo, negro, dorado y blanco, pero más cuidado y más deportivo en todas las pantallas. No cambia dónde está cada cosa.",
+      "En la barra de abajo, el marcador rojo se desliza de una sección a otra y el icono da un pequeño bote al entrar.",
+      "Las pantallas entran con suavidad, las tarjetas aparecen según bajas, las listas llegan fila a fila y los botones responden al toque con un destello.",
+      "Finanzas abre con el saldo en grande sobre negro, con ingresos, gastos y resultado debajo.",
+      "En Sorteos, cada campaña es un boleto con su matriz y su línea de corte.",
+      "Mi perfil tiene cabecera propia con tu foto, tu nombre y tu perfil; Novedades pasa a ser una línea del tiempo.",
+      "Formularios más cómodos de rellenar, avisos de «guardado» y de error más claros y, donde no hay datos, un balón esperando.",
+      "Si tu móvil tiene activado «reducir movimiento», la app respeta ese ajuste y no anima nada.",
+    ],
+  },
+  {
     version: "3.24.0",
     date: "2026-11-10",
     title: "Una previa más completa",

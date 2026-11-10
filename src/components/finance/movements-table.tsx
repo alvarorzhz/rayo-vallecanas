@@ -15,10 +15,10 @@ export function Amount({ kind, cents, voided }: { kind: string; cents: number; v
 export function MovementsTable({ rows }: { rows: MovementRow[] }) {
   return (
     <>
-      <ul className="divide-y divide-black/5 md:hidden">
+      <ul className="stagger divide-y divide-black/5 md:hidden">
         {rows.map((m) => (
           <li key={m.id}>
-            <Link href={`/finanzas/${m.id}`} prefetch={false} className="flex items-center gap-3 py-3">
+            <Link href={`/finanzas/${m.id}`} prefetch={false} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition active:scale-[0.99] active:bg-gris">
               <span className={`h-9 w-1.5 shrink-0 -skew-x-[15deg] rounded ${m.kind === "income" ? "bg-green-600" : "bg-rojo"}`} />
               <span className="min-w-0 flex-1">
                 <span className={`block truncate font-semibold ${m.voided_at ? "text-negro/60 line-through" : ""}`}>{m.concept}</span>

@@ -16,10 +16,11 @@ export function AdminTabs({ tabs }: { tabs: AdminTab[] }) {
           const active = path === t.href || path.startsWith(t.href + "/");
           return (
             <Link key={t.href} href={t.href} prefetch
-              className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-bold transition ${
-                active ? "bg-negro text-white shadow" : "bg-white text-negro/70 ring-1 ring-black/10 hover:text-rojo"
+              aria-current={active ? "page" : undefined}
+              className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-bold transition active:scale-95 ${
+                active ? "tab-on bg-negro text-white shadow-[0_8px_18px_-10px_rgba(0,0,0,0.8)]" : "bg-white text-negro/70 ring-1 ring-black/10 hover:text-rojo hover:ring-rojo/30"
               }`}>
-              <Icon size={16} /> {t.label}
+              <Icon size={16} className={active ? "text-dorado" : ""} /> {t.label}
             </Link>
           );
         })}

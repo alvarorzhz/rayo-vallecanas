@@ -36,7 +36,7 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
   };
   const recent = (log ?? []).filter((r) => sees[areaOf(r.url, r.tag)]).slice(0, 25);
 
-  const tab = (on: boolean) => `flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition sm:flex-none ${on ? "bg-negro text-white shadow" : "text-negro/70 hover:text-rojo"}`;
+  const tab = (on: boolean) => `flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition sm:flex-none ${on ? "tab-on bg-negro text-white shadow" : "text-negro/70 hover:text-rojo"}`;
 
   return (
     <>

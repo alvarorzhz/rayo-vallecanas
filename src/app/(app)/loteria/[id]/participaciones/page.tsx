@@ -57,8 +57,8 @@ export default async function SharesPage({ params, searchParams }: { params: Pro
       <div className="card">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-1">
-            <Link href={link({ v: "lista" })} className={`badge px-3 py-1.5 ${view === "lista" ? "bg-negro text-white" : "bg-gris"}`}>Lista</Link>
-            <Link href={link({ v: "cuadricula" })} className={`badge px-3 py-1.5 ${view === "cuadricula" ? "bg-negro text-white" : "bg-gris"}`}>Cuadrícula</Link>
+            <Link href={link({ v: "lista" })} className={`badge px-3 py-1.5 ${view === "lista" ? "tab-on bg-negro text-white" : "bg-gris"}`}>Lista</Link>
+            <Link href={link({ v: "cuadricula" })} className={`badge px-3 py-1.5 ${view === "cuadricula" ? "tab-on bg-negro text-white" : "bg-gris"}`}>Cuadrícula</Link>
           </div>
           <form className="flex gap-2">
             <input type="hidden" name="v" value={view} />
@@ -74,7 +74,7 @@ export default async function SharesPage({ params, searchParams }: { params: Pro
         {blocks > 1 && (
           <div className="mb-3 flex flex-wrap gap-1">
             {Array.from({ length: blocks }, (_, i) => (
-              <Link key={i} href={link({ b: i + 1 })} className={`badge px-2 py-1 ${block === i + 1 ? "bg-negro text-white" : "bg-gris"}`}>
+              <Link key={i} href={link({ b: i + 1 })} className={`badge px-2 py-1 ${block === i + 1 ? "tab-on bg-negro text-white" : "bg-gris"}`}>
                 {i * BLOCK + 1}–{Math.min((i + 1) * BLOCK, c.total_shares)}
               </Link>
             ))}

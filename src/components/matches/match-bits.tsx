@@ -122,7 +122,7 @@ export function MatchLine({ m, rank }: { m: MatchRow; rank?: Rank | null }) {
   const time = hhmm(m.kickoff);
   return (
     <Link href={`/partidos/${m.id}`} prefetch={false}
-      className={`group flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-rojo/40 sm:p-4 ${off ? "opacity-70" : ""}`}>
+      className={`group flex items-center gap-3 reveal lift rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 hover:ring-rojo/40 sm:p-4 ${off ? "opacity-70" : ""}`}>
       <div className="w-12 shrink-0 text-center leading-none">
         <div className="text-[11px] font-bold uppercase text-negro/65">{shortDay(m.match_date).split(" ")[0].replace(",", "")}</div>
         <div className="sport text-2xl font-black">{Number(m.match_date.slice(8, 10))}</div>

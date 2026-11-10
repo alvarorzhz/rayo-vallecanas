@@ -147,7 +147,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         <div className="flex rounded-xl bg-white p-1 shadow-sm ring-1 ring-black/5">
           {([["todos", "Calendario"], ["proximos", "Próximos"], ["resultados", "Resultados"], ...(withTable ? [["clasificacion", "Clasificación"]] as const : [])] as const).map(([v, label]) => (
             <Link key={v} href={link({ ver: v })} prefetch aria-current={view === v ? "page" : undefined}
-              className={`sport rounded-lg px-3 py-1.5 text-sm font-black transition ${view === v ? "bg-negro text-white" : "text-negro/65 hover:text-negro"}`}>
+              className={`sport rounded-lg px-3 py-1.5 text-sm font-black transition ${view === v ? "tab-on bg-negro text-white" : "text-negro/65 hover:text-negro"}`}>
               {label}
             </Link>
           ))}
