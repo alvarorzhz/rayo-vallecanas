@@ -1,5 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import type { createClient } from "@/lib/supabase/server";
 import { openSession } from "@/lib/league-sync";
 import { parseCalendar, parseCompetitionName, parseTable, type Outcome, type StandingRow } from "@/lib/league-parse";
 
@@ -51,4 +52,26 @@ export async function getLeagueTable(competition: string): Promise<LeagueTable |
     console.error("No se ha podido leer la clasificación:", e instanceof Error ? e.message : e);
     return null;
   }
+}
+
+const within = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<null>((ok) => setTimeout(() => ok(null), ms))]);
+
+/**
+ * Clasificación para enseñar junto a los partidos (posición y puntos del rival).
+ * Si la web de la liga tarda más de `ms`, se sigue sin ella para no frenar la página.
+ */
+export async function getStandings(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ms = 2500,
+): Promise<{ table: LeagueTable; us: string; competition: string } | null> {
+  const { data: l } = await supabase.from("league_sync").select("competition, team").eq("id", 1)
+    .maybeSingle<{ competition: string | null; team: string | null }>();
+  if (!l?.competition || !l.team) return null;
+  const table = await getLeagueTableQuick(l.competition, ms);
+  return table ? { table, us: l.team, competition: l.competition } : null;
+}
+
+/** Como getLeagueTable, pero si la web de la liga tarda más de `ms` devuelve null. */
+export function getLeagueTableQuick(competition: string, ms = 2500): Promise<LeagueTable | null> {
+  return within(getLeagueTable(competition), ms);
 }
