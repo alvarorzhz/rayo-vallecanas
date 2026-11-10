@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { BarChart3, Minus, Plus, Settings2, List } from "lucide-react";
+import { BarChart3, Minus, Plus, Scale, Settings2, List, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha } from "@/lib/format";
-import { Empty, PageHeader, Stat } from "@/components/ui";
+import { Empty, Hero, PageHeader } from "@/components/ui";
 import { MovementsTable } from "@/components/finance/movements-table";
 import { MOVEMENT_SELECT, seasonOf, seasonRange, type FinanceSummary, type MovementRow } from "@/lib/finance";
 
@@ -59,12 +59,28 @@ export default async function FinancesPage({ searchParams }: { searchParams: Pro
         <button className="btn-ghost px-3 py-1.5 text-xs">Ver</button>
       </form>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Saldo actual" value={euros(summary.balance_cents)} hint="Dinero disponible hoy" tone="dark" />
-        <Stat label="Ingresos" value={euros(summary.income_cents)} hint={`Temporada ${season}`} />
-        <Stat label="Gastos" value={euros(summary.expense_cents)} hint={`Temporada ${season}`} />
-        <Stat label="Resultado" value={euros(result)} hint={result >= 0 ? "Ingresos menos gastos" : "Se ha gastado más de lo ingresado"} tone={result >= 0 ? "gold" : "red"} />
-      </div>
+      <Hero className="mb-6">
+        <div className="p-5 sm:p-6">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-dorado">
+            <Wallet size={14} aria-hidden /> Saldo actual
+          </div>
+          <div className="anim-score sport mt-1 text-5xl leading-none font-black tabular-nums sm:text-6xl">{euros(summary.balance_cents)}</div>
+          <div className="mt-1 text-sm text-white/60">Dinero disponible hoy</div>
+        </div>
+        <dl className="grid grid-cols-3 divide-x divide-white/10 border-t border-white/10 bg-[#0b0b0b]/95">
+          {[
+            { k: "Ingresos", v: euros(summary.income_cents), icon: <TrendingUp size={14} aria-hidden />, tone: "text-green-400" },
+            { k: "Gastos", v: euros(summary.expense_cents), icon: <TrendingDown size={14} aria-hidden />, tone: "text-red-400" },
+            { k: "Resultado", v: euros(result), icon: <Scale size={14} aria-hidden />, tone: result >= 0 ? "text-dorado" : "text-red-400" },
+          ].map((x, i) => (
+            <div key={x.k} className="anim-rise px-3 py-3 sm:px-5" style={{ animationDelay: `${150 + i * 70}ms` }}>
+              <dt className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${x.tone}`}>{x.icon} {x.k}</dt>
+              <dd className="sport mt-0.5 text-lg leading-tight font-black tabular-nums sm:text-2xl">{x.v}</dd>
+            </div>
+          ))}
+        </dl>
+      </Hero>
+      {result < 0 && <p className="-mt-3 mb-6 text-xs font-semibold text-rojo">Esta temporada se ha gastado más de lo ingresado.</p>}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <section className="card min-w-0">
@@ -86,7 +102,7 @@ export default async function FinancesPage({ searchParams }: { searchParams: Pro
                       <li key={name}>
                         <div className="flex justify-between gap-2"><span className="truncate">{name}</span><b className="tabular-nums">{euros(cents)}</b></div>
                         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/10">
-                          <div className={`h-full rounded-full ${k === "income" ? "bg-green-600" : "bg-rojo"}`} style={{ width: `${total ? Math.round((cents / total) * 100) : 0}%` }} />
+                          <div className={`anim-fill h-full rounded-full ${k === "income" ? "bg-green-600" : "bg-rojo"}`} style={{ width: `${total ? Math.round((cents / total) * 100) : 0}%` }} />
                         </div>
                       </li>
                     );

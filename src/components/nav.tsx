@@ -80,12 +80,22 @@ export function BottomNav({ items }: { items: NavItem[] }) {
   // Caben 6 botones: si sobran, se quitan los del medio y «Gestión» (el último) se queda siempre
   const all = items.filter((i) => !i.soon && i.mobile !== false);
   const visible = all.length > 6 ? [...all.slice(0, 5), all[all.length - 1]] : all;
+  const activeIdx = visible.findIndex((it) => isActive(path, it.href, it.also));
   return (
     <nav
       aria-label="Menú principal"
-      className="fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-negro/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-negro/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       style={{ gridTemplateColumns: `repeat(${visible.length}, minmax(0, 1fr))` }}
     >
+      {/* Marcador rojo: se desliza de una pestaña a otra */}
+      <span
+        aria-hidden
+        className={`nav-slider pointer-events-none absolute left-0 top-0 flex flex-col items-center ${activeIdx < 0 ? "opacity-0" : ""}`}
+        style={{ width: `${100 / visible.length}%`, transform: `translateX(${Math.max(activeIdx, 0) * 100}%)` }}
+      >
+        <span className="h-[3px] w-10 -skew-x-[25deg] rounded-b bg-dorado" />
+        <span className="mt-[7px] h-8 w-12 -skew-x-[10deg] rounded-xl bg-rojo shadow-[0_6px_18px_-4px_rgba(210,13,23,0.9)]" />
+      </span>
       {visible.map((it) => {
         const Icon = ICONS[it.icon];
         const active = isActive(path, it.href, it.also);
@@ -96,11 +106,10 @@ export function BottomNav({ items }: { items: NavItem[] }) {
             prefetch
             data-tour={it.href}
             aria-current={active ? "page" : undefined}
-            className={`relative flex min-w-0 flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] font-semibold transition ${active ? "text-white" : "text-white/50"}`}
+            className={`nav-tab relative flex min-w-0 flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] font-semibold transition-colors duration-200 ${active ? "text-white" : "text-white/50"}`}
           >
-            {active && <span aria-hidden className="absolute inset-x-4 top-0 h-[3px] -skew-x-[25deg] rounded-b bg-rojo" />}
-            <span className={`flex h-8 w-12 items-center justify-center rounded-xl transition ${active ? "-skew-x-[10deg] bg-rojo" : ""}`}>
-              <Icon size={20} className={active ? "skew-x-[10deg]" : ""} />
+            <span className="nav-ico flex h-8 w-12 items-center justify-center">
+              <Icon key={active ? "on" : "off"} size={20} className={active ? "nav-ico-on" : ""} />
             </span>
             <span className="max-w-full truncate px-1">{it.label}</span>
           </Link>

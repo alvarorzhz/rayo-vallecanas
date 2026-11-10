@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/session";
-import { PageHeader } from "@/components/ui";
+import { Hero, PageHeader } from "@/components/ui";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { PushSettings } from "@/components/push-settings";
 import { TourButton } from "@/components/tour";
@@ -19,26 +19,30 @@ export default async function ProfilePage() {
     <>
       <PageHeader title="Mi perfil" subtitle="Tu foto aparece en el menú, en la lista de usuarios y en tu ficha de jugador." />
       <div className="mx-auto max-w-md space-y-6">
-        <section className="card">
-          <AvatarUpload name={p.full_name} url={p.avatar_url} upload={uploadAvatar} remove={removeAvatar} />
-        </section>
+        <Hero>
+          <div className="px-5 pb-5 pt-6 text-center">
+            <AvatarUpload name={p.full_name} url={p.avatar_url} upload={uploadAvatar} remove={removeAvatar} dark />
+            <div className="sport mt-4 text-3xl leading-none font-black">{p.full_name}</div>
+            <div className="mt-2 inline-flex -skew-x-[10deg] rounded bg-dorado px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-negro">{p.role_label}</div>
+          </div>
+        </Hero>
         {player && (
-          <Link href={`/plantilla/${player.id}`} prefetch className="card flex items-center gap-3 hover:ring-rojo">
+          <Link href={`/plantilla/${player.id}`} prefetch className="card group flex items-center gap-3 hover:ring-rojo/40">
             <Shirt size={22} className="text-rojo" />
             <span className="flex-1">
               <span className="block font-bold">Mi ficha de jugador</span>
               <span className="block text-xs text-negro/65">Tu dorsal, tu posición y tus datos de contacto</span>
             </span>
-            <span className="text-rojo">→</span>
+            <span className="text-rojo transition-transform duration-200 group-hover:translate-x-1">→</span>
           </Link>
         )}
-        <Link href="/votaciones" prefetch className="card flex items-center gap-3 hover:ring-rojo">
+        <Link href="/votaciones" prefetch className="card group flex items-center gap-3 hover:ring-rojo/40">
           <Vote size={22} className="text-rojo" />
           <span className="flex-1">
             <span className="block font-bold">Votaciones</span>
             <span className="block text-xs text-negro/65">Las que están abiertas y los resultados de las anteriores</span>
           </span>
-          <span className="text-rojo">→</span>
+          <span className="text-rojo transition-transform duration-200 group-hover:translate-x-1">→</span>
         </Link>
         <section className="card">
           <h2 className="mb-3 font-bold">Avisos (notificaciones)</h2>

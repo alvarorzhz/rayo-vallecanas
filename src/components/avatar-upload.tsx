@@ -21,11 +21,14 @@ export function AvatarUpload({
   url,
   upload,
   remove,
+  dark = false,
 }: {
   name: string;
   url: string | null;
   upload: (s: AvatarState, f: FormData) => Promise<AvatarState>;
   remove: () => Promise<AvatarState>;
+  /** Sobre fondo negro (cabecera del perfil) */
+  dark?: boolean;
 }) {
   const [state, setState] = useState<AvatarState>();
   const [preview, setPreview] = useState<string | null>(null);
@@ -57,7 +60,7 @@ export function AvatarUpload({
       <button type="button" onClick={() => input.current?.click()} disabled={pending}
         className="group relative rounded-full focus:outline-none focus-visible:ring-4 focus-visible:ring-rojo/40" aria-label="Cambiar foto">
         <Avatar name={name} url={preview ?? url} size={128} className={pending ? "opacity-50" : ""} />
-        <span className="absolute bottom-1 right-1 rounded-full bg-negro p-2 text-white shadow-lg transition group-hover:bg-rojo">
+        <span className={`absolute bottom-1 right-1 rounded-full p-2 text-white shadow-lg transition group-hover:scale-110 ${dark ? "bg-rojo ring-2 ring-negro" : "bg-negro group-hover:bg-rojo"}`}>
           <Camera size={18} />
         </span>
       </button>
@@ -73,7 +76,7 @@ export function AvatarUpload({
           </button>
         )}
       </div>
-      <p className="text-xs text-negro/65">Puedes hacer una foto con el móvil o elegir una de la galería. Se recorta en cuadrado.</p>
+      <p className={`text-xs ${dark ? "text-white/60" : "text-negro/65"}`}>Puedes hacer una foto con el móvil o elegir una de la galería. Se recorta en cuadrado.</p>
       <FormMessage state={state} />
     </div>
   );

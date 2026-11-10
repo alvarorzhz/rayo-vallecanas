@@ -44,7 +44,7 @@ export default async function MySalesPage({ searchParams }: { searchParams: Prom
       </div>
       <div className="mb-3 flex gap-2 overflow-x-auto text-sm">
         {[["", "Todas"], ["pending", "Pendientes"], ["partial", "Parciales"], ["paid", "Pagadas"]].map(([v, l]) => (
-          <Link key={v} href={v ? `?estado=${v}` : "?"} className={`badge px-3 py-1.5 ${(sp.estado ?? "") === v ? "bg-negro text-white" : "bg-white ring-1 ring-black/10"}`}>{l}</Link>
+          <Link key={v} href={v ? `?estado=${v}` : "?"} className={`badge px-3 py-1.5 ${(sp.estado ?? "") === v ? "tab-on bg-negro text-white" : "bg-white ring-1 ring-black/10"}`}>{l}</Link>
         ))}
       </div>
       <div className="card">

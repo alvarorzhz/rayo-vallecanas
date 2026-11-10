@@ -37,6 +37,8 @@
     0% { transform: translateX(-100%); }
     100% { transform: translateX(250%); }
   }
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --font-sans: var(--nf-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --font-display: var(--nf-display), "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
 }
@@ -49,7 +51,12 @@ html {
 }
 
 body {
-  background: var(--color-gris);
+  /* Un reflejo rojo y dorado muy suave arriba, como los focos sobre el campo */
+  background:
+    radial-gradient(900px 320px at 100% -80px, color-mix(in srgb, var(--color-rojo) 7%, transparent), transparent 70%),
+    radial-gradient(700px 260px at -10% -60px, color-mix(in srgb, var(--color-dorado) 9%, transparent), transparent 70%),
+    var(--color-gris);
+  background-attachment: fixed;
   color: var(--color-negro);
   /* Nada puede ensanchar la página en el móvil */
   overflow-x: clip;
@@ -85,7 +92,7 @@ input::-webkit-datetime-edit { padding: 0; }
 input[type="file"] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @utility card {
-  @apply rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.12)] ring-1 ring-black/5 sm:p-5;
+  @apply rounded-2xl bg-white p-4 shadow-[0_1px_1px_rgba(0,0,0,0.03),0_10px_30px_-14px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.06] sm:p-5;
 }
 /* Titulares deportivos: condensada, cursiva y en mayúsculas */
 @utility sport {
@@ -106,12 +113,16 @@ input[type="file"] { overflow: hidden; text-overflow: ellipsis; white-space: now
 
 /* Entrada escalonada de las tarjetas de cada página */
 .page-enter > * {
-  animation: var(--animate-fade-up);
+  animation: page-in 0.42s var(--ease-out) both;
 }
-.page-enter > *:nth-child(2) { animation-delay: 40ms; }
-.page-enter > *:nth-child(3) { animation-delay: 80ms; }
-.page-enter > *:nth-child(4) { animation-delay: 120ms; }
-.page-enter > *:nth-child(n + 5) { animation-delay: 160ms; }
+.page-enter > *:nth-child(2) { animation-delay: 50ms; }
+.page-enter > *:nth-child(3) { animation-delay: 100ms; }
+.page-enter > *:nth-child(4) { animation-delay: 150ms; }
+.page-enter > *:nth-child(n + 5) { animation-delay: 200ms; }
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -121,25 +132,25 @@ input[type="file"] { overflow: hidden; text-overflow: ellipsis; white-space: now
   }
 }
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50;
+  @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-200 ease-[var(--ease-out)] select-none active:scale-[0.96] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 bg-rojo text-white shadow-[0_6px_16px_-6px_rgba(210,13,23,0.6)] hover:bg-rojo-oscuro;
+  @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-200 ease-[var(--ease-out)] select-none active:scale-[0.96] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50 bg-rojo text-white shadow-[0_8px_18px_-8px_rgba(210,13,23,0.75),inset_0_1px_0_rgba(255,255,255,0.22)] hover:bg-rojo-oscuro hover:-translate-y-px;
 }
 @utility btn-dark {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 bg-negro text-white hover:bg-negro-2;
+  @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-200 ease-[var(--ease-out)] select-none active:scale-[0.96] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50 bg-negro text-white shadow-[0_8px_18px_-10px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-negro-2 hover:-translate-y-px;
 }
 @utility btn-ghost {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 bg-white text-negro ring-1 ring-black/10 hover:bg-gris;
+  @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-[15px] font-bold uppercase tracking-wide [font-family:var(--font-display)] italic transition duration-200 ease-[var(--ease-out)] select-none active:scale-[0.96] active:duration-75 disabled:cursor-not-allowed disabled:opacity-50 bg-white text-negro ring-1 ring-black/10 hover:ring-black/25 hover:-translate-y-px;
 }
 @utility input {
-  @apply w-full rounded-xl border border-black/15 bg-white px-3 py-2.5 text-base outline-none transition focus:border-rojo focus:ring-2 focus:ring-rojo/20 disabled:bg-gris sm:text-sm;
+  @apply w-full rounded-xl border border-black/10 bg-[#f7f7f4] px-3.5 py-2.5 text-base outline-none transition duration-200 placeholder:text-negro/40 hover:border-black/25 focus:border-rojo focus:bg-white focus:ring-4 focus:ring-rojo/15 disabled:bg-gris disabled:text-negro/50 sm:text-sm;
 }
 @utility label {
-  @apply mb-1 block text-sm font-semibold text-negro/80;
+  @apply mb-1.5 block text-[13px] font-bold tracking-wide text-negro/75;
 }
 @utility badge {
-  @apply inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide;
+  @apply inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide transition-colors duration-200;
 }
 @utility h1 {
   @apply text-3xl leading-none font-black sm:text-4xl;
@@ -160,6 +171,15 @@ input[type="file"] { overflow: hidden; text-overflow: ellipsis; white-space: now
     line-height: 1.1;
     letter-spacing: 0.01em;
   }
+  /* Destello que cruza el botón rojo al pasar o pulsar */
+  .btn-primary::after {
+    content: ""; position: absolute; inset: 0 auto 0 -60%; width: 40%; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+    transform: skewX(-20deg); opacity: 0;
+  }
+  .btn-primary:hover::after, .btn-primary:active::after, .btn-primary:focus-visible::after { opacity: 1; animation: rv-shine-fast 0.6s var(--ease-out); }
+  .table tbody tr { transition: background-color 0.15s; }
+  .table tbody tr:hover { background: rgba(8, 8, 8, 0.025); }
   .table th {
     @apply whitespace-nowrap border-b border-black/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-negro/65;
   }
@@ -547,4 +567,77 @@ html.rv-final {
 @media (prefers-reduced-motion: reduce) {
   .fc-bg, .fc-rays, .fc-landed, .fc-glow, .fc-crest, .fc-ring { animation: none !important; }
   .fc-ring { display: none; }
+}
+
+/* =====================================================================
+   Rediseño 3.25.0: movimiento común a toda la app
+   ===================================================================== */
+
+/* --- Barra de abajo: el marcador rojo se desliza de una pestaña a otra */
+.nav-slider { transition: transform 0.42s var(--ease-spring), opacity 0.2s; will-change: transform; }
+.nav-ico-on { animation: nav-pop 0.45s var(--ease-spring); }
+@keyframes nav-pop { 0% { transform: scale(0.6) rotate(-14deg); } 100% { transform: none; } }
+.nav-tab:active .nav-ico { transform: scale(0.86); }
+.nav-ico { transition: transform 0.15s; }
+
+/* --- Marcas roja y dorada de los títulos: entran como una pincelada */
+.title-ticks > span { transform-origin: left; animation: tick-in 0.5s var(--ease-out) both; }
+.title-ticks > span:nth-child(2) { animation-delay: 0.12s; }
+@keyframes tick-in { from { opacity: 0; transform: skewX(-25deg) scaleX(0); } to { opacity: 1; transform: skewX(-25deg) scaleX(1); } }
+
+/* --- Listas: las filas entran una detrás de otra (hasta 12; el resto, a la vez) */
+.stagger > * { animation: rv-rise 0.4s var(--ease-out) both; animation-delay: calc(min(var(--i, 12), 12) * 35ms); }
+.stagger > *:nth-child(1) { --i: 0; } .stagger > *:nth-child(2) { --i: 1; } .stagger > *:nth-child(3) { --i: 2; }
+.stagger > *:nth-child(4) { --i: 3; } .stagger > *:nth-child(5) { --i: 4; } .stagger > *:nth-child(6) { --i: 5; }
+.stagger > *:nth-child(7) { --i: 6; } .stagger > *:nth-child(8) { --i: 7; } .stagger > *:nth-child(9) { --i: 8; }
+.stagger > *:nth-child(10) { --i: 9; } .stagger > *:nth-child(11) { --i: 10; } .stagger > *:nth-child(12) { --i: 11; }
+
+/* --- Tarjetas que son un enlace: se levantan al pasar y se hunden al pulsar */
+a.card, .card-link, .lift {
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
+}
+@media (hover: hover) {
+  a.card:hover, .card-link:hover, .lift:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 18px 36px -16px rgba(0, 0, 0, 0.28); }
+}
+a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transition-duration: 0.08s; }
+
+/* --- Aparecer al hacer scroll: solo donde el navegador lo sabe hacer sin JavaScript.
+       Si no, las tarjetas se ven tal cual (nunca se quedan ocultas). */
+@media screen and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    main .card, main .reveal {
+      animation: reveal-in linear backwards;
+      animation-timeline: view();
+      animation-range: entry 0px entry 110px;
+    }
+    /* Lo que ya entra con la página no se anima dos veces */
+    .page-enter > .card, .page-enter > .reveal {
+      animation-name: page-in; animation-duration: 0.42s; animation-timing-function: var(--ease-out);
+      animation-fill-mode: both; animation-timeline: auto; animation-range: normal;
+    }
+  }
+}
+@keyframes reveal-in { from { opacity: 0; transform: translateY(22px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* --- Pestañas y selectores: la pastilla activa aparece con un pequeño bote */
+.tab-on { animation: tab-on 0.32s var(--ease-spring); }
+@keyframes tab-on { from { transform: scale(0.9); } to { transform: none; } }
+
+/* --- Sin datos: el balón espera botando */
+.empty-ball { animation: rv-bounce 0.9s cubic-bezier(0.5, 0.05, 0.5, 1) infinite alternate; }
+.empty-shadow { animation: empty-shadow 0.9s cubic-bezier(0.5, 0.05, 0.5, 1) infinite alternate; }
+@keyframes empty-shadow { from { transform: scaleX(0.55); opacity: 0.12; } to { transform: scaleX(1); opacity: 0.28; } }
+
+/* --- Avisos de «guardado» y errores: entran con un toque */
+.flash { animation: flash-in 0.4s var(--ease-spring) both; }
+@keyframes flash-in { from { opacity: 0; transform: translateY(-6px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+/* --- Entrada a la app: la franja barre la pantalla y los focos se mueven */
+.auth-franja { animation: rv-sweep 1s var(--ease-out) both; }
+.auth-card { animation: page-in 0.55s var(--ease-out) 0.2s both; }
+.auth-crest { animation: splash-escudo 0.7s var(--ease-spring) both, md-float 3.4s ease-in-out 0.9s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-ball, .empty-shadow, .auth-crest { animation: none !important; }
+  .nav-slider { transition: none; }
 }

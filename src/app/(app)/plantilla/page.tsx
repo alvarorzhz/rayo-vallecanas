@@ -138,7 +138,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         <div className="flex rounded-xl bg-white p-1 shadow-sm ring-1 ring-black/5">
           {([["cromos", "Cromos", LayoutGrid], ["campo", "Campo", Shirt], ["lista", "Lista", List]] as const).map(([v, label, Icon]) => (
             <Link key={v} href={link({ vista: v })} prefetch
-              className={`sport flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-black transition ${view === v ? "bg-negro text-white" : "text-negro/60 hover:text-negro"}`}>
+              className={`sport flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-black transition ${view === v ? "tab-on bg-negro text-white" : "text-negro/60 hover:text-negro"}`}>
               <Icon size={15} /> {label}
             </Link>
           ))}
@@ -250,7 +250,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
 function Chip({ href, on, dot, children }: { href: string; on: boolean; dot?: string; children: React.ReactNode }) {
   return (
     <Link href={href} prefetch
-      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold transition ${on ? "bg-negro text-white" : "bg-white text-negro/70 ring-1 ring-black/10 hover:ring-negro/30"}`}>
+      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold transition ${on ? "tab-on bg-negro text-white" : "bg-white text-negro/70 ring-1 ring-black/10 hover:ring-negro/30"}`}>
       {dot && <span className={`h-2 w-2 rounded-full ${dot}`} />}{children}
     </Link>
   );
