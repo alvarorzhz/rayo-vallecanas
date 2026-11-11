@@ -15,8 +15,8 @@ const INTERVIEW_ERROR: Record<string, string> = {
   fallo: "El borrador se ha guardado, pero no se pudo mandar la entrevista. Prueba otra vez.",
 };
 
-// La IA puede tardar: hasta 60 s para «Redactar borrador»
-export const maxDuration = 60;
+// La IA puede tardar: hasta 2 minutos para «Redactar borrador»
+export const maxDuration = 120;
 export const metadata: Metadata = { title: `Editar · ${NEWS_NAME}` };
 
 export default async function EditArticle({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ guardada?: string; retirada?: string; enviada?: string; entrevista?: string }> }) {

@@ -191,7 +191,7 @@ function matchLines(m: MatchFacts, club: string): string[] {
   } else {
     if (m.callup.length) l.push(`- Convocados que han confirmado: ${list(m.callup)}.`);
   }
-  if (m.usRank) l.push(`- Clasificación del ${club}: ${m.usRank.pos}º de ${m.usRank.total} con ${m.usRank.points} puntos.`);
+  if (m.usRank) l.push(`- Clasificación del ${club}: ${m.usRank.pos}º de ${m.usRank.total} equipos, con ${m.usRank.points} puntos.`);
   if (m.rivalRank) l.push(`- Clasificación del ${m.rival}: ${m.rivalRank.pos}º con ${m.rivalRank.points} puntos.`);
   if (m.form) l.push(`- Últimos resultados del ${club} (del más antiguo al más reciente, V=victoria, E=empate, D=derrota): ${m.form}.`);
   return l;
@@ -239,7 +239,7 @@ export function buildPrompt({ kind, match, player, notes, club = "Rayo Vallecañ
   }
   l.push("REGLAS:");
   l.push(`- ${TONE[kind]}`);
-  l.push("- No inventes minutos, jugadas, lesiones, declaraciones ni nombres que no estén arriba. Si falta algo, no lo cuentes.");
+  l.push("- No inventes minutos, jugadas, lesiones, declaraciones ni nombres que no estén arriba. Si falta algo, no lo cuentes. Si usas una cita destacada (> ), que sea una frase de mis notas, nunca una declaración inventada.");
   l.push("- Nombra a los jugadores solo por el nombre que aparece arriba (es su apodo).");
   l.push("- En español de España. Sin emojis ni hashtags.");
   l.push("");
