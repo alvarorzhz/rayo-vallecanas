@@ -206,14 +206,17 @@ describe("sin iniciar sesión", () => {
   test("las páginas privadas llevan a la entrada y las públicas se ven", async () => {
     const ctx = await browser.newContext({ viewport: PHONE });
     const page = await ctx.newPage();
-    for (const path of ["/", "/finanzas", "/plantilla", "/admin/usuarios"]) {
+    for (const path of ["/", "/finanzas", "/plantilla", "/admin/usuarios", "/la-voz"]) {
       await page.goto(BASE + path, { waitUntil: "networkidle" });
       assert.equal(new URL(page.url()).pathname, "/login", `${path} debería pedir entrar`);
     }
-    for (const path of ["/login", "/privacidad"]) {
+    for (const path of ["/login", "/privacidad", "/noticias"]) {
       const res = await page.goto(BASE + path, { waitUntil: "networkidle" });
       assert.equal(res?.status(), 200, path);
     }
+    // Una noticia que no es pública no existe para quien no ha entrado
+    const res = await page.goto(BASE + "/noticias/no-existe-esta-noticia", { waitUntil: "networkidle" });
+    assert.equal(res?.status(), 404);
     await ctx.close();
   });
 });

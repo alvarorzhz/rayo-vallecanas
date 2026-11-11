@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bodyImages, buildPrompt, imageLine, inline, isFeaturedNow, plainText, parseAiReply, parseBody, readDraft, readingMinutes, scoreLine, teaser, type MatchFacts } from "../news.ts";
+import { isNewsSlug, newsSlug, bodyImages, buildPrompt, imageLine, inline, isFeaturedNow, plainText, parseAiReply, parseBody, readDraft, readingMinutes, scoreLine, teaser, type MatchFacts } from "../news.ts";
 
 const facts: MatchFacts = {
   rival: "CD Tejares", home: false, date: "domingo, 15 de noviembre", competition: "Liga", round: "Jornada 6", venue: "La Aldehuela A1", kickoff: "11:00",
@@ -82,4 +82,14 @@ test("tiempo de lectura y entradilla de repuesto", () => {
   assert.equal(readingMinutes("uno dos"), 1);
   assert.equal(readingMinutes("a ".repeat(1000)), 5);
   assert.equal(teaser({ summary: null, body: "## Ladillo\n\nTexto **largo** de verdad." }, 12), "Ladillo…");
+});
+
+test("el enlace público sale del titular, sin tildes ni símbolos", () => {
+  assert.equal(newsSlug("El Rayo remonta bajo el diluvio", "X7K2"), "el-rayo-remonta-bajo-el-diluvio-x7k2");
+  assert.equal(newsSlug("Dani: «Este vestuario es una familia»", "a1b2"), "dani-este-vestuario-es-una-familia-a1b2");
+  assert.equal(newsSlug("Año nuevo, ¡cañonazo!", "zz"), "ano-nuevo-canonazo-zz");
+  assert.equal(newsSlug("¡¡!!", "q1"), "noticia-q1");
+  assert.ok(newsSlug("x".repeat(200), "abcd").length <= 80);
+  assert.ok(isNewsSlug(newsSlug("Nueva equipación para la temporada", "k9")));
+  assert.equal(isNewsSlug("../admin"), false);
 });

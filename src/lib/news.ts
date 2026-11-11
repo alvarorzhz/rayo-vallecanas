@@ -20,6 +20,9 @@ export type Article = {
   byline: string;
   ai_notes: string | null;
   featured: boolean;
+  is_public?: boolean;
+  public_slug?: string | null;
+  public_at?: string | null;
   status: NewsStatus;
   published_at: string | null;
   notified_at: string | null;
@@ -331,3 +334,13 @@ export function readDraft(f: { get: (k: string) => unknown }, publish: boolean):
   };
 }
 
+
+// ------------------------------------------------------------------ Noticias públicas (4.1.0)
+/** Enlace público a partir del titular: «El Rayo remonta» → «el-rayo-remonta-x7k2». El final evita choques. */
+export function newsSlug(title: string, suffix: string) {
+  const base = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/ñ/g, "n").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "");
+  const tail = suffix.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "rayo";
+  return base.length >= 3 ? `${base}-${tail}` : `noticia-${tail}`;
+}
+export const isNewsSlug = (s: string) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) && s.length >= 4 && s.length <= 80;
