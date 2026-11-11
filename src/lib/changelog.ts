@@ -8,6 +8,20 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.0.0",
+    date: "2026-11-11",
+    title: "La Voz del Rayo, el periódico del club",
+    changes: [
+      "Nace La Voz del Rayo, el periódico del Rayo Vallecañas dentro de la app: crónicas de cada partido, previas, entrevistas y comunicados oficiales, con cabecera, papel y letra de periódico de los de antes.",
+      "Cada crónica lleva su ficha técnica, que sale sola del acta: resultado con los escudos, titulares, suplentes, goles, asistencias, tarjetas, el MVP votado por el equipo y la clasificación.",
+      "Cuando hay una noticia importante, Inicio se abre como la portada del periódico durante tres días. La víspera y el día del partido manda el Matchday y la noticia queda justo debajo.",
+      "Fotos: una de portada con su pie y todas las que quieras en mitad del texto. Si no hay foto, la portada se hace sola con el marcador, la foto del jugador o el escudo.",
+      "Redactar con IA: escribe lo que viste y la app prepara las instrucciones con los datos del partido o del jugador para pegarlas en ChatGPT, Gemini o Claude. Lo que te devuelva se pega y se reparte solo en antetítulo, titular, entradilla y texto. Solo viajan apodos.",
+      "Las piezas se guardan como borrador hasta que se publican, y al publicar puede salir un aviso al móvil de todo el equipo. Después de cada partido con acta, la redacción ve el botón «Escribir la crónica».",
+      "Escriben los gestores y leen todos. En Gestión → Perfiles hay un permiso nuevo, «La Voz del Rayo», para tener redactores a medida. En el móvil, el periódico se abre desde el icono de la cabecera y en el ordenador, desde el menú.",
+    ],
+  },
+  {
     version: "3.28.2",
     date: "2026-11-11",
     title: "Última conexión al día",

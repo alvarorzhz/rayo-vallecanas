@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, Newspaper } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { Avatar } from "@/components/avatar";
 import { PushPrompt } from "@/components/push-prompt";
@@ -26,6 +26,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const items: NavItem[] = [{ href: "/", label: "Inicio", icon: "Home" }];
   if (s.can("matches")) items.push({ href: "/partidos", label: "Partidos", icon: "CalendarDays" });
   if (s.can("squad")) items.push({ href: "/plantilla", label: "Plantilla", icon: "Shirt" });
+  // La Voz del Rayo: en el ordenador, en el menú; en el móvil, el periódico de la cabecera (la barra de abajo ya va llena)
+  if (s.can("news")) items.push({ href: "/la-voz", label: "La Voz del Rayo", icon: "Newspaper", mobile: false });
   // «Mis ventas» va dentro de Sorteos para no cargar la barra de abajo
   if (s.can("lottery_admin") || s.can("lottery_sell")) items.push({ href: "/loteria", label: "Sorteos", icon: "Ticket", also: ["/mis-ventas"] });
   if (s.can("finances")) items.push({ href: "/finanzas", label: "Finanzas", icon: "Wallet" });
@@ -62,6 +64,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </span>
           </Link>
           <div className="relative flex shrink-0 items-center gap-2">
+            {s.can("news") && (
+              <Link href="/la-voz" prefetch aria-label="La Voz del Rayo" data-tour="/la-voz" className="rounded-lg bg-black/30 p-2 text-white/85 hover:text-dorado">
+                <Newspaper size={18} />
+              </Link>
+            )}
             <Link href="/perfil" prefetch aria-label="Mi perfil" data-tour="/perfil">
               <Avatar name={s.profile.full_name} url={s.profile.avatar_url} size={34} />
             </Link>

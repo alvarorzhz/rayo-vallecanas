@@ -13,7 +13,7 @@ export type TourStep = {
   href?: string;
   /** Elemento del menú que se resalta: el valor de su atributo data-tour. */
   target?: string;
-  icon: "Sparkles" | "Home" | "CalendarDays" | "Shirt" | "Ticket" | "Wallet" | "Settings" | "UserRound" | "Trophy";
+  icon: "Sparkles" | "Home" | "CalendarDays" | "Shirt" | "Ticket" | "Wallet" | "Settings" | "UserRound" | "Trophy" | "Newspaper";
   title: string;
   text: string;
   points?: string[];
@@ -60,6 +60,12 @@ export function buildTour(s: Session): TourStep[] {
     if (s.can("matches", "update"))
       p.push("Como gestor: añade partidos, sincroniza con la liga, prepara la convocatoria con la alineación y rellena el acta.");
     steps.push({ key: "partidos", href: "/partidos", target: "/partidos", icon: "CalendarDays", title: "Partidos", text: "Todo lo que pasa en el campo.", points: p });
+  }
+
+  if (s.can("news")) {
+    const p = ["Las crónicas de cada partido, las previas, las entrevistas y los comunicados oficiales del club.", "Cuando hay una noticia importante, Inicio se abre como la portada del periódico."];
+    if (s.can("news", "create")) p.push("Escribe piezas con fotos. Si quieres, la app te prepara las instrucciones para que una IA te redacte el borrador con los datos del partido.");
+    steps.push({ key: "la-voz", href: "/la-voz", target: "/la-voz", icon: "Newspaper", title: "La Voz del Rayo", text: "El periódico del club. En el móvil, el icono del periódico de arriba.", points: p });
   }
 
   if (s.can("squad")) {

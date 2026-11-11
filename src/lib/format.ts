@@ -112,4 +112,5 @@ export const MODULE_LABEL: Record<string, string> = {
   squad_private: "Plantilla · datos personales",
   matches: "Partidos",
   sponsors: "Patrocinadores",
+  news: "La Voz del Rayo",
 };

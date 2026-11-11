@@ -1,12 +1,12 @@
 "use client";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CalendarDays, Home, Settings, Shirt, Sparkles, Ticket, Trophy, UserRound, Wallet, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Home, Settings, Shirt, Sparkles, Ticket, Trophy, UserRound, Wallet, X, Newspaper } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { TourStep } from "@/lib/tour";
 import { APP_VERSION } from "@/lib/changelog";
 
-const ICONS = { Sparkles, Home, CalendarDays, Shirt, Ticket, Wallet, Settings, UserRound, Trophy };
+const ICONS = { Sparkles, Home, CalendarDays, Shirt, Ticket, Wallet, Settings, UserRound, Trophy, Newspaper };
 const KEY = "rv-tutorial-visto";
 /** Evento para volver a lanzar el tutorial desde cualquier botón (ver TourButton). */
 const TOUR_EVENT = "rv-tutorial";

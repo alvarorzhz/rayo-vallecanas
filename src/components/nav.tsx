@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDays, LogOut, Settings } from "lucide-react";
+import { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDays, LogOut, Settings, Newspaper } from "lucide-react";
 import { signOut } from "@/app/login/actions";
 import { Avatar } from "@/components/avatar";
 import { CrestEgg } from "@/components/easter-eggs";
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; soon?: boolean; mobile?: boolean; also?: string[] };
 
-const ICONS = { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDays, Settings };
+const ICONS = { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDays, Settings, Newspaper };
 
 function isActive(path: string, href: string, also: string[] = []) {
   const under = (h: string) => path === h || path.startsWith(h + "/");

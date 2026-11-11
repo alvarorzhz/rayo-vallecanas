@@ -18,6 +18,9 @@ import { fetchDisplay, type Showcase } from "@/lib/sponsors";
 import { PollCard } from "@/components/polls/poll-card";
 import type { Poll } from "@/lib/polls";
 import { fetchMvpBoard } from "@/lib/mvp-server";
+import { countPublished, fetchPendingChronicle, fetchPublished } from "@/lib/news-queries";
+import { isFeaturedNow } from "@/lib/news";
+import { HomeFront, HomeLatest } from "@/components/news/home";
 
 const LG_COLS: Record<number, string> = { 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" };
 
@@ -104,6 +107,16 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     .sort((a, b) => Number(a.my_vote !== null) - Number(b.my_vote !== null));
   const canManagePolls = s.can("users", "update") || s.can("lottery_admin", "update");
 
+  // La Voz del Rayo: si hay una noticia destacada (3 días), Inicio se abre como la portada del periódico
+  const [news, newsCount, pendingChronicle] = s.can("news")
+    ? await Promise.all([fetchPublished(supabase, { limit: 6 }), countPublished(supabase), s.can("news", "create") ? fetchPendingChronicle(supabase) : null])
+    : [[], 0, null];
+  const featured = news.find((a) => isFeaturedNow(a)) ?? null;
+  const latest = news[0] && Date.now() - new Date(news[0].published_at ?? 0).getTime() < 14 * 86_400_000 ? news[0] : null;
+  const front = featured && <HomeFront lead={featured} others={news.filter((a) => a.id !== featured.id).slice(0, 2)} count={newsCount} />;
+  // La víspera y el día del partido manda el Matchday: el periódico va justo debajo
+  const matchFirst = !!md && md.phase !== "post";
+
   const sponsors = display.show_home ? ((showcase.data ?? []) as Showcase[]) : [];
 
   const firstName = s.profile.full_name.split(" ")[0];
@@ -125,6 +138,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       {error === "permiso" && (
         <div className="mb-4 rounded-xl bg-rojo/10 p-3 text-sm font-medium text-rojo">No tienes permiso para acceder a esa sección.</div>
       )}
+
+      {/* 0 · Modo periódico: la noticia destacada abre Inicio (salvo la víspera y el día del partido) */}
+      {front && !matchFirst && front}
 
       {/* 1 · El partido: siempre en portada, según el momento */}
       {md ? (
@@ -154,6 +170,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </div>
         </section>
       )}
+
+      {front && matchFirst && front}
+      {!featured && <HomeLatest a={latest} pending={pendingChronicle} />}
 
       {/* Votaciones abiertas */}
       {polls.length > 0 && (

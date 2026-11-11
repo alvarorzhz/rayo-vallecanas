@@ -17,7 +17,7 @@ type DB = { from: (t: string) => any }; // eslint-disable-line @typescript-eslin
 
 export const ACTS: Act[] = ["read", "create", "update", "delete"];
 /** Módulos que se pueden configurar (la auditoría es siempre y solo del superadministrador). */
-export const EDITABLE_MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "squad_private", "matches", "sponsors"];
+export const EDITABLE_MODULES = ["lottery_admin", "lottery_sell", "users", "finances", "squad", "squad_private", "matches", "sponsors", "news"];
 /** Reglas fijas del club: los jugadores nunca ven Finanzas, los patrocinios ni datos personales de otros. */
 export const PLAYER_BLOCKED = ["finances", "squad_private", "sponsors"];
 export const blocked = (base: Base, module: string) => base === "player" && PLAYER_BLOCKED.includes(module);

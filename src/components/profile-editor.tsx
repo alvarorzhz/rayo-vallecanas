@@ -16,6 +16,7 @@ const GROUPS: { title: string; modules: string[] }[] = [
   { title: "Sorteos", modules: ["lottery_sell", "lottery_admin"] },
   { title: "Finanzas", modules: ["finances"] },
   { title: "Patrocinadores", modules: ["sponsors"] },
+  { title: "La Voz del Rayo", modules: ["news"] },
   { title: "Gestión", modules: ["users"] },
 ];
 

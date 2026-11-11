@@ -756,3 +756,73 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
 @media (prefers-reduced-motion: reduce) {
   .office-plaque::after, .desk-calendar, .ink-stamp { animation: none !important; }
 }
+
+/* =====================================================================
+   La Voz del Rayo 4.0.0: el periódico del club
+   Papel crema, tinta negra, filetes rojos y letra de periódico.
+   ===================================================================== */
+.paper {
+  --ink: #141210;
+  --paper: #f8f4ea;
+  color: var(--ink);
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 255, 255, 0.55), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(60, 40, 10, 0.018) 0 1px, transparent 1px 3px),
+    var(--paper);
+}
+.news-head { font-family: var(--nf-news-head), Georgia, "Times New Roman", serif; letter-spacing: -0.01em; }
+.news-body { font-family: var(--nf-news-body), Georgia, "Times New Roman", serif; }
+.news-kicker { font-family: var(--font-display); font-style: italic; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-rojo); }
+.news-meta { font-family: var(--font-sans); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(20, 18, 16, 0.6); }
+
+/* Cabecera: el nombre entre dos filetes dobles */
+.masthead-rule { border-top: 3px solid var(--ink, #141210); border-bottom: 1px solid var(--ink, #141210); height: 7px; }
+.masthead-title { font-family: var(--nf-news-head), Georgia, serif; font-weight: 900; line-height: 0.88; letter-spacing: -0.02em; text-transform: uppercase; }
+.masthead-title .bolt { color: var(--color-rojo); }
+
+/* Filetes entre columnas y piezas */
+.news-rule { border-top: 1px solid rgba(20, 18, 16, 0.85); }
+.news-rule-thin { border-top: 1px solid rgba(20, 18, 16, 0.18); }
+@media (min-width: 1024px) {
+  .news-cols > * + * { border-left: 1px solid rgba(20, 18, 16, 0.18); padding-left: 1.5rem; }
+}
+
+/* Texto de la noticia: letra capital, ladillos, citas, preguntas */
+.article-text { font-size: 1.075rem; line-height: 1.7; }
+.article-text > p { margin-top: 1em; text-wrap: pretty; hyphens: auto; }
+.article-text.drop > p:first-of-type::first-letter {
+  float: left; margin: 0.08em 0.12em 0 0; font-family: var(--nf-news-head), Georgia, serif; font-weight: 900;
+  font-size: 3.6em; line-height: 0.8; color: var(--color-rojo);
+}
+.article-text h2 { margin-top: 1.6em; font-family: var(--font-display); font-style: italic; font-weight: 800; text-transform: uppercase; font-size: 1.1rem; letter-spacing: 0.04em; }
+.article-text h2::before { content: ""; display: inline-block; width: 1.4rem; height: 0.35rem; margin-right: 0.5rem; transform: skewX(-25deg) translateY(-0.15em); background: var(--color-rojo); }
+.article-text blockquote { margin: 1.4em 0; padding: 0.4em 0 0.4em 1rem; border-left: 4px solid var(--color-dorado); font-family: var(--nf-news-head), Georgia, serif; font-style: italic; font-weight: 700; font-size: 1.45rem; line-height: 1.25; }
+.article-text blockquote::before { content: "«"; color: var(--color-rojo); }
+.article-text blockquote::after { content: "»"; color: var(--color-rojo); }
+.article-text .qa-q { margin-top: 1.3em; font-weight: 700; }
+.article-text .qa-q::before { content: "P. "; color: var(--color-rojo); font-family: var(--font-display); font-style: italic; font-weight: 900; }
+.article-text .qa-a { margin-top: 0.35em; }
+.article-text .qa-a::before { content: "R. "; color: rgba(20, 18, 16, 0.5); font-family: var(--font-display); font-style: italic; font-weight: 900; }
+.article-text figure { margin: 1.5em 0; }
+
+/* Foto con marco de periódico */
+.news-photo { position: relative; overflow: hidden; background: #e9e3d4; box-shadow: 0 0 0 1px rgba(20, 18, 16, 0.12); }
+.news-photo img { filter: saturate(0.92) contrast(1.04); }
+.news-caption { font-family: var(--font-sans); font-size: 12px; line-height: 1.35; color: rgba(20, 18, 16, 0.65); }
+
+/* Sello del comunicado oficial */
+.news-seal { border: 2px solid var(--color-rojo); color: var(--color-rojo); transform: rotate(-6deg); font-family: var(--font-display); font-style: italic; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* Ficha técnica, como el recuadro de la prensa deportiva */
+.match-sheet { background: #fffdf7; box-shadow: 0 0 0 1px rgba(20, 18, 16, 0.85), 4px 4px 0 0 rgba(20, 18, 16, 0.85); }
+
+/* Entrada: la portada se «imprime» de arriba abajo */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .press-in { animation: press-in 0.7s var(--ease-out) both; }
+  .press-in-2 { animation: press-in 0.7s var(--ease-out) 0.12s both; }
+  .press-in-3 { animation: press-in 0.7s var(--ease-out) 0.24s both; }
+}
+@keyframes press-in {
+  from { clip-path: inset(0 0 100% 0); opacity: 0.4; }
+  to { clip-path: inset(0 0 0 0); opacity: 1; }
+}
