@@ -7,31 +7,31 @@ export type LogRow = { id: number; title: string; body: string | null; url: stri
 
 const HOW_TONE = { auto: "bg-emerald-100 text-emerald-800", manual: "bg-negro text-white", opt: "bg-dorado/25 text-negro" };
 
-/** Últimos avisos que han salido al móvil (registro push_log). */
+/** Últimos avisos que han salido al móvil (registro push_log), clavados en el tablón de corcho. */
 export function NoticeHistory({ rows }: { rows: LogRow[] }) {
   const recent = rows;
   return (
       <section className="mt-8 space-y-3" aria-labelledby="ultimos">
         <h2 id="ultimos" className="flex items-center gap-2 text-lg font-black"><History size={18} className="text-rojo" /> Últimos avisos enviados</h2>
         {recent.length ? (
-          <ul className="divide-y divide-black/5 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-            {recent.map((r) => (
-              <li key={r.id} className="flex gap-3 p-3 sm:p-4">
-                <div className="min-w-0 flex-1">
+          <div className="corkboard rounded-2xl p-4 pt-6 sm:p-6 sm:pt-7">
+            <ul className="grid gap-x-4 gap-y-6 sm:grid-cols-2">
+              {recent.map((r) => (
+                <li key={r.id} className="cork-note flex flex-col gap-2 rounded-md bg-white p-3 pt-4">
+                  <span aria-hidden className="cork-pin" />
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <b className="text-sm">{r.title}</b>
                     <span className="badge bg-gris text-negro/70">{AREA_LABEL[areaOf(r.url, r.tag)]}</span>
                   </div>
-                  {r.body && <p className="mt-0.5 line-clamp-2 text-sm text-negro/70">{r.body}</p>}
-                </div>
-                <div className="shrink-0 text-right text-xs text-negro/60">
-                  <div className="font-semibold text-negro/80">{fecha(r.created_at, true)}</div>
-                  <div>{r.people} {r.people === 1 ? "persona" : "personas"}</div>
-                  <div>{r.devices} {r.devices === 1 ? "dispositivo" : "dispositivos"}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  {r.body && <p className="line-clamp-2 text-sm text-negro/70">{r.body}</p>}
+                  <div className="mt-auto flex flex-wrap justify-between gap-x-3 border-t border-dashed border-black/10 pt-1.5 text-xs text-negro/60">
+                    <span className="font-semibold text-negro/80">{fecha(r.created_at, true)}</span>
+                    <span>{r.people} {r.people === 1 ? "persona" : "personas"} · {r.devices} {r.devices === 1 ? "dispositivo" : "dispositivos"}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : (
           <Empty>Todavía no se ha apuntado ningún aviso. A partir de ahora, aquí verás cada aviso que salga, automático o manual.</Empty>
         )}

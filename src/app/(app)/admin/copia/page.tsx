@@ -11,15 +11,24 @@ export default async function BackupPage() {
   return (
     <>
       <PageHeader title="Copia de seguridad" subtitle="Descarga todos los datos de la app para guardarlos a buen recaudo." />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="card space-y-3">
+      {/* Archivador del despacho: un cajón por cada copia */}
+      <div className="cabinet grid gap-3 rounded-3xl p-3 shadow-xl sm:p-4 lg:grid-cols-2">
+        <section className="drawer card space-y-3 rounded-xl pt-0 sm:pt-0">
+          <div aria-hidden className="flex flex-col items-center gap-2">
+            <span className="drawer-handle" />
+            <span className="drawer-label rounded px-3 py-0.5 text-[10px] font-black uppercase tracking-[0.25em] text-negro/70">Cajón 1 · Para consultar</span>
+          </div>
           <h2 className="flex items-center gap-2 font-bold"><Download size={18} className="text-rojo" /> Excel (para consultar)</h2>
           <p className="text-sm text-negro/60">
             Un Excel con una hoja por cada tipo de dato: usuarios, sorteos, compradores, ventas, números, cobros, justificantes y auditoría.
           </p>
           <a href="/api/admin/backup?formato=xlsx" className="btn-primary w-full sm:w-auto"><Download size={16} /> Descargar Excel</a>
         </section>
-        <section className="card space-y-3">
+        <section className="drawer card space-y-3 rounded-xl pt-0 sm:pt-0">
+          <div aria-hidden className="flex flex-col items-center gap-2">
+            <span className="drawer-handle" />
+            <span className="drawer-label rounded px-3 py-0.5 text-[10px] font-black uppercase tracking-[0.25em] text-negro/70">Cajón 2 · Para restaurar</span>
+          </div>
           <h2 className="flex items-center gap-2 font-bold"><FileJson size={18} className="text-rojo" /> Archivo completo (para restaurar)</h2>
           <p className="text-sm text-negro/60">
             Los mismos datos en un único archivo (.json) con el formato exacto de la base de datos. Es el que sirve para recuperar la

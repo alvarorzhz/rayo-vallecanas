@@ -122,7 +122,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
             </div>
           </form>
 
-          <div className="card">
+          <div className="card ledger">
             {!rows.length ? (
               <Empty>{filtered ? "No hay accesos con esos filtros." : "Todavía no hay accesos apuntados. Se empiezan a guardar desde la versión 3.21.0."}</Empty>
             ) : (
