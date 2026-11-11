@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { NEWS_NAME } from "@/lib/news";
-import { fetchArticle, fetchInterview, fetchMatchOptions, fetchPlayerOptions } from "@/lib/news-queries";
+import { fetchArticle, fetchInterview, fetchMatchOptions, fetchPlayerOptions, fetchSponsorOptions } from "@/lib/news-queries";
 import { PageHeader } from "@/components/ui";
 import { NewsEditor } from "@/components/news/editor";
 import { geminiConfigured } from "@/lib/gemini";
@@ -27,7 +27,7 @@ export default async function EditArticle({ params, searchParams }: { params: Pr
   if (!a) notFound();
   const own = a.created_by === s.user.id && s.can("news", "create");
   if (!s.can("news", "update") && !own) redirect(`/la-voz/${id}`);
-  const [matches, players, interview] = await Promise.all([fetchMatchOptions(supabase), fetchPlayerOptions(supabase), a.kind === "entrevista" ? fetchInterview(supabase, id) : null]);
+  const [matches, players, sponsors, interview] = await Promise.all([fetchMatchOptions(supabase), fetchPlayerOptions(supabase), fetchSponsorOptions(supabase), a.kind === "entrevista" ? fetchInterview(supabase, id) : null]);
   const canDelete = s.can("news", "delete") || (own && a.status === "draft");
   return (
     <>
@@ -36,7 +36,7 @@ export default async function EditArticle({ params, searchParams }: { params: Pr
       {sp.retirada && <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-600/20">Retirada de la portada: vuelve a ser un borrador.</p>}
       <NewsEditor action={saveArticle.bind(null, id)} promptFor={promptFor} draftWithAi={draftWithAi} suggestQuestions={suggestQuestions} aiReady={geminiConfigured()} interview={interview}
         interviewFlash={sp.enviada ? { ok: "Preguntas mandadas. Le ha llegado un aviso al móvil y te avisaremos cuando las entregue." } : sp.entrevista ? { error: INTERVIEW_ERROR[sp.entrevista] ?? INTERVIEW_ERROR.fallo } : undefined}
-        article={a} matches={matches} players={players} canPublish
+        article={a} matches={matches} players={players} sponsors={sponsors} canPublish
         unpublish={s.can("news", "update") ? unpublishArticle.bind(null, id) : undefined}
         remove={canDelete ? deleteArticle.bind(null, id) : undefined} />
     </>

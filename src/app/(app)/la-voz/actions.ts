@@ -5,8 +5,8 @@ import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
-import { buildPrompt, buildQuestionsPrompt, interviewNotes, interviewToBody, kindOf, mergeAnswers, newsSlug, parseAiReply, parseQuestions, readDraft, readQuestions, KIND_LABEL, NEWS_NAME, teaser, type InterviewQA } from "@/lib/news";
-import { fetchInterview, fetchInterviewById, fetchMatchSheet, fetchPlayerFacts } from "@/lib/news-queries";
+import { buildPrompt, buildQuestionsPrompt, interviewNotes, interviewToBody, kindOf, mergeAnswers, newsSlug, parseAiReply, parseQuestions, readDraft, readQuestions, KIND_LABEL, NEWS_NAME, teaser, type InterviewQA, type SponsorFacts } from "@/lib/news";
+import { fetchInterview, fetchInterviewById, fetchMatchSheet, fetchPlayerFacts, sponsorCards } from "@/lib/news-queries";
 import { askGemini } from "@/lib/gemini";
 import { shirtName } from "@/lib/squad";
 
@@ -113,7 +113,7 @@ export async function deleteArticle(id: string): Promise<NewsState> {
   redirect("/la-voz?eliminada=1");
 }
 
-type AiInput = { kind: string; matchId?: string | null; playerId?: string | null; notes?: string | null; articleId?: string | null };
+type AiInput = { kind: string; matchId?: string | null; playerId?: string | null; sponsorId?: string | null; notes?: string | null; articleId?: string | null };
 
 /** Prepara las instrucciones para la IA con los datos de la app (solo apodos) y las notas de quien escribe. */
 async function promptOf(input: AiInput): Promise<{ prompt?: string; error?: string }> {
@@ -128,13 +128,19 @@ async function promptOf(input: AiInput): Promise<{ prompt?: string; error?: stri
   const player = kind === "entrevista" && input.playerId ? await fetchPlayerFacts(supabase, input.playerId) : null;
   if (kind === "entrevista" && !player) return { error: "Elige primero al jugador" };
   if (kind === "comunicado" && !input.notes?.trim()) return { error: "Escribe en tus notas qué quiere comunicar el club" };
+  let sponsor: SponsorFacts | null = null;
+  if (kind === "promocion") {
+    const sc = input.sponsorId && /^[0-9a-f-]{36}$/i.test(input.sponsorId) ? (await sponsorCards([input.sponsorId])).get(input.sponsorId) : null;
+    if (!sc) return { error: "Elige primero el patrocinador" };
+    sponsor = { name: sc.name, main: sc.tier === "main", website: sc.website };
+  }
   // Entrevista contestada en la app: sus respuestas van a la IA tal cual
   let notes = input.notes?.slice(0, 3000) ?? "";
   if (kind === "entrevista" && input.articleId && /^[0-9a-f-]{36}$/i.test(input.articleId)) {
     const iv = await fetchInterview(supabase, input.articleId);
     if (iv && iv.player_id === input.playerId) notes = [notes.trim(), interviewNotes(iv.questions)].filter(Boolean).join("\n\n");
   }
-  return { prompt: buildPrompt({ kind, match: sheet?.facts, player, notes }) };
+  return { prompt: buildPrompt({ kind, match: sheet?.facts, player, sponsor, notes }) };
 }
 
 /** Prompt para copiar en una IA con los datos de la app y las notas de quien escribe. */

@@ -42,6 +42,21 @@ export function StoryArt({ a, tall = false }: { a: ArticleCard; tall?: boolean }
       </div>
     );
   }
+  if (a.kind === "promocion" && a.sponsor)
+    return (
+      <div className={`relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#f3e3a4] via-dorado to-[#a8841c] ${ratio}`}>
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.55),transparent_55%)]" />
+        {a.sponsor.logo_url ? (
+          <span className={`relative grid place-items-center rounded-2xl bg-white p-3 shadow-xl ${tall ? "h-36 w-36 sm:h-44 sm:w-44" : "h-20 w-20"}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={a.sponsor.logo_url} alt={a.sponsor.name} className="max-h-full max-w-full object-contain" />
+          </span>
+        ) : (
+          <span className={`news-head relative px-4 text-center font-black text-negro ${tall ? "text-4xl" : "text-xl"}`}>{a.sponsor.name}</span>
+        )}
+        <span className="news-seal promo absolute bottom-3 right-3 rounded-md bg-white/70 px-2 py-0.5 text-xs">Promoción</span>
+      </div>
+    );
   if (a.kind === "entrevista" && a.player?.photo_url)
     return (
       <div className={`news-photo ${ratio} bg-negro`}>
@@ -106,6 +121,20 @@ export function StoryLine({ a, href = `/la-voz/${a.id}` }: { a: ArticleCard; hre
       <p className="news-kicker text-[11px]">{kickerOf(a)}</p>
       <h3 className="news-head text-lg font-bold leading-tight group-hover:text-rojo">{a.title}</h3>
       <Meta a={a} />
+    </Link>
+  );
+}
+
+/** Pieza pequeña con foto a la izquierda (el «Más de La Voz del Rayo» del final de cada noticia). */
+export function StoryThumb({ a, href = `/la-voz/${a.id}` }: { a: ArticleCard; href?: string }) {
+  return (
+    <Link href={href} prefetch className="group grid grid-cols-[7.5rem_1fr] items-center gap-3 py-3 sm:grid-cols-[9rem_1fr]">
+      <div className="overflow-hidden transition duration-300 group-hover:brightness-105"><StoryArt a={a} /></div>
+      <div className="min-w-0">
+        <p className="news-kicker text-[11px]">{kickerOf(a)}</p>
+        <h3 className="news-head text-[17px] font-bold leading-tight group-hover:text-rojo">{a.title}</h3>
+        <Meta a={a} />
+      </div>
     </Link>
   );
 }

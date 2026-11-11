@@ -46,7 +46,8 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
             {a.status === "published" && <ShareButton title={a.title} url={a.is_public && a.public_slug ? `/noticias/${a.public_slug}` : undefined} />}
             {canEdit && <Link href={`/la-voz/${a.id}/editar`} prefetch className="btn-ghost !px-3 !py-1.5 text-xs"><Pencil size={14} /> Editar</Link>}
           </>
-        } />
+        }
+        share={a.status === "published" ? <ShareButton title={a.title} url={a.is_public && a.public_slug ? `/noticias/${a.public_slug}` : undefined} /> : undefined} />
       {/* Solo el superadministrador decide qué se lee fuera de la app */}
       {(isSuper || a.is_public) && a.status === "published" && (
         <PublicPanel title={a.title} slug={a.is_public ? a.public_slug ?? null : null} canToggle={isSuper}

@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.3.0",
+    date: "2026-11-11",
+    title: "La Voz del Rayo, con más vida y con promociones",
+    changes: [
+      "Las noticias se leen con más color: cada sección tiene su etiqueta (crónica en rojo, previa en dorado, entrevista en negro), la entradilla va destacada y las citas salen a toda anchura entre filetes dorados.",
+      "Ficha técnica nueva: el marcador en negro con los escudos, el MVP en una franja dorada, los goles con sus balones y la clasificación en etiquetas. Ya no salen titulares ni suplentes, ni en la ficha ni en lo que se le pasa a la IA.",
+      "Entrevistas: el entrevistado aparece como un cromo con su foto, dorsal, partidos y goles, y cada pregunta va en una franja negra.",
+      "Una línea roja y dorada arriba indica cuánto llevas leído. Al final, una franja para compartir la noticia, y «Más de La Voz del Rayo» con foto.",
+      "Nueva sección «Promoción», para dar a conocer a los patrocinadores: se elige el patrocinador, la IA puede redactarla y al final sale su logo con el botón «Visitar su web». Lleva el sello «Promoción».",
+    ],
+  },
+  {
     version: "4.2.5",
     date: "2026-11-11",
     title: "La IA de La Voz, por fin a la primera",
