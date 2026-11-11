@@ -1,0 +1,24 @@
+import type { Metadata } from "next";
+import { requirePerm } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
+import { kindOf, NEWS_NAME } from "@/lib/news";
+import { fetchMatchOptions, fetchPlayerOptions } from "@/lib/news-queries";
+import { PageHeader } from "@/components/ui";
+import { NewsEditor } from "@/components/news/editor";
+import { promptFor, saveArticle } from "../actions";
+
+export const metadata: Metadata = { title: `Escribir · ${NEWS_NAME}` };
+
+export default async function NewArticle({ searchParams }: { searchParams: Promise<{ tipo?: string; partido?: string; jugador?: string }> }) {
+  const sp = await searchParams;
+  await requirePerm("news", "create");
+  const supabase = await createClient();
+  const [matches, players] = await Promise.all([fetchMatchOptions(supabase), fetchPlayerOptions(supabase)]);
+  return (
+    <>
+      <PageHeader title="Escribir" subtitle={`Una pieza nueva para ${NEWS_NAME}`} back={{ href: "/la-voz", label: NEWS_NAME }} />
+      <NewsEditor action={saveArticle.bind(null, null)} promptFor={promptFor} article={null} matches={matches} players={players} canPublish
+        init={{ kind: kindOf(sp.tipo), matchId: sp.partido ?? null, playerId: sp.jugador ?? null }} />
+    </>
+  );
+}

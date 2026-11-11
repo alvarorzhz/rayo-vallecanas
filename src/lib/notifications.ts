@@ -3,12 +3,13 @@
  * Al añadir un aviso nuevo en el código (sendPush), añádelo aquí también.
  */
 
-export type NoticeArea = "manual" | "polls" | "matches" | "lottery" | "sponsors" | "league";
+export type NoticeArea = "manual" | "polls" | "matches" | "news" | "lottery" | "sponsors" | "league";
 
 export const AREA_LABEL: Record<NoticeArea, string> = {
   manual: "Avisos y votaciones",
   polls: "Votaciones",
   matches: "Partidos y convocatorias",
+  news: "La Voz del Rayo",
   lottery: "Sorteos",
   sponsors: "Patrocinadores",
   league: "Liga",
@@ -43,6 +44,8 @@ export const NOTICE_CATALOG: NoticeKind[] = [
   { area: "matches", title: "⏰ Mañana hay partido: ¿vas?", when: "Cada mañana a las 9:00 (10:00 en verano), la víspera del partido.", who: "Los convocados que no han contestado.", how: "auto" },
   { area: "matches", title: "⚽ ¡Hoy jugamos!", when: "La mañana del partido, con la hora y el sitio de quedada.", who: "Los convocados que van o dudan.", how: "auto" },
 
+  { area: "news", title: "🗞️ La Voz del Rayo", when: "Al publicar una pieza por primera vez, si se deja marcado «Avisar al equipo». Lleva el titular y el principio del texto.", who: "Todo el que puede leer La Voz del Rayo (menos quien publica).", how: "opt" },
+
   { area: "lottery", title: "¡Ya puedes vender! 🎟️", when: "Al abrir un sorteo.", who: "Sus vendedores.", how: "auto" },
   { area: "lottery", title: "Nueva venta 💶", when: "Con cada venta.", who: "Los gestores de sorteos que lo tienen activado en Mi perfil.", how: "auto" },
   { area: "lottery", title: "🏆 Número ganador", when: "Al registrar el número ganador.", who: "Vendedores y gestores de sorteos.", how: "auto" },
@@ -60,6 +63,7 @@ export function areaOf(url: string | null, tag: string | null): NoticeArea {
   if (u.startsWith("/votaciones")) return "polls";
   if (tag === "liga-sincronizacion" || u.startsWith("/partidos/liga")) return "league";
   if (u.startsWith("/partidos")) return "matches";
+  if (u.startsWith("/la-voz")) return "news";
   if (u.startsWith("/loteria")) return "lottery";
   if (u.startsWith("/admin/patrocinadores")) return "sponsors";
   return "manual";

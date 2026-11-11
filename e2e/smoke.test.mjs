@@ -117,7 +117,7 @@ describe("superadministrador", () => {
     "/loteria", "/loteria/nueva", "/mis-ventas",
     "/finanzas", "/finanzas/movimientos", "/finanzas/informes", "/finanzas/ajustes", "/finanzas/nuevo?tipo=ingreso",
     "/admin", "/admin/usuarios", "/admin/perfiles", "/admin/avisos", "/admin/patrocinadores", "/admin/auditoria", "/admin/auditoria/accesos", "/admin/copia",
-    "/votaciones", "/perfil", "/novedades",
+    "/votaciones", "/perfil", "/novedades", "/la-voz", "/la-voz/nueva",
   ];
   for (const path of SECTIONS) test(`se abre ${path}`, () => visit(s, path));
 
@@ -188,7 +188,7 @@ describe("jugador", () => {
     });
   }
 
-  for (const path of ["/", "/partidos", "/plantilla", "/votaciones", "/perfil"]) test(`se abre ${path}`, () => visit(s, path));
+  for (const path of ["/", "/partidos", "/plantilla", "/votaciones", "/perfil", "/la-voz"]) test(`se abre ${path}`, () => visit(s, path));
 
   test("contesta «Voy» a la convocatoria desde Inicio y queda apuntado", async () => {
     await s.page.goto(BASE + "/", { waitUntil: "networkidle" });

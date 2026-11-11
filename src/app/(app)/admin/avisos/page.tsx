@@ -32,7 +32,7 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
 
   // Cada uno ve en el historial solo los avisos de lo que puede ver (los de ventas o patrocinios llevan importes)
   const sees: Record<NoticeArea, boolean> = {
-    manual: true, polls: true, matches: s.can("matches"), league: s.can("matches"), lottery: s.can("lottery_admin"), sponsors: s.can("sponsors"),
+    manual: true, polls: true, matches: s.can("matches"), news: s.can("news"), league: s.can("matches"), lottery: s.can("lottery_admin"), sponsors: s.can("sponsors"),
   };
   const recent = (log ?? []).filter((r) => sees[areaOf(r.url, r.tag)]).slice(0, 25);
 

@@ -80,6 +80,12 @@ export const TABLE_GROUPS: { label: string; tables: Record<string, string> }[] =
     },
   },
   {
+    label: "La Voz del Rayo",
+    tables: {
+      news_articles: "Noticia",
+    },
+  },
+  {
     label: "Usuarios y app",
     tables: {
       profiles: "Usuario",
@@ -187,7 +193,7 @@ const VALUES: Record<string, Record<string, string>> = {
   numbering_mode: { auto: "Automática", booklet: "Talonarios", manual: "Elección manual" },
   module: {
     lottery_admin: "Sorteos · gestión", lottery_sell: "Sorteos · vender", users: "Usuarios y permisos", audit: "Auditoría",
-    finances: "Finanzas", squad: "Plantilla", squad_private: "Plantilla · datos personales", matches: "Partidos", sponsors: "Patrocinadores",
+    finances: "Finanzas", squad: "Plantilla", squad_private: "Plantilla · datos personales", matches: "Partidos", sponsors: "Patrocinadores", news: "La Voz del Rayo",
   },
   foot: { right: "Diestro", left: "Zurdo", both: "Ambidiestro" },
   armband: { captain: "Capitán", vice: "Segundo capitán" },

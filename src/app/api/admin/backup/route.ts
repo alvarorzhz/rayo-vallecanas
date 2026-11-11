@@ -27,6 +27,7 @@ const TABLES: [string, string][] = [
   ["player_documents", "Plantilla · documentos"],
   ["squad_fee_plans", "Plantilla · cuotas"],
   ["squad_fee_overrides", "Plantilla · cuotas especiales"],
+  ["news_articles", "La Voz del Rayo · noticias"],
   ["audit_log", "Auditoría"],
   ["access_log", "Auditoría · accesos"],
 ];

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_LABEL } from "@/lib/format";
 
-export type Module = "lottery_admin" | "lottery_sell" | "users" | "audit" | "finances" | "squad" | "squad_private" | "matches" | "sponsors";
+export type Module = "lottery_admin" | "lottery_sell" | "users" | "audit" | "finances" | "squad" | "squad_private" | "matches" | "sponsors" | "news";
 export type Action = "read" | "create" | "update" | "delete";
 type Perms = Record<Module, Record<Action, boolean>>;
 

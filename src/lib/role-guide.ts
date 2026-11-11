@@ -82,6 +82,15 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
       delete: "Eliminar partidos y rivales creados por error.",
     },
   },
+  news: {
+    title: "La Voz del Rayo",
+    acts: {
+      read: "Leer el periódico del club: crónicas, previas, entrevistas y comunicados oficiales.",
+      create: "Escribir piezas nuevas (con la ayuda de la IA si quiere), guardarlas como borrador, publicarlas y editar o borrar las suyas.",
+      update: "Editar y retirar cualquier pieza, también las de otros, y llevarlas a la portada de Inicio.",
+      delete: "Eliminar cualquier pieza.",
+    },
+  },
   sponsors: {
     title: "Patrocinadores (nunca para jugadores)",
     acts: {
@@ -101,6 +110,7 @@ export const MENU_BY_MODULE: { module: string; act: Act; label: string }[] = [
   { module: "squad", act: "read", label: "Plantilla" },
   { module: "finances", act: "read", label: "Finanzas" },
   { module: "sponsors", act: "read", label: "Patrocinadores" },
+  { module: "news", act: "read", label: "La Voz del Rayo" },
   { module: "users", act: "read", label: "Usuarios" },
   { module: "audit", act: "read", label: "Auditoría" },
 ];
