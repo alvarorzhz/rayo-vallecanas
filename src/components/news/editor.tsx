@@ -1,18 +1,27 @@
 "use client";
 import { useActionState, useRef, useState, useTransition } from "react";
-import { Bold, Check, ClipboardCopy, Heading2, ImagePlus, MessageCircleQuestion, Quote, Sparkles, Trash2, Undo2, Wand2, X } from "lucide-react";
+import { Bold, Check, ClipboardCopy, Heading2, ImagePlus, MessageCircleQuestion, Plus, Quote, Send, Sparkles, Trash2, Undo2, Wand2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { shrinkImage } from "@/lib/shrink-image";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { ArticleBody } from "@/components/news/article-body";
-import { DEFAULT_BYLINE, FEATURED_HOURS, KINDS, imageLine, parseAiReply, type Article, type NewsKind } from "@/lib/news";
-import type { MatchOption, PlayerOption } from "@/lib/news-queries";
-import type { NewsState } from "@/app/(app)/la-voz/actions";
+import { DEFAULT_BYLINE, FEATURED_HOURS, KINDS, MAX_QUESTION, MAX_QUESTIONS, imageLine, interviewToBody, parseAiReply, type Article, type NewsKind } from "@/lib/news";
+import type { Interview, MatchOption, PlayerOption } from "@/lib/news-queries";
+import type { AiDraft, NewsState } from "@/app/(app)/la-voz/actions";
+
+type AiInput = { kind: string; matchId?: string | null; playerId?: string | null; notes?: string | null; articleId?: string | null };
 
 type Props = {
   action: (s: NewsState, f: FormData) => Promise<NewsState>;
-  promptFor: (i: { kind: string; matchId?: string | null; playerId?: string | null; notes?: string | null }) => Promise<{ prompt?: string; error?: string }>;
+  promptFor: (i: AiInput) => Promise<{ prompt?: string; error?: string }>;
+  /** «Redactar borrador» con la IA gratuita (solo si hay clave de Gemini en Vercel). */
+  draftWithAi: (i: AiInput) => Promise<AiDraft>;
+  suggestQuestions: (i: { playerId?: string | null; notes?: string | null }) => Promise<{ questions?: string[]; error?: string }>;
+  aiReady: boolean;
+  interview?: Interview | null;
+  /** Aviso tras mandar la entrevista (o por qué no se pudo). */
+  interviewFlash?: { error?: string; ok?: string };
   unpublish?: () => Promise<NewsState>;
   remove?: () => Promise<NewsState>;
   article: Article | null;
@@ -34,7 +43,7 @@ async function upload(file: File): Promise<string> {
   return sb.storage.from("news-photos").getPublicUrl(path).data.publicUrl;
 }
 
-export function NewsEditor({ action, promptFor, unpublish, remove, article: a, init, matches, players, canPublish }: Props) {
+export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, aiReady, interview, interviewFlash, unpublish, remove, article: a, init, matches, players, canPublish }: Props) {
   const [state, formAction] = useActionState(action, undefined);
   const [kind, setKind] = useState<NewsKind>(a?.kind ?? init?.kind ?? "cronica");
   const [matchId, setMatchId] = useState(a?.match_id ?? init?.matchId ?? "");
@@ -53,6 +62,9 @@ export function NewsEditor({ action, promptFor, unpublish, remove, article: a, i
   const [aiText, setAiText] = useState("");
   const [msg, setMsg] = useState<{ error?: string; ok?: string }>();
   const [busy, setBusy] = useState<string | null>(null);
+  const [questions, setQuestions] = useState<string[]>(interview?.questions.map((x) => x.q) ?? []);
+  const [aiMsg, setAiMsg] = useState<{ error?: string; ok?: string }>();
+  const [ivMsg, setIvMsg] = useState<{ error?: string; ok?: string } | undefined>(interviewFlash);
   const [pending, start] = useTransition();
   const area = useRef<HTMLTextAreaElement>(null);
   const coverInput = useRef<HTMLInputElement>(null);
@@ -124,13 +136,58 @@ export function NewsEditor({ action, promptFor, unpublish, remove, article: a, i
       }
     });
 
-  const applyAi = () => {
-    const r = parseAiReply(aiText);
-    if (!r) return setMsg({ error: "Pega primero lo que te ha devuelto la IA" });
+  const fill = (r: { kicker?: string; title?: string; summary?: string; body?: string }) => {
     if (r.kicker) setKicker(r.kicker.slice(0, 60));
     if (r.title) setTitle(r.title.slice(0, 140));
     if (r.summary) setSummary(r.summary.slice(0, 500));
     if (r.body) setBody(r.body);
+  };
+
+  const writeWithAi = () => {
+    if ((title.trim() || body.trim()) && !confirm("La IA va a sustituir el antetítulo, el titular, la entradilla y el texto que hay ahora. ¿Seguimos?")) return;
+    setBusy("ai");
+    setAiMsg(undefined);
+    start(async () => {
+      try {
+        const r = await draftWithAi({ kind, matchId: matchId || null, playerId: playerId || null, notes, articleId: a?.id ?? null });
+        if (r.error || !r.body) return setAiMsg({ error: r.error ?? "La IA no ha podido redactarlo" });
+        fill(r);
+        setTab("write");
+        setAiMsg({ ok: "Borrador listo. Repásalo y cámbialo a tu gusto: no se guarda ni se publica hasta que tú lo digas." });
+      } finally {
+        setBusy(null);
+      }
+    });
+  };
+
+  const proposeQuestions = () => {
+    if (questions.some((q) => q.trim()) && !confirm("La IA va a sustituir las preguntas que hay ahora. ¿Seguimos?")) return;
+    setBusy("questions");
+    setIvMsg(undefined);
+    start(async () => {
+      try {
+        const r = await suggestQuestions({ playerId: playerId || null, notes });
+        if (r.error || !r.questions) return setIvMsg({ error: r.error ?? "La IA no ha propuesto preguntas" });
+        setQuestions(r.questions);
+        setIvMsg({ ok: "Preguntas propuestas. Quita, cambia o añade las que quieras antes de mandarlas." });
+      } finally {
+        setBusy(null);
+      }
+    });
+  };
+
+  const answersToBody = () => {
+    if (!interview) return;
+    if (body.trim() && !confirm("Se va a sustituir el texto por las preguntas y respuestas del jugador. ¿Seguimos?")) return;
+    setBody(interviewToBody(interview.questions));
+    setTab("write");
+    setIvMsg({ ok: "Respuestas metidas en el texto. Añade una introducción y repásalas." });
+  };
+
+  const applyAi = () => {
+    const r = parseAiReply(aiText);
+    if (!r) return setMsg({ error: "Pega primero lo que te ha devuelto la IA" });
+    fill(r);
     setAiText("");
     setMsg({ ok: r.title ? "Listo: titular, entradilla y texto repartidos. Repásalos antes de publicar." : "No venía en el formato pedido: lo he puesto todo en el texto." });
   };
@@ -184,22 +241,44 @@ export function NewsEditor({ action, promptFor, unpublish, remove, article: a, i
         )}
       </fieldset>
 
+      {/* Entrevista que contesta el propio jugador desde la app */}
+      {kind === "entrevista" && playerId && (
+        <InterviewBox
+          player={players.find((p) => p.id === playerId) ?? null}
+          interview={interview && interview.player_id === playerId ? interview : null}
+          questions={questions} setQuestions={setQuestions}
+          aiReady={aiReady} busy={busy} pending={pending} msg={ivMsg}
+          onPropose={proposeQuestions} onUseAnswers={answersToBody} />
+      )}
+
       {/* 2 · Ayuda de la IA */}
       <section className="card relative overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-sm">
         <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-dorado/20 blur-2xl" />
         <h2 className="relative flex items-center gap-2"><Sparkles size={18} className="text-dorado" /> 2 · Que te ayude una IA (opcional)</h2>
         <p className="relative mt-1 text-sm text-white/70">
-          Escribe lo que viste o lo que quieres contar. La app añade los datos del {meta.needs === "player" ? "jugador" : meta.needs === "match" ? "partido" : "club"} (solo apodos) y te prepara las instrucciones para pegarlas en ChatGPT, Gemini o Claude.
+          {aiReady
+            ? <>Escribe lo que viste o lo que quieres contar. La app añade los datos del {meta.needs === "player" ? "jugador" : meta.needs === "match" ? "partido" : "club"} (solo apodos) y la IA te redacta un borrador que luego cambias a tu gusto. Nunca publica sola.</>
+            : <>Escribe lo que viste o lo que quieres contar. La app añade los datos del {meta.needs === "player" ? "jugador" : meta.needs === "match" ? "partido" : "club"} (solo apodos) y te prepara las instrucciones para pegarlas en ChatGPT, Gemini o Claude.</>}
         </p>
         <label className="label relative mt-3 !text-white/80" htmlFor="ai_notes">Tus notas</label>
         <textarea id="ai_notes" name="ai_notes" rows={4} maxLength={3000} value={notes} onChange={(e) => setNotes(e.target.value)} className="input relative !bg-white/95 !text-negro"
           placeholder={kind === "entrevista" ? "Preguntas que quieres hacerle o sus respuestas, si ya las tienes…" : kind === "comunicado" ? "Qué quiere comunicar el club…" : "Ej.: Llovía muchísimo. Empezamos perdiendo y Chino lo remontó con dos golazos. Gran partido de Gato bajo palos…"} />
         <p className="relative mt-1 text-xs text-white/50">Solo las ve la redacción: nunca salen en la noticia.</p>
         <div className="relative mt-3 flex flex-wrap gap-2">
-          <button type="button" onClick={makePrompt} disabled={pending} className="btn bg-dorado text-negro hover:brightness-105">
-            {copied ? <Check size={18} /> : <ClipboardCopy size={18} />} {copied ? "Copiado: pégalo en la IA" : "Copiar instrucciones para la IA"}
+          {aiReady && (
+            <button type="button" onClick={writeWithAi} disabled={pending || !!busy} className="btn bg-dorado text-negro hover:brightness-105">
+              {busy === "ai" ? <span aria-hidden className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" /> : <Wand2 size={18} />}
+              {busy === "ai" ? "Redactando… (unos segundos)" : "Redactar borrador"}
+            </button>
+          )}
+          <button type="button" onClick={makePrompt} disabled={pending || !!busy} className={aiReady ? "btn bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/15" : "btn bg-dorado text-negro hover:brightness-105"}>
+            {copied ? <Check size={18} /> : <ClipboardCopy size={18} />} {copied ? "Copiado: pégalo en la IA" : aiReady ? "O copiar instrucciones" : "Copiar instrucciones para la IA"}
           </button>
         </div>
+        {aiReady && kind === "entrevista" && interview?.status === "answered" && (
+          <p className="relative mt-2 text-xs text-white/60">La IA usará las respuestas que ha entregado el jugador, sin cambiar lo que dice.</p>
+        )}
+        {aiMsg && <div className="relative mt-3"><FormMessage state={aiMsg} /></div>}
         {prompt && (
           <details className="relative mt-3 rounded-xl bg-white/10 p-3 text-sm" open={!copied}>
             <summary className="cursor-pointer font-bold">Ver las instrucciones</summary>
@@ -336,5 +415,110 @@ function Tool({ onClick, icon, label, disabled }: { onClick: () => void; icon: R
     <button type="button" onClick={onClick} disabled={disabled} className="inline-flex items-center gap-1 rounded-lg bg-gris px-2.5 py-1.5 text-xs font-bold text-negro/75 ring-1 ring-black/5 hover:bg-white hover:ring-black/20 disabled:opacity-50">
       {icon} {label}
     </button>
+  );
+}
+
+function fmtDay(iso: string) {
+  return new Date(iso).toLocaleString("es-ES", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
+}
+
+/** Las preguntas para el jugador: se escriben (o las propone la IA), se le mandan y aquí se ven sus respuestas. */
+function InterviewBox({ player, interview: iv, questions, setQuestions, aiReady, busy, pending, msg, onPropose, onUseAnswers }: {
+  player: PlayerOption | null;
+  interview: Interview | null;
+  questions: string[];
+  setQuestions: (q: string[]) => void;
+  aiReady: boolean;
+  busy: string | null;
+  pending: boolean;
+  msg?: { error?: string; ok?: string };
+  onPropose: () => void;
+  onUseAnswers: () => void;
+}) {
+  const name = player?.name ?? "el jugador";
+  const answered = iv?.questions.filter((x) => x.a?.trim()).length ?? 0;
+  const sentSame = !!iv && iv.questions.length === questions.length && iv.questions.every((x, i) => x.q === questions[i]?.trim());
+  const set = (i: number, v: string) => setQuestions(questions.map((q, j) => (j === i ? v : q)));
+  const clean = questions.map((q) => q.trim()).filter((q) => q.length >= 3);
+
+  if (player && !player.hasUser) {
+    return (
+      <section className="card rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+        <h2 className="flex items-center gap-2"><MessageCircleQuestion size={18} className="text-rojo" /> Que conteste {name} desde la app</h2>
+        <p className="mt-1 text-sm text-negro/70">{name} aún no tiene usuario en la app, así que no se le pueden mandar las preguntas. Hazle la entrevista a mano y escribe sus respuestas en el texto (o en tus notas para que la IA las ordene).</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="card space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+      <input type="hidden" name="questions" value={JSON.stringify(clean)} />
+      <input type="hidden" name="fallback_title" value={`Entrevista a ${name}`} />
+      <div>
+        <h2 className="flex items-center gap-2"><MessageCircleQuestion size={18} className="text-rojo" /> Que conteste {name} desde la app</h2>
+        <p className="mt-1 text-sm text-negro/70">Escribe las preguntas y mándaselas: le llega un aviso al móvil y las contesta él mismo. Sus respuestas vuelven aquí.</p>
+      </div>
+
+      {iv && (
+        <div className={`rounded-xl px-3 py-2 text-sm ring-1 ${iv.status === "answered" ? "bg-green-50 text-green-900 ring-green-600/15" : "bg-amber-50 text-amber-900 ring-amber-600/20"}`}>
+          {iv.status === "answered"
+            ? <><b>Contestada</b> el {fmtDay(iv.answered_at ?? iv.sent_at)}: {answered} de {iv.questions.length} respuestas.</>
+            : <><b>Mandada</b> el {fmtDay(iv.sent_at)}. Esperando a {name}{answered ? ` (lleva ${answered} de ${iv.questions.length} guardadas)` : ""}.</>}
+        </div>
+      )}
+
+      {iv?.status === "answered" && (
+        <div className="space-y-2 rounded-xl bg-[#f7f7f4] p-3 ring-1 ring-black/5">
+          {iv.questions.map((x, i) => (
+            <div key={i} className="text-sm">
+              <p className="font-bold">{x.q}</p>
+              <p className={x.a ? "news-body whitespace-pre-line text-negro/80" : "italic text-negro/45"}>{x.a || "Sin contestar"}</p>
+            </div>
+          ))}
+          <button type="button" onClick={onUseAnswers} className="btn-primary mt-1"><Wand2 size={18} /> Meter las respuestas en el texto</button>
+        </div>
+      )}
+
+      {(() => {
+        const editor = (
+          <>
+      <ol className="space-y-2">
+        {questions.map((q, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span className="sport mt-2 w-5 shrink-0 text-right text-sm font-black text-rojo">{i + 1}</span>
+            <textarea rows={2} maxLength={MAX_QUESTION} value={q} onChange={(e) => set(i, e.target.value)} aria-label={`Pregunta ${i + 1}`} className="input min-h-0 flex-1 !py-2 text-sm" placeholder="¿Cómo llegaste al Rayo?" />
+            <button type="button" onClick={() => setQuestions(questions.filter((_, j) => j !== i))} aria-label={`Quitar la pregunta ${i + 1}`} className="mt-1.5 rounded-full p-1.5 text-negro/50 hover:bg-gris hover:text-rojo"><X size={16} /></button>
+          </li>
+        ))}
+      </ol>
+      <div className="flex flex-wrap gap-2">
+        {questions.length < MAX_QUESTIONS && (
+          <button type="button" onClick={() => setQuestions([...questions, ""])} className="btn-ghost"><Plus size={16} /> {questions.length ? "Otra pregunta" : "Escribir una pregunta"}</button>
+        )}
+        {aiReady && (
+          <button type="button" onClick={onPropose} disabled={pending || !!busy} className="btn-ghost">
+            {busy === "questions" ? <span aria-hidden className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" /> : <Sparkles size={16} className="text-dorado" />}
+            {busy === "questions" ? "Pensando preguntas…" : "Que la IA proponga preguntas"}
+          </button>
+        )}
+      </div>
+          </>
+        );
+        return iv?.status === "answered" ? (
+          <details className="space-y-3">
+            <summary className="cursor-pointer text-sm font-bold text-negro/70">Cambiar las preguntas y volver a mandársela</summary>
+            <div className="mt-3 space-y-3">{editor}</div>
+          </details>
+        ) : editor;
+      })()}
+      {aiReady && <p className="text-xs text-negro/60">La IA solo recibe su apodo, su posición y sus números de la temporada, más tus notas de abajo si las hay.</p>}
+      <FormMessage state={msg} />
+      {clean.length > 0 && !(iv && sentSame) && (
+        <SubmitButton name="intent" value="interview" formNoValidate className="btn-primary w-full sm:w-auto" pendingText="Mandando…" disabled={!!busy}>
+          <Send size={18} /> {iv ? `Volver a mandársela a ${name}` : `Mandar las preguntas a ${name}`}
+        </SubmitButton>
+      )}
+      {iv && !sentSame && <p className="text-xs text-negro/60">Si se la vuelves a mandar, se conserva lo que ya haya contestado en las preguntas que no cambies.</p>}
+    </section>
   );
 }

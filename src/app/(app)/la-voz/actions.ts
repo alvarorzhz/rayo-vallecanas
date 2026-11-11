@@ -5,8 +5,10 @@ import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
-import { buildPrompt, kindOf, newsSlug, readDraft, KIND_LABEL, NEWS_NAME, teaser } from "@/lib/news";
-import { fetchMatchSheet, fetchPlayerFacts } from "@/lib/news-queries";
+import { buildPrompt, buildQuestionsPrompt, interviewNotes, interviewToBody, kindOf, mergeAnswers, newsSlug, parseAiReply, parseQuestions, readDraft, readQuestions, KIND_LABEL, NEWS_NAME, teaser, type InterviewQA } from "@/lib/news";
+import { fetchInterview, fetchInterviewById, fetchMatchSheet, fetchPlayerFacts } from "@/lib/news-queries";
+import { askGemini } from "@/lib/gemini";
+import { shirtName } from "@/lib/squad";
 
 export type NewsState = { error?: string; ok?: string } | undefined;
 
@@ -47,8 +49,18 @@ export async function saveArticle(id: string | null, _: NewsState, f: FormData):
   const s = await getSession();
   if (!(s.can("news", "create") || (id && s.can("news", "update")))) return { error: "No tienes permiso para escribir en La Voz del Rayo" };
   const publish = f.get("intent") === "publish";
+  const sendInterview = f.get("intent") === "interview";
+  // Para mandar la entrevista aún no hace falta titular: se pone uno provisional
+  if (sendInterview && String(f.get("title") ?? "").trim().length < 3) f.set("title", String(f.get("fallback_title") ?? "").slice(0, 140) || "Entrevista");
   const { draft, error } = readDraft(f, publish);
   if (!draft) return { error };
+  let questions: string[] = [];
+  if (sendInterview) {
+    if (draft.kind !== "entrevista" || !draft.player_id) return { error: "Elige primero al jugador entrevistado" };
+    const q = readQuestions(f.get("questions"));
+    if (!q.questions) return { error: q.error };
+    questions = q.questions;
+  }
   const supabase = await createClient();
   const row = { ...draft, cover_url: coverFrom(f) };
 
@@ -68,6 +80,12 @@ export async function saveArticle(id: string | null, _: NewsState, f: FormData):
     aid = data.id as string;
   }
   if (publish && f.get("notify") === "on") await announce(aid!, s.user.id);
+  if (sendInterview) {
+    const r = await sendInterviewTo(aid!, draft.player_id!, questions, s.user.id);
+    refresh(aid!);
+    if (r.error) redirect(`/la-voz/${aid}/editar?entrevista=${r.error}`);
+    redirect(`/la-voz/${aid}/editar?enviada=1`);
+  }
   refresh(aid!);
   redirect(publish ? `/la-voz/${aid}?publicada=1` : `/la-voz/${aid}/editar?guardada=1`);
 }
@@ -95,8 +113,10 @@ export async function deleteArticle(id: string): Promise<NewsState> {
   redirect("/la-voz?eliminada=1");
 }
 
-/** Prompt para copiar en una IA con los datos de la app y las notas de quien escribe. */
-export async function promptFor(input: { kind: string; matchId?: string | null; playerId?: string | null; notes?: string | null }): Promise<{ prompt?: string; error?: string }> {
+type AiInput = { kind: string; matchId?: string | null; playerId?: string | null; notes?: string | null; articleId?: string | null };
+
+/** Prepara las instrucciones para la IA con los datos de la app (solo apodos) y las notas de quien escribe. */
+async function promptOf(input: AiInput): Promise<{ prompt?: string; error?: string }> {
   const s = await getSession();
   if (!s.can("news", "create") && !s.can("news", "update")) return { error: "No tienes permiso" };
   const kind = kindOf(input.kind);
@@ -107,7 +127,105 @@ export async function promptFor(input: { kind: string; matchId?: string | null; 
   if (kind === "cronica" && sheet && !sheet.facts.played) return { error: "Ese partido aún no tiene resultado: para antes del partido, elige «Previa»" };
   const player = kind === "entrevista" && input.playerId ? await fetchPlayerFacts(supabase, input.playerId) : null;
   if (kind === "entrevista" && !player) return { error: "Elige primero al jugador" };
-  return { prompt: buildPrompt({ kind, match: sheet?.facts, player, notes: input.notes?.slice(0, 3000) }) };
+  if (kind === "comunicado" && !input.notes?.trim()) return { error: "Escribe en tus notas qué quiere comunicar el club" };
+  // Entrevista contestada en la app: sus respuestas van a la IA tal cual
+  let notes = input.notes?.slice(0, 3000) ?? "";
+  if (kind === "entrevista" && input.articleId && /^[0-9a-f-]{36}$/i.test(input.articleId)) {
+    const iv = await fetchInterview(supabase, input.articleId);
+    if (iv && iv.player_id === input.playerId) notes = [notes.trim(), interviewNotes(iv.questions)].filter(Boolean).join("\n\n");
+  }
+  return { prompt: buildPrompt({ kind, match: sheet?.facts, player, notes }) };
+}
+
+/** Prompt para copiar en una IA con los datos de la app y las notas de quien escribe. */
+export async function promptFor(input: AiInput): Promise<{ prompt?: string; error?: string }> {
+  return promptOf(input);
+}
+
+export type AiDraft = { kicker?: string; title?: string; summary?: string; body?: string; error?: string };
+
+/** «Redactar borrador»: la IA gratuita (Gemini) escribe antetítulo, titular, entradilla y texto. Nunca guarda ni publica. */
+export async function draftWithAi(input: AiInput): Promise<AiDraft> {
+  const p = await promptOf(input);
+  if (!p.prompt) return { error: p.error };
+  const r = await askGemini(p.prompt);
+  if (!r.text) return { error: r.error };
+  const d = parseAiReply(r.text);
+  if (!d?.body) return { error: "La IA no ha devuelto un texto que se pueda usar. Prueba otra vez." };
+  return { kicker: d.kicker?.slice(0, 60), title: d.title?.slice(0, 140), summary: d.summary?.slice(0, 500), body: d.body.slice(0, 30000) };
+}
+
+/** La IA propone preguntas para la entrevista (solo con el apodo y los números de la temporada). */
+export async function suggestQuestions(input: { playerId?: string | null; notes?: string | null }): Promise<{ questions?: string[]; error?: string }> {
+  const s = await getSession();
+  if (!s.can("news", "create") && !s.can("news", "update")) return { error: "No tienes permiso" };
+  const supabase = await createClient();
+  const player = input.playerId ? await fetchPlayerFacts(supabase, input.playerId) : null;
+  if (!player) return { error: "Elige primero al jugador" };
+  const r = await askGemini(buildQuestionsPrompt({ player, notes: input.notes?.slice(0, 3000) }), { temperature: 0.9, maxTokens: 2048 });
+  if (!r.text) return { error: r.error };
+  const questions = parseQuestions(r.text);
+  return questions.length ? { questions } : { error: "La IA no ha devuelto preguntas. Prueba otra vez." };
+}
+
+// ------------------------------------------------------------------ Entrevistas en la app
+/** Manda (o vuelve a mandar) las preguntas al jugador y le avisa en el móvil. */
+async function sendInterviewTo(articleId: string, playerId: string, questions: string[], by: string): Promise<{ error?: "jugador" | "sin-usuario" | "fallo" }> {
+  const supabase = await createClient();
+  const { data: p } = await supabase.from("players").select("id, user_id").eq("id", playerId).maybeSingle<{ id: string; user_id: string | null }>();
+  if (!p) return { error: "jugador" };
+  if (!p.user_id) return { error: "sin-usuario" };
+  const old = await fetchInterview(supabase, articleId);
+  const qas = mergeAnswers(questions, old && old.player_id === playerId ? old.questions : null);
+  const row = { article_id: articleId, player_id: playerId, questions: qas, status: "pending", sent_by: by, sent_at: new Date().toISOString(), answered_at: null };
+  const { data, error } = old
+    ? await supabase.from("news_interviews").update(row).eq("id", old.id).select("id").single()
+    : await supabase.from("news_interviews").insert(row).select("id").single();
+  if (error || !data) return { error: "fallo" };
+  await sendPush([p.user_id], {
+    title: `🎙️ ${NEWS_NAME} quiere entrevistarte`,
+    body: `${questions.length} pregunta${questions.length > 1 ? "s" : ""} para ti. Contéstalas desde la app cuando puedas.`,
+    url: `/la-voz/entrevista/${data.id}`,
+    tag: `entrevista-${data.id}`,
+  });
+  revalidatePath("/");
+  return {};
+}
+
+export type InterviewState = { error?: string; ok?: string; status?: "pending" | "answered" } | undefined;
+
+/** El jugador guarda sus respuestas (a medias) o las entrega. Al entregar, avisa a quien se la mandó. */
+export async function answerInterview(id: string, answers: string[], submit: boolean): Promise<InterviewState> {
+  const s = await getSession();
+  const supabase = await createClient();
+  const iv = await fetchInterviewById(supabase, id);
+  if (!iv || iv.player.user_id !== s.user.id) return { error: "Esta entrevista no es tuya" };
+  if (iv.status !== "pending") return { error: "Ya la entregaste. ¡Gracias!" };
+  const clean = iv.questions.map((_, i) => String(answers[i] ?? "").trim().slice(0, 2000));
+  const { data, error } = await supabase.rpc("answer_news_interview", { p_id: id, p_answers: clean, p_submit: submit });
+  if (error) return { error: /al menos/i.test(error.message) ? "Contesta al menos una pregunta antes de entregarla" : "No se pudo guardar. Prueba otra vez." };
+  if (submit) {
+    const admin = createAdminClient();
+    const qas: InterviewQA[] = iv.questions.map((x, i) => ({ q: x.q, a: clean[i] || null }));
+    // Si el borrador aún no tiene texto, las respuestas se montan solas como P/R
+    const { data: a } = await admin.from("news_articles").select("id, body, created_by").eq("id", iv.article_id).maybeSingle<{ id: string; body: string; created_by: string | null }>();
+    if (a && !a.body.trim()) await admin.from("news_articles").update({ body: interviewToBody(qas) }).eq("id", a.id);
+    let to = [iv.sent_by ?? a?.created_by].filter((u): u is string => !!u);
+    if (!to.length) {
+      const { data: writers } = await admin.rpc("users_with_perm", { p_module: "news", p_action: "update" });
+      to = (writers ?? []) as string[];
+    }
+    await sendPush(to.filter((u) => u !== s.user.id), {
+      title: `🎙️ ${shirtName(iv.player)} ha contestado la entrevista`,
+      body: "Sus respuestas ya están en el borrador. Repásalas y publícala.",
+      url: `/la-voz/${iv.article_id}/editar`,
+      tag: `entrevista-${id}`,
+    });
+    revalidatePath(`/la-voz/${iv.article_id}/editar`);
+  }
+  revalidatePath("/");
+  revalidatePath(`/la-voz/entrevista/${id}`);
+  return data === "answered" ? { status: "answered", ok: "¡Entregada! Gracias. La redacción ya tiene tus respuestas." } : { status: "pending", ok: "Guardado. Puedes seguir cuando quieras." };
 }
 
 /** Enciende o apaga la página pública de una pieza publicada. Solo superadministradores (la base de datos lo vuelve a comprobar). */

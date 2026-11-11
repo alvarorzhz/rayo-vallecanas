@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, ShoppingCart, Shirt, Ticket, Wallet } from "lucide-react";
+import { BarChart3, Mic, ShoppingCart, Shirt, Ticket, Wallet } from "lucide-react";
 import { fetchCallups, fetchMatchday, fetchMatchdayFocus, fetchMatchdayPreview, fetchMyPlayerId, fetchPlayerLog, fetchReport } from "@/lib/match-queries";
 import { MatchdayDetails, MatchdayHero } from "@/components/matches/matchday";
 import { fetchMatchWeather } from "@/lib/weather";
@@ -18,7 +18,7 @@ import { fetchDisplay, type Showcase } from "@/lib/sponsors";
 import { PollCard } from "@/components/polls/poll-card";
 import type { Poll } from "@/lib/polls";
 import { fetchMvpBoard } from "@/lib/mvp-server";
-import { countPublished, fetchPendingChronicle, fetchPublished } from "@/lib/news-queries";
+import { countPublished, fetchMyPendingInterviews, fetchPendingChronicle, fetchPublished } from "@/lib/news-queries";
 import { isFeaturedNow } from "@/lib/news";
 import { HomeFront, HomeLatest } from "@/components/news/home";
 
@@ -111,6 +111,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const [news, newsCount, pendingChronicle] = s.can("news")
     ? await Promise.all([fetchPublished(supabase, { limit: 6 }), countPublished(supabase), s.can("news", "create") ? fetchPendingChronicle(supabase) : null])
     : [[], 0, null];
+  // Entrevistas que me ha mandado la redacción y aún no he entregado
+  const myInterviews = await fetchMyPendingInterviews(supabase, s.user.id);
   const featured = news.find((a) => isFeaturedNow(a)) ?? null;
   const latest = news[0] && Date.now() - new Date(news[0].published_at ?? 0).getTime() < 14 * 86_400_000 ? news[0] : null;
   const front = featured && <HomeFront lead={featured} others={news.filter((a) => a.id !== featured.id).slice(0, 2)} count={newsCount} />;
@@ -173,6 +175,21 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
       {front && matchFirst && front}
       {!featured && <HomeLatest a={latest} pending={pendingChronicle} />}
+
+      {/* La Voz del Rayo quiere entrevistarte */}
+      {myInterviews.map((iv) => (
+        <Link key={iv.id} href={`/la-voz/entrevista/${iv.id}`} prefetch className="group paper mb-6 flex items-center gap-4 rounded-2xl p-4 shadow-sm ring-1 ring-black/10 transition hover:ring-dorado">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-negro text-dorado ring-2 ring-dorado"><Mic size={22} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="news-head block text-xs font-bold uppercase tracking-[0.2em] text-rojo">La Voz del Rayo</span>
+            <span className="news-head block text-lg font-black leading-tight">Quiere entrevistarte</span>
+            <span className="block text-sm text-negro/60">
+              {iv.questions.length} pregunta{iv.questions.length > 1 ? "s" : ""}{iv.questions.some((x) => x.a) ? ` · llevas ${iv.questions.filter((x) => x.a).length}` : ""}
+            </span>
+          </span>
+          <span className="shrink-0 text-sm font-bold text-rojo transition group-hover:translate-x-0.5">Contestar →</span>
+        </Link>
+      ))}
 
       {/* Votaciones abiertas */}
       {polls.length > 0 && (

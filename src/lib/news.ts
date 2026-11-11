@@ -344,3 +344,84 @@ export function newsSlug(title: string, suffix: string) {
   return base.length >= 3 ? `${base}-${tail}` : `noticia-${tail}`;
 }
 export const isNewsSlug = (s: string) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) && s.length >= 4 && s.length <= 80;
+
+// ------------------------------------------------------------------ Entrevistas en la app (4.2.0)
+/** Una pregunta de la entrevista y lo que ha contestado el jugador (null si aún nada). */
+export type InterviewQA = { q: string; a: string | null };
+export type InterviewStatus = "pending" | "answered";
+export const MAX_QUESTIONS = 12;
+export const MAX_QUESTION = 300;
+export const MAX_ANSWER = 2000;
+
+/** Prompt para que la IA proponga preguntas. Solo lleva el apodo y los números de la temporada. */
+export function buildQuestionsPrompt({ player, notes, club = "Rayo Vallecañas" }: { player: PlayerFacts; notes?: string | null; club?: string }): string {
+  const l: string[] = [];
+  l.push(`Eres el redactor de «${NEWS_NAME}», el periódico del ${club}, un equipo amateur de fútbol 7 de Salamanca.`);
+  l.push("Vas a entrevistar a un jugador de la plantilla. Él mismo contestará las preguntas por escrito desde el móvil.");
+  l.push("");
+  l.push("EL ENTREVISTADO:");
+  l.push(`- ${player.name}${player.number != null ? `, dorsal ${player.number}` : ""}, ${player.position.toLowerCase()}.`);
+  const s = player.stats;
+  l.push(`- Temporada ${player.season}: ${s.apps} partidos, ${s.goals} goles, ${s.assists} asistencias, ${s.mvps} veces MVP.`);
+  const n = notes?.trim();
+  if (n) {
+    l.push("");
+    l.push("MIS NOTAS (temas que me interesan; tienen prioridad):");
+    l.push(n);
+  }
+  l.push("");
+  l.push("REGLAS:");
+  l.push("- Entre 6 y 8 preguntas cortas (como mucho 25 palabras cada una), de la más sencilla a la más personal.");
+  l.push("- Tono cercano y con humor sano, de vestuario de barrio. Mezcla fútbol, el equipo y alguna pregunta divertida.");
+  l.push("- No preguntes por datos personales (trabajo, familia, dirección, salud) ni des por hechas cosas que no estén arriba.");
+  l.push("- Trátale de tú. En español de España. Sin emojis.");
+  l.push("");
+  l.push("DEVUELVE SOLO LAS PREGUNTAS, una por línea y empezando cada una por «P: », sin nada antes ni después.");
+  return l.join("\n");
+}
+
+/** Saca las preguntas de lo que devuelve la IA (o de lo que se pegue): «P: …», «1. …», «- …» o una por línea. */
+export function parseQuestions(raw: string): string[] {
+  const lines = raw.replace(/\r\n?/g, "\n").replace(/^```\w*\n?|```\s*$/g, "").split("\n").map((x) => x.trim()).filter(Boolean);
+  const marked = lines.filter((x) => /^(?:\*\*)?(?:P(?:regunta)?\s*\d*\s*[:.\-–]|\d+\s*[.)\-–]|[-*•]\s)/i.test(x));
+  const pick = marked.length ? marked : lines;
+  return pick
+    .map((x) => x.replace(/^(?:\*\*)?(?:P(?:regunta)?\s*\d*\s*[:.\-–]|\d+\s*[.)\-–]|[-*•]\s)(?:\*\*)?\s*/i, "").replace(/\*\*/g, "").trim())
+    .filter((x) => x.length >= 3 && !/^R(?:espuesta)?\s*[:.]/i.test(x))
+    .map((x) => x.slice(0, MAX_QUESTION))
+    .slice(0, MAX_QUESTIONS);
+}
+
+/** Comprueba las preguntas que llegan del editor (JSON con una lista de textos). */
+export function readQuestions(raw: unknown): { questions?: string[]; error?: string } {
+  let list: unknown;
+  try {
+    list = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return { error: "No se han podido leer las preguntas" };
+  }
+  if (!Array.isArray(list)) return { error: "No se han podido leer las preguntas" };
+  const questions = list.map((q) => (typeof q === "string" ? q.replace(/\s+/g, " ").trim().slice(0, MAX_QUESTION) : "")).filter((q) => q.length >= 3);
+  if (!questions.length) return { error: "Escribe al menos una pregunta" };
+  if (questions.length > MAX_QUESTIONS) return { error: `Como mucho ${MAX_QUESTIONS} preguntas` };
+  return { questions };
+}
+
+/** Al volver a mandar la entrevista, conserva lo ya contestado en las preguntas que no cambian. */
+export function mergeAnswers(questions: string[], old: InterviewQA[] | null | undefined): InterviewQA[] {
+  const prev = new Map((old ?? []).map((x) => [x.q.trim().toLowerCase(), x.a]));
+  return questions.map((q) => ({ q, a: prev.get(q.trim().toLowerCase()) ?? null }));
+}
+
+/** Las preguntas y respuestas en el formato del texto de la noticia («P: …» / «R: …»). Las sin contestar no salen. */
+export function interviewToBody(qas: InterviewQA[]): string {
+  const one = (s: string) => s.replace(/\s*\n+\s*/g, " ").trim();
+  return qas.filter((x) => x.a?.trim()).map((x) => `P: ${one(x.q)}\n\nR: ${one(x.a!)}`).join("\n\n");
+}
+
+/** Lo que se le pasa a la IA para pulir la entrevista: las respuestas del jugador tal cual. */
+export function interviewNotes(qas: InterviewQA[]): string {
+  const done = qas.filter((x) => x.a?.trim());
+  if (!done.length) return "";
+  return ["RESPUESTAS DEL JUGADOR (escritas por él mismo; respeta lo que dice):", interviewToBody(done)].join("\n");
+}

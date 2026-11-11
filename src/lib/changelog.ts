@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.2.0",
+    date: "2026-11-11",
+    title: "La Voz del Rayo: redacta la IA y contestan los jugadores",
+    changes: [
+      "Nuevo botón «Redactar borrador» en el editor de La Voz del Rayo: la IA gratuita de Google escribe antetítulo, titular, entradilla y texto con los datos del partido o del jugador y tus notas. Siempre queda como borrador para repasarlo y cambiarlo: nunca publica sola.",
+      "A la IA solo viajan apodos (o el primer apellido si no hay apodo), los goles, el MVP, el rival y las notas de la redacción. Nunca nombres completos ni datos personales.",
+      "Entrevistas que contesta el propio jugador: la redacción escribe las preguntas (o le pide a la IA que proponga unas cuantas) y se las manda. Al jugador le llega un aviso y una tarjeta en Inicio, «La Voz del Rayo quiere entrevistarte».",
+      "El jugador contesta desde el móvil, puede guardar a medias y seguir otro día, y la entrega cuando quiera. A la redacción le llega un aviso y sus respuestas ya están en el borrador, listas para pulir y publicar.",
+      "El botón de copiar las instrucciones para pegarlas en otra IA sigue ahí, por si se prefiere.",
+    ],
+  },
+  {
     version: "4.1.0",
     date: "2026-11-11",
     title: "La Voz del Rayo, abierta a todos",
