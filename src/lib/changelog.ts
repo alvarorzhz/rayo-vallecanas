@@ -8,6 +8,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.1.0",
+    date: "2026-11-11",
+    title: "La Voz del Rayo, abierta a todos",
+    changes: [
+      "Las noticias de La Voz del Rayo ya se pueden leer fuera de la app: un superadministrador pulsa «Hacer pública» en una pieza publicada y tiene un enlace que se abre sin registrarse.",
+      "Al compartir el enlace por WhatsApp o en redes sale una imagen con la cabecera del periódico, el titular y, si lo hay, el resultado. Si la noticia tiene foto, sale de fondo.",
+      "Botones para copiar el enlace o mandarlo por WhatsApp. «Dejar de compartir» lo apaga en el momento, y si se vuelve a encender el enlace es el mismo.",
+      "La hemeroteca pública reúne todas las noticias compartidas. En lo público, los jugadores salen solo por su apodo y nunca se ven las notas para la IA.",
+    ],
+  },
+  {
     version: "4.0.0",
     date: "2026-11-11",
     title: "La Voz del Rayo, el periódico del club",

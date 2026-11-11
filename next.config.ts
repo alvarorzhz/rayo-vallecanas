@@ -47,6 +47,7 @@ const nextConfig: NextConfig = {
     "/api/loteria/venta/[saleId]/pdf": ["./public/escudo.png"],
     "/api/finanzas/exportar": ["./public/escudo.png"],
     "/api/plantilla/exportar": ["./public/escudo.png"],
+    "/noticias/[slug]/opengraph-image": ["./public/escudo.png", "./src/assets/fonts/*.ttf"],
     "/api/partidos/[id]/imagen": ["./public/escudo.png", "./public/patrocinadores/*.png", "./src/assets/fonts/*.ttf"],
   },
   experimental: {

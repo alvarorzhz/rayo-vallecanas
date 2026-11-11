@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
-import { buildPrompt, kindOf, readDraft, KIND_LABEL, NEWS_NAME, teaser } from "@/lib/news";
+import { buildPrompt, kindOf, newsSlug, readDraft, KIND_LABEL, NEWS_NAME, teaser } from "@/lib/news";
 import { fetchMatchSheet, fetchPlayerFacts } from "@/lib/news-queries";
 
 export type NewsState = { error?: string; ok?: string } | undefined;
@@ -108,4 +108,29 @@ export async function promptFor(input: { kind: string; matchId?: string | null; 
   const player = kind === "entrevista" && input.playerId ? await fetchPlayerFacts(supabase, input.playerId) : null;
   if (kind === "entrevista" && !player) return { error: "Elige primero al jugador" };
   return { prompt: buildPrompt({ kind, match: sheet?.facts, player, notes: input.notes?.slice(0, 3000) }) };
+}
+
+/** Enciende o apaga la página pública de una pieza publicada. Solo superadministradores (la base de datos lo vuelve a comprobar). */
+export async function setNewsPublic(id: string, on: boolean): Promise<NewsState & { slug?: string | null }> {
+  const s = await getSession();
+  if (s.profile.role !== "superadmin") return { error: "Solo un superadministrador puede hacer pública una noticia" };
+  const supabase = await createClient();
+  const { data: a } = await supabase.from("news_articles").select("title, status, public_slug").eq("id", id).maybeSingle();
+  if (!a) return { error: "Esta pieza ya no existe" };
+  if (on && a.status !== "published") return { error: "Primero hay que publicarla" };
+  let slug = a.public_slug as string | null;
+  if (on && !slug) {
+    // El enlace sale del titular y no cambia nunca (aunque luego se cambie el titular)
+    for (let i = 0; i < 4 && !slug; i++) {
+      const candidate = newsSlug(a.title, crypto.randomUUID().slice(0, 4));
+      const { count } = await supabase.from("news_articles").select("id", { count: "exact", head: true }).eq("public_slug", candidate);
+      if (!count) slug = candidate;
+    }
+    if (!slug) return { error: "No se pudo crear el enlace. Prueba otra vez." };
+  }
+  const { error } = await supabase.from("news_articles").update(on ? { is_public: true, public_slug: slug } : { is_public: false }).eq("id", id);
+  if (error) return { error: "No se pudo cambiar. ¿Eres superadministrador?" };
+  refresh(id);
+  revalidatePath("/noticias", "layout");
+  return { ok: on ? "Hecha pública. Ya puedes compartir el enlace." : "Ya no es pública: el enlace deja de funcionar.", slug };
 }
