@@ -7,7 +7,7 @@ import { getStandings } from "@/lib/league-table";
 import { rivalRow } from "@/lib/standings";
 import { POSITION_LABEL, shirtName, type Membership, type Player } from "@/lib/squad";
 import type { ReportView } from "@/lib/reports";
-import type { Article, MatchFacts, NewsKind, PlayerFacts } from "@/lib/news";
+import type { Article, InterviewQA, InterviewStatus, MatchFacts, NewsKind, PlayerFacts } from "@/lib/news";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
 
@@ -140,12 +140,13 @@ export async function fetchMatchOptions(supabase: DB): Promise<MatchOption[]> {
   });
 }
 
-export type PlayerOption = { id: string; label: string };
+/** hasUser: tiene usuario en la app (se le puede mandar la entrevista para que la conteste él). */
+export type PlayerOption = { id: string; label: string; name: string; hasUser: boolean };
 
 export async function fetchPlayerOptions(supabase: DB): Promise<PlayerOption[]> {
-  const { data } = await supabase.from("squad_members").select("number, status, player:players!inner(id, first_name, last_name, nickname)").eq("season", seasonOf()).neq("status", "left")
-    .returns<{ number: number | null; status: string; player: Pick<Player, "id" | "first_name" | "last_name" | "nickname"> }[]>();
-  return (data ?? []).map((r) => ({ id: r.player.id, label: `${r.number != null ? `${r.number} · ` : ""}${shirtName(r.player)}` }))
+  const { data } = await supabase.from("squad_members").select("number, status, player:players!inner(id, first_name, last_name, nickname, user_id)").eq("season", seasonOf()).neq("status", "left")
+    .returns<{ number: number | null; status: string; player: Pick<Player, "id" | "first_name" | "last_name" | "nickname" | "user_id"> }[]>();
+  return (data ?? []).map((r) => ({ id: r.player.id, name: shirtName(r.player), hasUser: !!r.player.user_id, label: `${r.number != null ? `${r.number} · ` : ""}${shirtName(r.player)}` }))
     .sort((a, b) => a.label.localeCompare(b.label, "es", { numeric: true }));
 }
 
@@ -160,4 +161,37 @@ export async function fetchPendingChronicle(supabase: DB): Promise<{ id: string;
   if (Date.now() - new Date(m.report_saved_at).getTime() > 14 * 86_400_000) return null;
   const { count } = await supabase.from("news_articles").select("id", { count: "exact", head: true }).eq("kind", "cronica").eq("match_id", m.id);
   return count ? null : { id: m.id, rival: m.rival.name };
+}
+
+// ------------------------------------------------------------------ Entrevistas en la app (4.2.0)
+export type Interview = {
+  id: string;
+  article_id: string;
+  player_id: string;
+  questions: InterviewQA[];
+  status: InterviewStatus;
+  sent_by: string | null;
+  sent_at: string;
+  answered_at: string | null;
+};
+
+/** La entrevista mandada desde un borrador (si la hay). */
+export async function fetchInterview(supabase: DB, articleId: string): Promise<Interview | null> {
+  const { data } = await supabase.from("news_interviews").select("*").eq("article_id", articleId).maybeSingle<Interview>();
+  return data;
+}
+
+/** Una entrevista para contestarla (la base de datos solo deja ver las propias, o todas a la redacción). */
+export async function fetchInterviewById(supabase: DB, id: string): Promise<(Interview & { player: Pick<Player, "id" | "first_name" | "last_name" | "nickname" | "photo_url" | "user_id"> }) | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const { data } = await supabase.from("news_interviews").select("*, player:players!inner(id, first_name, last_name, nickname, photo_url, user_id)").eq("id", id)
+    .maybeSingle<Interview & { player: Pick<Player, "id" | "first_name" | "last_name" | "nickname" | "photo_url" | "user_id"> }>();
+  return data;
+}
+
+/** Las entrevistas que me han mandado y aún no he entregado (para la tarjeta de Inicio). */
+export async function fetchMyPendingInterviews(supabase: DB, userId: string): Promise<Pick<Interview, "id" | "questions" | "sent_at">[]> {
+  const { data } = await supabase.from("news_interviews").select("id, questions, sent_at, player:players!inner(user_id)").eq("status", "pending").eq("player.user_id", userId)
+    .order("sent_at", { ascending: false }).limit(3).returns<(Pick<Interview, "id" | "questions" | "sent_at">)[]>();
+  return data ?? [];
 }
