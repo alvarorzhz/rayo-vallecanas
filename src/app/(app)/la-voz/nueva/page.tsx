@@ -8,8 +8,8 @@ import { NewsEditor } from "@/components/news/editor";
 import { geminiConfigured } from "@/lib/gemini";
 import { draftWithAi, promptFor, saveArticle, suggestQuestions } from "../actions";
 
-// La IA puede tardar: hasta 60 s para «Redactar borrador»
-export const maxDuration = 60;
+// La IA puede tardar: hasta 2 minutos para «Redactar borrador»
+export const maxDuration = 120;
 export const metadata: Metadata = { title: `Escribir · ${NEWS_NAME}` };
 
 export default async function NewArticle({ searchParams }: { searchParams: Promise<{ tipo?: string; partido?: string; jugador?: string }> }) {

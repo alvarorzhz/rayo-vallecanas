@@ -14,11 +14,15 @@ export const geminiConfigured = () => cleanKey(process.env.GEMINI_API_KEY).lengt
 
 // Si Google retira un modelo, se prueba el siguiente. GEMINI_MODEL permite fijar otro desde Vercel sin tocar el código.
 // En noviembre de 2026 Google ya no deja usar los 2.5 a claves nuevas: los actuales son 3.8 Flash y 3.5 Flash Lite.
-const MODELS = () => [process.env.GEMINI_MODEL?.trim(), "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"].filter((m): m is string => !!m);
+// Probado con una clave gratis real (11-11-2026): 3.5 Flash Lite contesta en ~2 s siempre; 3.8 Flash suele estar
+// saturado (503) o tarda más de un minuto, así que va de reserva.
+const MODELS = () => [process.env.GEMINI_MODEL?.trim(), "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-flash-lite-latest", "gemini-flash-latest"].filter((m): m is string => !!m);
 /** Que razone poco: es lo que más tarda y para una crónica no hace falta. Si un modelo no lo admite, se repite sin ello. */
-const thinkingLow = (model: string) => (/^gemini-[3-9]/.test(model) ? { thinkingConfig: { thinkingLevel: "low" } } : {});
+const thinkingLow = (model: string) => (/^gemini-[3-9]/.test(model) ? { thinkingConfig: { thinkingLevel: /lite/.test(model) ? "minimal" : "low" } } : {});
 /** Tiempo total para todos los intentos: la función de Vercel no debe morir antes de contestar. */
-const BUDGET_MS = 50_000;
+const BUDGET_MS = 100_000;
+/** Lo que se espera a cada modelo: si uno va lento, se pasa al siguiente en vez de gastar todo el tiempo en él. */
+const PER_TRY_MS = 30_000;
 
 export type GeminiResult = { text: string; error?: undefined } | { text?: undefined; error: string };
 
@@ -41,14 +45,14 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
   const start = Date.now();
   // Lo que ha contestado cada modelo, para el aviso y para los logs de Vercel
   const trail: string[] = [];
-  let kind: "key" | "busy" | "net" | "other" = "other";
+  let kind: "key" | "busy" | "slow" | "net" | "other" = "other";
   const attempts = [...new Set(MODELS())].flatMap((m) => [m, m]); // cada modelo, hasta dos veces si Google está saturado
   const plain = new Set<string>(); // modelos que no admiten thinkingLevel
   for (let i = 0; i < attempts.length; i++) {
     const model = attempts[i];
     const retry = i > 0 && attempts[i - 1] === model;
     const left = BUDGET_MS - (Date.now() - start);
-    if (left < 5_000) break;
+    if (left < 8_000) break;
     let res: Response;
     try {
       res = await fetch(`${process.env.GEMINI_BASE_URL?.trim() || "https://generativelanguage.googleapis.com"}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
@@ -57,15 +61,20 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           // Google recomienda no tocar la temperatura en los Gemini 3 (con menos de 1 pueden repetirse)
-          generationConfig: { ...(/^gemini-[3-9]/.test(model) ? {} : { temperature: opts.temperature ?? 0.8 }), maxOutputTokens: opts.maxTokens ?? 8192, ...(plain.has(model) ? {} : thinkingLow(model)) },
+          generationConfig: { ...(/^gemini-[3-9]/.test(model) ? {} : { temperature: opts.temperature ?? 0.8 }), maxOutputTokens: opts.maxTokens ?? 4096, ...(plain.has(model) ? {} : thinkingLow(model)) },
         }),
-        signal: AbortSignal.timeout(left),
+        signal: AbortSignal.timeout(Math.min(left, PER_TRY_MS)),
         cache: "no-store",
       });
     } catch (e) {
       const err = e as Error & { cause?: { code?: string; message?: string } };
       console.error(`[gemini] ${model}: ${err.name} ${err.message} ${err.cause?.code ?? ""} ${err.cause?.message ?? ""}`);
-      if (err.name === "TimeoutError" || err.name === "AbortError") return { error: "La IA ha tardado demasiado en contestar. Prueba otra vez en un minuto." };
+      if (err.name === "TimeoutError" || err.name === "AbortError") {
+        trail.push(`${model}: sin respuesta en ${Math.round(Math.min(left, PER_TRY_MS) / 1000)} s`);
+        kind = kind === "key" ? kind : "slow";
+        if (!retry) i++; // lento: mejor otro modelo que repetir este
+        continue;
+      }
       trail.push(`${model}: sin conexión (${err.cause?.code ?? err.name})`);
       kind = "net";
       if (!retry) i++; // sin conexión no merece la pena repetir el mismo modelo
@@ -106,6 +115,7 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
   }
   const head = kind === "key" ? "Google no acepta la clave de Gemini. Revisa GEMINI_API_KEY en Vercel y haz Redeploy."
     : kind === "busy" ? "La IA de Google está saturada ahora mismo. Prueba en un rato."
+    : kind === "slow" ? "La IA ha tardado demasiado en contestar. Prueba otra vez en un minuto."
     : kind === "net" ? "No se ha podido conectar con la IA de Google. Prueba otra vez en un momento."
     : "La IA no ha podido redactarlo.";
   return { error: trail.length ? `${head} (Detalle: ${trail.join(" · ")})` : head };
