@@ -8,6 +8,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.28.0",
+    date: "2026-11-11",
+    title: "Gestión, ahora el despacho del club",
+    changes: [
+      "Gestión estrena aspecto de oficina del club: arriba, la placa de la puerta en negro y dorado con el escudo (un brillo la cruza al entrar) y un calendario de mesa con la fecha de hoy.",
+      "Nueva «Mesa del despacho» al entrar en Gestión: una carpeta por sección con lo más importante a la vista (personas con acceso, perfiles, patrocinadores, avisos activados, anotaciones de hoy y última copia).",
+      "Las secciones se eligen con pestañas de archivador pegadas a la hoja.",
+      "Usuarios es un fichero de carnets del club, con una banda del color de cada perfil y un sello rojo de «Sin acceso». En la ficha de cada persona, su carnet en grande con el sello del acceso, que cae de nuevo al cambiarlo.",
+      "Perfiles se ven como acreditaciones con su cordón; los patrocinadores, como contratos con su clip; los últimos avisos, clavados en un tablón de corcho; la auditoría, como un libro de registro; y la copia de seguridad, como un archivador de dos cajones.",
+      "Todo funciona igual que antes: solo cambia el aspecto. Si tu móvil tiene «reducir movimiento», no se anima nada.",
+    ],
+  },
+  {
     version: "3.27.0",
     date: "2026-11-11",
     title: "La liga, lista para la siguiente competición",

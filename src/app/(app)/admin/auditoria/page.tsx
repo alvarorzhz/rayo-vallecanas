@@ -102,7 +102,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         </form>
       )}
 
-      <div className="card">
+      <div className="card ledger">
         {!rows.length ? (
           <Empty>{filtered ? "No hay registros con esos filtros." : "Sin registros."}</Empty>
         ) : (

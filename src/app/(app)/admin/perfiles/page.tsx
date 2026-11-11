@@ -4,6 +4,7 @@ import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_LABEL } from "@/lib/format";
 import { PageHeader } from "@/components/ui";
+import { bandOf } from "@/components/admin-office";
 import { MENU_BY_MODULE, MODULE_GUIDE, ROLE_INFO } from "@/lib/role-guide";
 import { ACTS, allows, fetchProfileDefs, profileKey } from "@/lib/roles";
 
@@ -52,7 +53,12 @@ export default async function ProfilesGuide({ searchParams }: { searchParams: Pr
           const menu = MENU_BY_MODULE.filter((x) => can(role, x.module, x.act)).map((x) => x.label);
           const menuUnique = menu.includes("Sorteos (todas las campañas)") ? menu.filter((l) => l !== "Sorteos (sus campañas)") : menu;
           return (
-            <section key={role} className={`card ${role === "superadmin" ? "ring-2 ring-rojo/30" : ""}`}>
+            <section key={role} className={`card overflow-hidden ${role === "superadmin" ? "ring-2 ring-rojo/30" : ""}`}>
+              {/* Acreditación: banda del color del perfil con la ranura del cordón */}
+              <div aria-hidden className={`-mx-4 -mt-4 mb-4 flex flex-col items-center gap-1.5 pb-2 pt-2.5 sm:-mx-5 sm:-mt-5 ${bandOf(base)}`}>
+                <span className="credential-slot" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Acreditación · {ROLE_LABEL[base] ?? base}</span>
+              </div>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-2xl">{name}</h2>
                 <div className="flex items-center gap-2">

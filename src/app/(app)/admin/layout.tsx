@@ -1,11 +1,12 @@
 import { getSession } from "@/lib/session";
 import { AdminTabs, type AdminTab } from "@/components/admin-tabs";
+import { OfficePlaque } from "@/components/admin-office";
 
-/** Panel «Gestión»: usuarios, perfiles, patrocinadores, avisos y, para superadministradores, auditoría y copias. */
+/** Panel «Gestión» (el despacho del club): la mesa, usuarios, perfiles, patrocinadores, avisos y, para superadministradores, auditoría y copias. */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
   const isSuper = s.profile.role === "superadmin";
-  const tabs: AdminTab[] = [];
+  const tabs: AdminTab[] = [{ href: "/admin", label: "Mesa", icon: "BriefcaseBusiness", exact: true }];
   if (s.can("users")) {
     tabs.push({ href: "/admin/usuarios", label: "Usuarios", icon: "Users" });
     tabs.push({ href: "/admin/perfiles", label: "Perfiles", icon: "IdCard" });
@@ -18,7 +19,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
   return (
     <>
-      {tabs.length > 1 && <AdminTabs tabs={tabs} />}
+      <OfficePlaque />
+      <AdminTabs tabs={tabs} />
       {children}
     </>
   );

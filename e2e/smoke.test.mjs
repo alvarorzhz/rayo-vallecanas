@@ -116,7 +116,7 @@ describe("superadministrador", () => {
     "/plantilla", "/plantilla?vista=campo", "/plantilla?vista=lista", "/plantilla/cuotas", "/plantilla/documentos", "/plantilla/historia", "/plantilla/nuevo",
     "/loteria", "/loteria/nueva", "/mis-ventas",
     "/finanzas", "/finanzas/movimientos", "/finanzas/informes", "/finanzas/ajustes", "/finanzas/nuevo?tipo=ingreso",
-    "/admin/usuarios", "/admin/perfiles", "/admin/avisos", "/admin/patrocinadores", "/admin/auditoria", "/admin/auditoria/accesos", "/admin/copia",
+    "/admin", "/admin/usuarios", "/admin/perfiles", "/admin/avisos", "/admin/patrocinadores", "/admin/auditoria", "/admin/auditoria/accesos", "/admin/copia",
     "/votaciones", "/perfil", "/novedades",
   ];
   for (const path of SECTIONS) test(`se abre ${path}`, () => visit(s, path));

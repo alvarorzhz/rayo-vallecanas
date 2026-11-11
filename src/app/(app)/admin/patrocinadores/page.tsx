@@ -53,7 +53,7 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
     return (
       <li key={sp.id} className="anim-rise" style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}>
         <Link href={`/admin/patrocinadores/${sp.id}`} prefetch
-          className="card group flex h-full flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:ring-rojo/40">
+          className="card contract-clip group flex h-full flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:ring-rojo/40">
           <div className="flex items-center gap-3">
             <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 ring-1 ring-black/10">
               <SponsorLogo sponsor={sp} className="max-h-14" />

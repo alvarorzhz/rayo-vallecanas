@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchProfileDefs, profileKey } from "@/lib/roles";
 import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/ui";
+import { bandOf } from "@/components/admin-office";
 import { InviteForm } from "@/components/admin-forms";
 import { inviteUser } from "./actions";
 
@@ -17,7 +18,7 @@ export default async function UsersPage() {
     supabase.from("profiles").select("id, full_name, email, phone, role, custom_role_id, active, avatar_url").order("full_name"),
     fetchProfileDefs(supabase),
   ]);
-  const nameOf = new Map(defs.map((d) => [d.key, d.name]));
+  const byKey = new Map(defs.map((d) => [d.key, d]));
   const profiles = defs.filter((d) => d.key !== "superadmin" || s.profile.role === "superadmin")
     .map(({ key, name, base, perms }) => ({ key, name, base, perms }));
 
@@ -35,22 +36,31 @@ export default async function UsersPage() {
           <InviteForm action={inviteUser} profiles={profiles} />
         </section>
       )}
-      <section className="card">
-        <ul className="divide-y divide-black/5">
-          {(users ?? []).map((u) => (
+      {/* Fichero de carnets del club: uno por persona */}
+      <ul className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {(users ?? []).map((u, i) => {
+          const def = byKey.get(profileKey(u));
+          return (
             <li key={u.id}>
-              <Link href={`/admin/usuarios/${u.id}`} className="flex items-center gap-3 py-3 hover:text-rojo">
-                <Avatar name={u.full_name} url={u.avatar_url} size={40} className={u.active ? "" : "opacity-40 grayscale"} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{u.full_name}{!u.active && <span className="ml-2 badge bg-rojo text-white">Sin acceso</span>}</div>
-                  <div className="truncate text-xs text-negro/65">{u.email}</div>
+              <Link href={`/admin/usuarios/${u.id}`} prefetch className="card carnet group flex h-full items-stretch gap-0 overflow-hidden p-0 sm:p-0">
+                <span aria-hidden className={`w-2 shrink-0 ${bandOf(def?.base ?? u.role).split(" ")[0]}`} />
+                <div className="flex min-w-0 flex-1 items-center gap-3 p-3">
+                  <Avatar name={u.full_name} url={u.avatar_url} size={48} className={u.active ? "" : "opacity-40 grayscale"} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-bold group-hover:text-rojo">{u.full_name}</div>
+                    <div className="truncate text-xs text-negro/65">{u.email}</div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className={`badge ${bandOf(def?.base ?? u.role)}`}>{def?.name ?? u.role}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-negro/40">Ficha nº {String(i + 1).padStart(3, "0")}</span>
+                    </div>
+                  </div>
+                  {!u.active && <span className="ink-stamp shrink-0 text-[11px] text-rojo">Sin acceso</span>}
                 </div>
-                <span className={`badge ${u.role === "player" ? "bg-gris" : "bg-dorado/25"}`}>{nameOf.get(profileKey(u)) ?? u.role}</span>
               </Link>
             </li>
-          ))}
-        </ul>
-      </section>
+          );
+        })}
+      </ul>
     </>
   );
 }
