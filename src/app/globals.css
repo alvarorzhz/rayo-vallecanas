@@ -674,9 +674,9 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
 
 /* --- Pestañas de archivador pegadas a la hoja */
 .folder-tabs { box-shadow: inset 0 -2px 0 var(--color-negro); }
-.folder-tab { position: relative; border-radius: 12px 12px 0 0; transform: translateY(3px); transition: transform 0.2s var(--ease-out), color 0.2s, background-color 0.2s; }
-@media (hover: hover) { .folder-tab:not([aria-current]):hover { transform: translateY(0); } }
-.folder-tab[aria-current] { transform: none; box-shadow: inset 0 3px 0 var(--color-dorado); }
+.folder-tab { position: relative; border-radius: 12px 12px 0 0; margin-top: 4px; transition: margin-top 0.2s var(--ease-out), color 0.2s, background-color 0.2s; }
+@media (hover: hover) { .folder-tab:not([aria-current]):hover { margin-top: 1px; } }
+.folder-tab[aria-current] { margin-top: 0; box-shadow: inset 0 3px 0 var(--color-dorado); }
 
 /* --- Carpetas de la mesa: lengüeta arriba a la izquierda */
 .desk-folder { position: relative; margin-top: 14px; border-top-left-radius: 0; }

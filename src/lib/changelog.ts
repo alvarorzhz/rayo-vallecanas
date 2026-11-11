@@ -8,6 +8,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.28.1",
+    date: "2026-11-11",
+    title: "Pestañas de Gestión más firmes",
+    quiet: true,
+    changes: [
+      "Las pestañas de Gestión (Mesa, Usuarios, Perfiles…) ya solo se deslizan hacia los lados: dejan de moverse también arriba y abajo.",
+    ],
+  },
+  {
     version: "3.28.0",
     date: "2026-11-11",
     title: "Gestión, ahora el despacho del club",
