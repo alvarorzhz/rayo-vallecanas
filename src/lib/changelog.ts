@@ -8,6 +8,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.27.0",
+    date: "2026-11-11",
+    title: "La liga, lista para la siguiente competición",
+    changes: [
+      "Cambio de liga guiado en Partidos → Liga: pega la dirección nueva o pulsa «Buscar al Rayo en futormes» y la app encuentra sola en qué competición aparece el equipo. Antes de guardar enseña lo que va a traer: competición, equipos, partidos y fechas.",
+      "Histórico por competición: cada partido y los totales de cada jugador quedan guardados con su liga. Al empezar la siguiente, lo del Apertura no se pierde y la temporada suma las dos.",
+      "Cuando la competición termina, la app lo detecta, cada lunes busca la siguiente y avisa a los gestores en cuanto el Rayo aparece en ella. Nunca cambia de liga sola.",
+      "Lecturas más resistentes: si futormes tarda o falla, cada página se intenta hasta tres veces. Y un freno de seguridad: si la web enseña de repente bastantes menos partidos de los que ya había, no se guarda nada y se avisa.",
+      "Nueva explicación «Qué datos se traen» en Partidos → Liga, con cada dato, de qué página sale y qué se guarda, más un resumen de la última lectura.",
+      "Los rivales y jugadores que cambian de número en la liga nueva se reconocen por su nombre, así no se duplican.",
+    ],
+  },
+  {
     version: "3.26.0",
     date: "2026-11-11",
     title: "Puesta a punto por dentro",

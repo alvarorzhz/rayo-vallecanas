@@ -4,9 +4,14 @@ import { sendPush } from "@/lib/push";
 import { CLUB_NAME, hhmm, longDay } from "@/lib/matches";
 import { seasonOf } from "@/lib/finance";
 import {
-  inspectCalendar, inspectPlayer, inspectSheet, inspectTable, inspectTeam, parseCompetitionName, parseSheet, prettyTeam,
+  inspectCalendar, inspectPlayer, inspectSheet, inspectTable, inspectTeam, parseCompetitionMenu, parseCompetitionName, parseSheet, prettyTeam,
   type LeaguePlayer, type LeagueRow, type SheetRow,
 } from "@/lib/league-parse";
+import {
+  NoRetry, findOurTeam, inBatches, leagueFinished, mergeLeagueStats, previewOf, suspiciousRead, withRetry,
+  type LeaguePreview, type LeagueStats,
+} from "@/lib/league-plan";
+import { madridDay } from "@/lib/dates";
 import { resultNotice } from "@/lib/result-watch";
 import { alertLeagueProblem, recordLeagueFailure, type LeagueStatus } from "@/lib/league-alerts";
 
@@ -34,21 +39,28 @@ export type LeagueData = { competitionName: string | null; teams: { id: string; 
 /** La web guarda la competición elegida en la sesión: primero se abre su portada y luego el resto con la misma cookie. */
 export async function openSession(competition: string) {
   const jar = new Map<string, string>();
-  const get = async (path: string) => {
-    const res = await fetch(`${BASE}/${path}`, {
-      headers: { "User-Agent": UA, Cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; ") },
-      redirect: "follow",
-      cache: "no-store",
-      signal: AbortSignal.timeout(20000),
-    });
+  // La web de la liga se cae o tarda a ratos: cada página se intenta hasta tres veces
+  const get = (path: string) => withRetry(async () => {
+    let res: Response;
+    try {
+      res = await fetch(`${BASE}/${path}`, {
+        headers: { "User-Agent": UA, Cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; ") },
+        redirect: "follow",
+        cache: "no-store",
+        signal: AbortSignal.timeout(12000),
+      });
+    } catch (e) {
+      throw new Error(e instanceof Error && e.name === "TimeoutError" ? "La web de la liga tarda demasiado en contestar" : "No se ha podido conectar con la web de la liga");
+    }
     for (const c of res.headers.getSetCookie?.() ?? []) {
       const [pair] = c.split(";");
       const i = pair.indexOf("=");
       if (i > 0) jar.set(pair.slice(0, i).trim(), pair.slice(i + 1).trim());
     }
-    if (!res.ok) throw new Error(`La web de la liga no responde (${res.status})`);
+    // Un 404 o un 403 no se arreglan repitiendo; un 500 o un 503, a veces sí
+    if (!res.ok) throw new (res.status >= 500 ? Error : NoRetry)(`La web de la liga no responde (${res.status})`);
     return res.text();
-  };
+  });
   const situation = await get(`situation.aspx?itm=${competition}`);
   return { get, situation };
 }
@@ -83,7 +95,7 @@ const splitName = (full: string) => {
   return w.length <= 2 ? { first_name: w[0], last_name: w.slice(1).join(" ") } : { first_name: w.slice(0, -2).join(" "), last_name: w.slice(-2).join(" ") };
 };
 
-async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: string) => Promise<string>, team: string, season: string, issues: string[]) {
+async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: string) => Promise<string>, team: string, season: string, competition: string, issues: string[]) {
   const html = await get(`team.aspx?itm=${team}`);
   const roster = inspectTeam(html);
   issues.push(...roster.issues);
@@ -109,7 +121,7 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
   for (const msg of new Set(unread)) issues.push(`${msg} (${unread.filter((m) => m === msg).length} de ${ids.length})`);
   const [{ data: players }, { data: members }] = await Promise.all([
     admin.from("players").select("id, first_name, last_name, nickname, foot, height_cm, ext_id"),
-    admin.from("squad_members").select("id, player_id, number, status").eq("season", season),
+    admin.from("squad_members").select("id, player_id, number, status, league_stats_by").eq("season", season),
   ]);
   const memberOf = new Map((members ?? []).map((m) => [m.player_id as string, m]));
   let playersNew = 0, playersUpdated = 0;
@@ -130,7 +142,8 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
     } else {
       // Solo se rellena lo que falta: lo editado en la app manda
       const patch: Record<string, unknown> = {};
-      if (!p.ext_id) patch.ext_id = ext;
+      // En cada competición la liga puede dar otro número al mismo jugador: manda el de la actual
+      if (p.ext_id !== ext) patch.ext_id = ext;
       if (!p.foot && lp.foot) patch.foot = lp.foot;
       if (!p.height_cm && lp.height) patch.height_cm = lp.height;
       if (!p.nickname && lp.nickname) patch.nickname = lp.nickname;
@@ -140,9 +153,12 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
     // Las fotos de la liga no se traen: son diminutas (71×85) y en el cromo se ven pixeladas.
     // Cada jugador sube la suya desde su ficha.
     // Ficha de la temporada y estadísticas de la liga
-    // Los totales de la liga van aparte: la app suma previas + actas y, de cada dato, lo que la liga tenga de más
-    const stats = { league_stats: { apps: lp.apps, goals: lp.goals, conceded: lp.line === "POR" ? lp.conceded : 0, yellows: lp.yellows, reds: lp.reds } };
+    // Los totales de la liga van aparte: la app suma previas + actas y, de cada dato, lo que la liga tenga de más.
+    // Se guardan por competición y league_stats lleva la suma de la temporada: empezar otra liga no borra la anterior.
     const m = memberOf.get(p!.id);
+    const mine: LeagueStats = { apps: lp.apps, goals: lp.goals, conceded: lp.line === "POR" ? lp.conceded : 0, yellows: lp.yellows, reds: lp.reds };
+    const merged = mergeLeagueStats(m?.league_stats_by as Record<string, LeagueStats> | null | undefined, competition, mine);
+    const stats = { league_stats: merged.total, league_stats_by: merged.by };
     if (!m) {
       const { error } = await admin.from("squad_members").insert({ player_id: p!.id, season, number: lp.number, position: lp.line, status: "active", joined_on: new Date().toISOString().slice(0, 10), ...stats });
       // Dorsal repetido: entra sin dorsal
@@ -158,6 +174,10 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
 export type SyncSummary = {
   playersNew: number; players: number; squadError?: string; rivalsNew: number; matchesNew: number; matchesUpdated: number; results: number;
   competition: string | null; at: string;
+  /** Partidos nuestros leídos y cuántos están jugados */
+  matches: number; played: number;
+  /** No nos queda nada por jugar en esta competición: toca buscar la siguiente */
+  finished: boolean;
   /** ok: todo leído · partial: guardado lo que se pudo leer, con incidencias · failed: no se guardó nada */
   status: LeagueStatus;
   issues: string[];
@@ -184,7 +204,7 @@ export async function syncLeague(opts: { notifyExcept?: string } = {}): Promise<
   }
 }
 
-type Cfg = { competition: string; team: string; competition_name: string | null; last_summary: Record<string, unknown> | null };
+type Cfg = { competition: string; team: string; team_name: string | null; competition_name: string | null; last_summary: Record<string, unknown> | null };
 
 async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, opts: { notifyExcept?: string }): Promise<SyncSummary> {
   const sess = await openSession(cfg.competition);
@@ -192,6 +212,11 @@ async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, op
   const issues = [...league.issues];
   const ours = league.rows.filter((r) => r.homeId === cfg.team || r.awayId === cfg.team);
   if (!ours.length) throw new Error("No aparece nuestro equipo en esa competición");
+
+  // ---- Freno de seguridad: si la web enseña bastantes menos partidos que los que ya teníamos, no se toca nada
+  const { count: stored } = await admin.from("matches").select("id", { count: "exact", head: true }).eq("league_competition", cfg.competition);
+  const brake = suspiciousRead({ stored: stored ?? 0, read: ours.length });
+  if (brake) throw new Error(brake);
 
   // ---- Rivales: todos los equipos de la liga menos el nuestro
   const { data: existing } = await admin.from("rivals").select("id, name, ext_id, crest_url");
@@ -204,7 +229,8 @@ async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, op
     const ext = `futormes:${t.id}`;
     const name = prettyTeam(t.name).slice(0, 60);
     let r = byExt.get(ext) ?? byName.get(name.toLowerCase()) ?? byName.get(t.name.toLowerCase());
-    if (r && !r.ext_id) await admin.from("rivals").update({ ext_id: ext }).eq("id", r.id);
+    // El mismo rival puede tener otro número en la competición nueva: manda el de la actual (así cuadra con la clasificación)
+    if (r && r.ext_id !== ext) await admin.from("rivals").update({ ext_id: ext }).eq("id", r.id);
     if (!r) {
       const { data, error } = await admin.from("rivals").insert({ name, ext_id: ext }).select("id, name, ext_id, crest_url").single();
       if (error) throw error;
@@ -250,6 +276,7 @@ async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, op
       match_date: r.date,
       kickoff: r.time,
       competition: "league" as const,
+      league_competition: cfg.competition,
       round: r.round.slice(0, 40),
       rival_id: rivalId.get(oppId)!,
       is_home: home,
@@ -304,7 +331,7 @@ async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, op
   let squad = { playersNew: 0, players: 0 } as { playersNew: number; players: number; squadError?: string };
   try {
     const season = finance_season(ours[0].date);
-    const r = await syncSquad(admin, sess.get, cfg.team, season, issues);
+    const r = await syncSquad(admin, sess.get, cfg.team, season, cfg.competition, issues);
     squad = { playersNew: r.playersNew, players: r.players };
   } catch (e) {
     squad.squadError = e instanceof Error ? e.message : String(e);
@@ -318,20 +345,28 @@ async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, op
     issues.push(`Clasificación: no se ha podido descargar (${e instanceof Error ? e.message : String(e)}).`);
   }
 
+  const finished = leagueFinished(league.rows, cfg.team, madridDay());
   const summary: SyncSummary = {
     ...squad, rivalsNew, matchesNew, matchesUpdated, results, competition: league.competitionName, at: new Date().toISOString(),
+    matches: ours.length, played: ours.filter((r) => r.status === "played").length, finished,
     status: issues.length ? "partial" : "ok", issues,
   };
-  // Se conservan la última revisión semanal y el último aviso enviado
-  const keep = Object.fromEntries(Object.entries(cfg.last_summary ?? {}).filter(([k]) => k === "health" || k === "alert"));
-  await admin.from("league_sync").update({ last_synced_at: summary.at, last_summary: { ...keep, ...summary }, competition_name: league.competitionName?.slice(0, 160) ?? cfg.competition_name }).eq("id", 1);
+  // Se conservan la última revisión semanal, el último aviso enviado y la liga siguiente ya encontrada
+  const keep = Object.fromEntries(Object.entries(cfg.last_summary ?? {}).filter(([k]) => k === "health" || k === "alert" || k === "next"));
+  const name = league.competitionName?.slice(0, 160) ?? cfg.competition_name;
+  const teamName = league.teams.find((t) => t.id === cfg.team)?.name.slice(0, 120) ?? cfg.team_name;
+  await admin.from("league_sync").update({ last_synced_at: summary.at, last_summary: { ...keep, ...summary }, competition_name: name, team_name: teamName }).eq("id", 1);
+  // Histórico: esta competición queda apuntada con su temporada
+  await admin.from("league_competitions").upsert({
+    competition: cfg.competition, name, team: cfg.team, team_name: teamName, season: finance_season(ours[0].date), finished, last_synced_at: summary.at,
+  });
   return summary;
 }
 
 // ---------------------------------------------------------------------
 // Revisión semanal (solo lectura): ¿se sigue entendiendo la web de la liga?
 // ---------------------------------------------------------------------
-export type HealthReport = { status: LeagueStatus; issues: string[]; at: string; checked: string[] };
+export type HealthReport = { status: LeagueStatus; issues: string[]; at: string; checked: string[]; finished?: boolean };
 
 /**
  * Abre las mismas páginas que la sincronización (portada, calendario, clasificación,
@@ -381,7 +416,7 @@ export async function checkLeagueHealth(competition: string, team: string): Prom
     });
   }
   const status: LeagueStatus = !checked.length ? "failed" : issues.length ? "partial" : "ok";
-  return { status, issues, at, checked };
+  return { status, issues, at, checked, ...(rows.length ? { finished: leagueFinished(rows, team, madridDay()) } : {}) };
 }
 
 // ---------------------------------------------------------------------
@@ -393,4 +428,49 @@ export async function fetchSheet(competition: string, matchExt: string, home: bo
   const { get } = await openSession(competition);
   const html = await get(`match.aspx?itm=${matchExt}`);
   return parseSheet(html, home ? "L" : "V");
+}
+
+// ---------------------------------------------------------------------
+// Cambio de liga: vista previa y búsqueda de la competición siguiente
+// ---------------------------------------------------------------------
+
+/**
+ * Lee una competición sin guardar nada y dice qué se traería de ella. Si nuestro equipo
+ * no se encuentra solo, devuelve la lista de equipos para elegirlo.
+ */
+export async function previewLeague(
+  competition: string, hint: { id?: string | null; name?: string | null } = {},
+): Promise<{ preview: LeaguePreview } | { teams: { id: string; name: string }[] }> {
+  const league = await fetchLeague(competition);
+  const team = findOurTeam(league.teams, hint);
+  if (!team) return { teams: league.teams };
+  return { preview: previewOf(league, competition, team, madridDay()) };
+}
+
+export type FoundLeague = { competition: string; name: string; matches: number; played: number; from: string | null; finished: boolean };
+
+/**
+ * Busca a nuestro equipo en el resto de competiciones que la liga tiene abiertas
+ * (las del menú de su web). Sirve para encontrar la liga nueva cuando acaba la actual.
+ * Cada competición se abre en su propia sesión; las que fallan se saltan.
+ */
+export async function discoverLeagues(p: { current: string; teamName?: string | null; skip?: string[] }): Promise<FoundLeague[]> {
+  const { situation } = await openSession(p.current);
+  const skip = new Set([p.current, ...(p.skip ?? [])]);
+  const candidates = parseCompetitionMenu(situation).filter((c) => !skip.has(c.id)).slice(0, 40);
+  const today = madridDay();
+  const found = await inBatches(candidates, 5, async (c): Promise<FoundLeague | null> => {
+    try {
+      const league = await fetchLeague(c.id);
+      const team = findOurTeam(league.teams, { name: p.teamName });
+      if (!team) return null;
+      const pv = previewOf(league, c.id, team, today);
+      return { competition: c.id, name: pv.name ?? c.label, matches: pv.matches, played: pv.played, from: pv.from, finished: pv.finished };
+    } catch {
+      return null;
+    }
+  });
+  // Primero las que están en juego o por empezar, y de esas la más reciente
+  return found.filter((f): f is FoundLeague => !!f)
+    .sort((a, b) => Number(a.finished) - Number(b.finished) || (b.from ?? "").localeCompare(a.from ?? ""));
 }

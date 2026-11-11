@@ -21,11 +21,39 @@ export function alertText(status: Exclude<LeagueStatus, "ok">, issues: string[],
   return { title, body: `${first.length > 140 ? `${first.slice(0, 139)}…` : first}${more}. Mira Partidos → Liga.` };
 }
 
-type Health = { status: LeagueStatus; issues: string[]; at: string };
+type Health = { status: LeagueStatus; issues: string[]; at: string; finished?: boolean };
+/** Competición siguiente que la app ha encontrado sola al terminar la actual. */
+export type NextLeague = { competition: string; name: string; matches: number; at: string };
 export type StoredSummary = {
   status?: LeagueStatus; issues?: string[]; at?: string; failedAt?: string; health?: Health;
-  matchesNew?: number; matchesUpdated?: number; rivalsNew?: number;
+  matchesNew?: number; matchesUpdated?: number; rivalsNew?: number; results?: number;
+  matches?: number; played?: number; players?: number; playersNew?: number;
+  finished?: boolean; next?: NextLeague;
 } | null;
+
+/** ¿Ha terminado la competición? Manda lo más reciente entre la sincronización y la revisión semanal. */
+export function leagueOver(s: StoredSummary): boolean {
+  if (!s) return false;
+  const seen = [{ at: s.at ?? "", finished: s.finished }, { at: s.health?.at ?? "", finished: s.health?.finished }]
+    .filter((e) => e.at && e.finished != null).sort((a, b) => a.at.localeCompare(b.at)).at(-1);
+  return !!seen?.finished;
+}
+
+/** Aviso al móvil cuando la app encuentra la liga siguiente. */
+export const nextLeagueText = (name: string) => ({
+  title: "🏆 Hay liga nueva en futormes",
+  body: `El Rayo aparece en «${name.length > 90 ? `${name.slice(0, 89)}…` : name}». Entra en Partidos → Liga para cambiarla.`,
+});
+
+/** Resumen en una frase de lo que cambió en la última sincronización. */
+export function changesText(s: NonNullable<StoredSummary>): string {
+  const n = (v: number | undefined, one: string, many: string) => (v ? `${v} ${v === 1 ? one : many}` : "");
+  const bits = [
+    n(s.matchesNew, "partido nuevo", "partidos nuevos"), n(s.matchesUpdated, "partido actualizado", "partidos actualizados"),
+    n(s.results, "resultado", "resultados"), n(s.rivalsNew, "rival nuevo", "rivales nuevos"), n(s.playersNew, "jugador nuevo", "jugadores nuevos"),
+  ].filter(Boolean);
+  return bits.length ? bits.join(", ") : "sin cambios";
+}
 
 export type LeagueProblem = { status: Exclude<LeagueStatus, "ok">; issues: string[]; at: string; source: LeagueAlertSource };
 
