@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.2.1",
+    date: "2026-11-11",
+    title: "La IA de La Voz, más rápida",
+    quiet: true,
+    changes: [
+      "«Redactar borrador» usa primero un modelo de Gemini más rápido y tiene más margen para contestar, así que deja de salir «La IA ha tardado demasiado» a la primera.",
+      "Si falla, el aviso dice si es que Google ha tardado o que no se ha podido conectar.",
+    ],
+  },
+  {
     version: "4.2.0",
     date: "2026-11-11",
     title: "La Voz del Rayo: redacta la IA y contestan los jugadores",
