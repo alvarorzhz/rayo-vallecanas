@@ -18,8 +18,8 @@ export function AdminTabs({ tabs }: { tabs: AdminTab[] }) {
     if (box && on) box.scrollTo({ left: on.offsetLeft - (box.clientWidth - on.offsetWidth) / 2, behavior: "smooth" });
   }, [path]);
   return (
-    <nav ref={nav} aria-label="Gestión" className="-mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-      <div className="folder-tabs flex w-max min-w-full gap-1 pt-1">
+    <nav ref={nav} aria-label="Gestión" className="-mx-4 mb-6 overflow-x-auto overflow-y-hidden overscroll-x-contain px-4 sm:mx-0 sm:px-0">
+      <div className="folder-tabs flex w-max min-w-full items-end gap-1">
         {tabs.map((t) => {
           const Icon = ICONS[t.icon];
           const active = t.exact ? path === t.href : path === t.href || path.startsWith(t.href + "/");
