@@ -1,4 +1,5 @@
 "use server";
+import { teamKey } from "@/lib/league-plan";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -142,17 +143,29 @@ export async function leaguePrefill(matchId: string): Promise<PrefillResult> {
   if (!s.can("matches", "update")) return { error: "No tienes permiso para hacer esto" };
   const supabase = await createClient();
   const [{ data: m }, { data: cfg }] = await Promise.all([
-    supabase.from("matches").select("id, ext_id, is_home, goals_for").eq("id", matchId).maybeSingle(),
+    supabase.from("matches").select("id, ext_id, is_home, goals_for, league_competition").eq("id", matchId).maybeSingle(),
     supabase.from("league_sync").select("competition").eq("id", 1).maybeSingle(),
   ]);
   const ext = typeof m?.ext_id === "string" && m.ext_id.startsWith("futormes:") ? m.ext_id.slice(9) : null;
   if (!m || !ext) return { error: "Este partido no viene de la liga" };
-  if (!cfg?.competition) return { error: "Primero configura la liga en Partidos → Liga" };
+  // El partido puede ser de una competición anterior a la configurada ahora
+  const competition = (m.league_competition as string | null) ?? cfg?.competition;
+  if (!competition) return { error: "Primero configura la liga en Partidos → Liga" };
   try {
-    const rows = await fetchSheet(cfg.competition, ext, m.is_home);
+    const rows = await fetchSheet(competition, ext, m.is_home);
     if (!rows.length) return { error: "La liga todavía no ha publicado quién jugó este partido" };
     const { data: players } = await supabase.from("players").select("id, ext_id").in("ext_id", rows.map((r) => `futormes:${r.extId}`));
     const idOf = new Map((players ?? []).map((p) => [String(p.ext_id).slice(9), p.id as string]));
+    // En un partido de otra competición la liga puede dar otro número al jugador: se le busca por el nombre
+    if (rows.some((r) => !idOf.has(r.extId))) {
+      const words = (n: string) => teamKey(n).split(" ").sort().join(" ");
+      const { data: all } = await supabase.from("players").select("id, first_name, last_name");
+      const byName = new Map((all ?? []).map((p) => [words(`${p.first_name} ${p.last_name}`), p.id as string]));
+      for (const r of rows) {
+        const id = !idOf.has(r.extId) && byName.get(words(r.name));
+        if (id) idOf.set(r.extId, id);
+      }
+    }
     const apps: Record<string, DraftApp> = {};
     const goals: { scorer: string; assist: string }[] = [];
     const unknown: string[] = [];

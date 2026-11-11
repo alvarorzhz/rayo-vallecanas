@@ -133,6 +133,16 @@ describe("superadministrador", () => {
     await visit(s, `${campaign}/participaciones`);
   });
 
+  test("la pantalla de la liga explica qué datos se traen y deja buscar la competición", async () => {
+    await visit(s, "/partidos/liga");
+    const data = s.page.getByTestId("league-data");
+    for (const what of ["Partidos del Rayo", "Rivales", "Clasificación", "Plantilla", "Totales de cada jugador", "Acta de un partido"]) {
+      assert.ok(await data.getByText(what, { exact: true }).isVisible(), `falta «${what}» en la explicación`);
+    }
+    assert.ok(await s.page.getByRole("button", { name: "Comprobar" }).isVisible());
+    assert.ok(await s.page.getByRole("button", { name: "Buscar al Rayo en futormes" }).isVisible());
+  });
+
   test("apuntar un gasto lo deja en la lista y baja el saldo", async () => {
     const balance = async () => {
       await s.page.goto(BASE + "/finanzas", { waitUntil: "networkidle" });

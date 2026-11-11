@@ -60,6 +60,20 @@ export function parseCompetitionName(situation: string): string | null {
   return decode(situation).match(/Campeonato:(?:<\/b>)?\s*([^"<]{3,160})/)?.[1]?.trim() ?? null;
 }
 
+/**
+ * Competiciones que la liga tiene abiertas, según el menú de cualquier portada.
+ * Los grupos salen con su nombre corto («GRUPO I»): el nombre completo está en la portada de cada uno.
+ */
+export function parseCompetitionMenu(situation: string): { id: string; label: string }[] {
+  const seen = new Map<string, string>();
+  for (const m of situation.matchAll(/href="[^"]*situation\.aspx\?itm=(\d{1,9})"[^>]*>([\s\S]*?)<\/a>/g)) {
+    const label = decode(m[2].replace(/<[^>]+>/g, " "));
+    // El primer enlace con texto manda: la miga de pan repite la competición actual como «Situación»
+    if (label && !/^situaci[oó]n$/i.test(label) && !seen.has(m[1])) seen.set(m[1], label);
+  }
+  return [...seen].map(([id, label]) => ({ id, label }));
+}
+
 // ---------------------------------------------------------------- Nombres
 
 /** "PIZA 1904-BAR KFETÍN" -> "Piza 1904-Bar Kfetín"; las siglas (CF, FC, CB…) se quedan en mayúsculas. */

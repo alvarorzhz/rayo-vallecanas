@@ -254,27 +254,69 @@ export async function deleteRival(id: string): Promise<MatchState> {
 }
 
 // ---------------------------------------------------------------- Liga (futormes)
-export type LeagueState = { error?: string; ok?: string; teams?: { id: string; name: string }[]; competition?: string } | undefined;
+export type LeagueState = {
+  error?: string; ok?: string; teams?: { id: string; name: string }[]; competition?: string;
+  /** Lo que se traería de la competición: se enseña antes de guardarla */
+  preview?: import("@/lib/league-plan").LeaguePreview & { change: boolean };
+  /** Otras competiciones de la liga donde aparece nuestro equipo */
+  found?: import("@/lib/league-sync").FoundLeague[];
+} | undefined;
 
+type LeagueCfg = { competition: string; team: string; team_name: string | null };
+
+/**
+ * Guardar la competición va en dos pasos: primero se lee y se enseña lo que se va a traer;
+ * al confirmar, se guarda. Cambiar de liga no borra nada de la anterior.
+ */
 export async function saveLeague(_: LeagueState, f: FormData): Promise<LeagueState> {
   const s = await getSession();
   if (!s.can("matches", "update")) return { error: "No tienes permiso para hacer esto" };
-  const { competitionFromUrl, fetchLeague } = await import("@/lib/league-sync");
+  const { competitionFromUrl, previewLeague } = await import("@/lib/league-sync");
   const competition = competitionFromUrl(str(f, "url"));
   if (!competition) return { error: "Pega la dirección de la competición en futormes (la que acaba en «?itm=…»)" };
   try {
-    const league = await fetchLeague(competition);
-    let team = str(f, "team");
-    if (!team || !league.teams.some((t) => t.id === team)) team = league.teams.find((t) => /rayo\s+valleca/i.test(t.name))?.id ?? "";
-    if (!team) return { error: "No encuentro a Rayo Vallecañas en esa competición: elige nuestro equipo.", teams: league.teams, competition };
     const supabase = await createClient();
-    const { error } = await supabase.from("league_sync").upsert({ id: 1, provider: "futormes", competition, team, competition_name: league.competitionName?.slice(0, 160) ?? null, updated_by: s.user.id });
+    const { data: cfg } = await supabase.from("league_sync").select("competition, team, team_name").eq("id", 1).maybeSingle<LeagueCfg>();
+    const change = !!cfg && cfg.competition !== competition;
+    // Nuestro equipo: el elegido a mano, el que ya teníamos si es la misma competición o, si no, por su nombre
+    const r = await previewLeague(competition, { id: str(f, "team") || (cfg && !change ? cfg.team : null), name: cfg?.team_name });
+    if ("teams" in r) return { error: "No encuentro a Rayo Vallecañas en esa competición: elige nuestro equipo.", teams: r.teams, competition };
+    const pv = r.preview;
+    if (!pv.matches) return { error: "Ese equipo no tiene partidos en la competición.", teams: undefined, competition };
+    if (str(f, "confirm") !== competition) return { preview: { ...pv, change }, competition };
+
+    const row = { competition, team: pv.team, competition_name: pv.name?.slice(0, 160) ?? null, team_name: pv.teamName.slice(0, 120) || null };
+    const { error } = await supabase.from("league_sync").upsert({
+      id: 1, provider: "futormes", ...row, updated_by: s.user.id,
+      // Liga nueva: el resumen y los avisos de la anterior ya no valen
+      ...(change ? { last_synced_at: null, last_summary: null } : {}),
+    });
     if (error) throw error;
+    const { error: e2 } = await supabase.from("league_competitions").upsert({ competition, name: row.competition_name, team: row.team, team_name: row.team_name });
+    if (e2) throw e2;
+    revalidateTag("league-table");
+    revalidatePath("/partidos", "layout");
+    return { ok: change ? "Liga cambiada. Pulsa «Sincronizar con la liga» para traer sus partidos. Los de la liga anterior se quedan como están." : "Liga guardada. Ya puedes sincronizar." };
   } catch (e) {
     return { error: errMsg(e) };
   }
-  revalidatePath("/partidos", "layout");
-  return { ok: "Liga guardada. Ya puedes sincronizar." };
+}
+
+/** Busca a nuestro equipo en las demás competiciones abiertas de futormes (para encontrar la liga nueva). */
+export async function findLeagues(): Promise<LeagueState> {
+  const s = await getSession();
+  if (!s.can("matches", "update")) return { error: "No tienes permiso para hacer esto" };
+  try {
+    const supabase = await createClient();
+    const { data: cfg } = await supabase.from("league_sync").select("competition, team, team_name").eq("id", 1).maybeSingle<LeagueCfg>();
+    if (!cfg) return { error: "La primera vez hay que pegar la dirección de la competición. Después la app ya sabe buscar las siguientes." };
+    const { discoverLeagues } = await import("@/lib/league-sync");
+    const found = await discoverLeagues({ current: cfg.competition, teamName: cfg.team_name });
+    if (!found.length) return { ok: "No aparecemos en ninguna otra competición abierta de futormes. Cuando la liga publique la nueva, vuelve a buscar o pega su dirección." };
+    return { found };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
 }
 
 export async function runLeagueSync(): Promise<LeagueState> {

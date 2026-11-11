@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
-import { alertText, problemSignature, type LeagueAlertSource, type LeagueStatus } from "@/lib/league-status";
+import { alertText, nextLeagueText, problemSignature, type LeagueAlertSource, type LeagueStatus, type NextLeague } from "@/lib/league-status";
 
 export type { LeagueStatus } from "@/lib/league-status";
 
@@ -59,9 +59,28 @@ export async function recordLeagueFailure(error: string) {
 }
 
 /** Guarda el resultado de la revisión semanal. */
-export async function recordLeagueHealth(health: { status: LeagueStatus; issues: string[]; at: string; checked: string[] }) {
+export async function recordLeagueHealth(health: { status: LeagueStatus; issues: string[]; at: string; checked: string[]; finished?: boolean }) {
   const admin = createAdminClient();
   const { data: row } = await admin.from("league_sync").select("last_summary").eq("id", 1).maybeSingle();
   const summary = (row?.last_summary ?? {}) as Record<string, unknown>;
   await admin.from("league_sync").update({ last_summary: { ...summary, health } }).eq("id", 1);
+}
+
+/**
+ * Apunta la competición siguiente que se ha encontrado y avisa a los gestores.
+ * Solo avisa la primera vez que aparece cada competición. Devuelve a cuántos móviles llegó.
+ */
+export async function announceNextLeague(found: { competition: string; name: string; matches: number }) {
+  try {
+    const admin = createAdminClient();
+    const { data: row } = await admin.from("league_sync").select("last_summary").eq("id", 1).maybeSingle();
+    const summary = (row?.last_summary ?? {}) as Record<string, unknown>;
+    if ((summary.next as NextLeague | undefined)?.competition === found.competition) return 0;
+    const next: NextLeague = { competition: found.competition, name: found.name, matches: found.matches, at: new Date().toISOString() };
+    await admin.from("league_sync").update({ last_summary: { ...summary, next } }).eq("id", 1);
+    return await sendPush(await leagueAlertRecipients(), { ...nextLeagueText(found.name), url: "/partidos/liga", tag: "liga-nueva" });
+  } catch (e) {
+    console.error("No se ha podido avisar de la liga nueva:", e instanceof Error ? e.message : e);
+    return 0;
+  }
 }
