@@ -22,12 +22,30 @@ const BUDGET_MS = 50_000;
 
 export type GeminiResult = { text: string; error?: undefined } | { text?: undefined; error: string };
 
+/** Lo que contesta Google cuando falla, en corto: «503 UNAVAILABLE The model is overloaded». */
+async function why(res: Response): Promise<string> {
+  const body = await res.text().catch(() => "");
+  try {
+    const e = (JSON.parse(body) as { error?: { status?: string; message?: string } }).error;
+    return `${res.status} ${e?.status ?? ""} ${(e?.message ?? "").slice(0, 140)}`.replace(/\s+/g, " ").trim();
+  } catch {
+    return `${res.status} ${body.slice(0, 140)}`.replace(/\s+/g, " ").trim();
+  }
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function askGemini(prompt: string, opts: { temperature?: number; maxTokens?: number } = {}): Promise<GeminiResult> {
   const key = cleanKey(process.env.GEMINI_API_KEY);
   if (!key) return { error: "Falta la clave de Gemini en Vercel (GEMINI_API_KEY). Mientras, usa «Copiar instrucciones para la IA»." };
-  let last = "La IA no ha contestado. Prueba otra vez en un momento.";
   const start = Date.now();
-  for (const model of [...new Set(MODELS())]) {
+  // Lo que ha contestado cada modelo, para el aviso y para los logs de Vercel
+  const trail: string[] = [];
+  let kind: "key" | "busy" | "net" | "other" = "other";
+  const attempts = [...new Set(MODELS())].flatMap((m) => [m, m]); // cada modelo, hasta dos veces si Google está saturado
+  for (let i = 0; i < attempts.length; i++) {
+    const model = attempts[i];
+    const retry = i > 0 && attempts[i - 1] === model;
     const left = BUDGET_MS - (Date.now() - start);
     if (left < 5_000) break;
     let res: Response;
@@ -46,38 +64,41 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
       const err = e as Error & { cause?: { code?: string; message?: string } };
       console.error(`[gemini] ${model}: ${err.name} ${err.message} ${err.cause?.code ?? ""} ${err.cause?.message ?? ""}`);
       if (err.name === "TimeoutError" || err.name === "AbortError") return { error: "La IA ha tardado demasiado en contestar. Prueba otra vez en un minuto." };
-      last = "No se ha podido conectar con la IA de Google. Prueba otra vez en un momento.";
+      trail.push(`${model}: sin conexión (${err.cause?.code ?? err.name})`);
+      kind = "net";
+      if (!retry) i++; // sin conexión no merece la pena repetir el mismo modelo
       continue;
     }
-    if (!res.ok) console.error(`[gemini] ${model}: HTTP ${res.status}`);
-    // Modelo retirado o inexistente: el siguiente
-    if (res.status === 404) continue;
-    if (res.status === 429) return { error: "Se ha llegado al límite gratis de la IA por ahora. Espera un minuto y vuelve a probar." };
-    if (res.status === 400 || res.status === 401 || res.status === 403) {
-      const body = await res.text().catch(() => "");
-      console.error(`[gemini] ${model}: ${body.slice(0, 300)}`);
-      if (/thinking/i.test(body)) continue;
-      // Puede ser solo de este modelo (sin permiso para él): se prueba el siguiente antes de culpar a la clave
-      if (/API key|API_KEY|permission|PERMISSION/i.test(body)) {
-        last = "Google no acepta la clave de Gemini. Revisa GEMINI_API_KEY en Vercel y haz Redeploy.";
-        continue;
-      }
-      if (/location|region|country/i.test(body)) return { error: "Google no permite usar Gemini gratis desde esta región." };
-      last = "La IA no ha aceptado la petición. Prueba otra vez.";
+    if (res.ok) {
+      const data = (await res.json().catch(() => null)) as {
+        candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] }; finishReason?: string }[];
+        promptFeedback?: { blockReason?: string };
+      } | null;
+      if (data?.promptFeedback?.blockReason) return { error: "La IA no ha querido redactar esto. Cambia un poco las notas y prueba otra vez." };
+      const text = (data?.candidates?.[0]?.content?.parts ?? []).filter((p) => !p.thought).map((p) => p.text ?? "").join("").trim();
+      if (text) return { text };
+      trail.push(`${model}: respuesta vacía (${data?.candidates?.[0]?.finishReason ?? "?"})`);
+      if (!retry) i++;
       continue;
     }
-    if (!res.ok) {
-      last = "La IA no está disponible ahora mismo. Prueba en un rato.";
+    const detail = await why(res);
+    console.error(`[gemini] ${model}: ${detail}`);
+    trail.push(`${model}: ${detail}`);
+    // Saturado o fallo momentáneo de Google: se repite una vez tras una pausa corta
+    if ((res.status === 500 || res.status === 503) && !retry) {
+      kind = kind === "key" ? kind : "busy";
+      await sleep(1500);
       continue;
     }
-    const data = (await res.json().catch(() => null)) as {
-      candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] }; finishReason?: string }[];
-      promptFeedback?: { blockReason?: string };
-    } | null;
-    if (data?.promptFeedback?.blockReason) return { error: "La IA no ha querido redactar esto. Cambia un poco las notas y prueba otra vez." };
-    const text = (data?.candidates?.[0]?.content?.parts ?? []).filter((p) => !p.thought).map((p) => p.text ?? "").join("").trim();
-    if (text) return { text };
-    last = "La IA ha devuelto una respuesta vacía. Prueba otra vez.";
+    if (!retry) i++; // cualquier otro error no se arregla repitiendo
+    if (res.status === 429) return { error: `Se ha llegado al límite gratis de la IA por ahora. Espera un minuto y vuelve a probar. (Detalle: ${detail})` };
+    if (/location|region|country/i.test(detail) && !/API key/i.test(detail)) return { error: `Google no permite usar Gemini gratis desde aquí. (Detalle: ${detail})` };
+    if (/API key|API_KEY/i.test(detail)) kind = "key";
+    else if (res.status >= 500) kind = kind === "key" ? kind : "busy";
   }
-  return { error: last };
+  const head = kind === "key" ? "Google no acepta la clave de Gemini. Revisa GEMINI_API_KEY en Vercel y haz Redeploy."
+    : kind === "busy" ? "La IA de Google está saturada ahora mismo. Prueba en un rato."
+    : kind === "net" ? "No se ha podido conectar con la IA de Google. Prueba otra vez en un momento."
+    : "La IA no ha podido redactarlo.";
+  return { error: trail.length ? `${head} (Detalle: ${trail.join(" · ")})` : head };
 }

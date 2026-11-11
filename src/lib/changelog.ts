@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.2.3",
+    date: "2026-11-11",
+    title: "La IA de La Voz insiste cuando Google va saturado",
+    quiet: true,
+    changes: [
+      "Si Google contesta que está saturado, «Redactar borrador» espera un momento, lo vuelve a intentar y prueba otro modelo antes de rendirse.",
+      "Cuando no lo consigue, el aviso explica lo que ha contestado Google con cada modelo.",
+    ],
+  },
+  {
     version: "4.2.2",
     date: "2026-11-11",
     title: "La IA de La Voz vuelve a reconocer la clave",
