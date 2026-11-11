@@ -5,8 +5,11 @@ import "server-only";
  * La clave va en Vercel como GEMINI_API_KEY y nunca sale del servidor.
  * Solo se le mandan apodos, datos del partido y las notas de la redacción.
  */
-/** La clave tal cual se pegó en Vercel, sin espacios, comillas ni caracteres invisibles que rompen la petición. */
-export const cleanKey = (raw: string | undefined) => (raw ?? "").replace(/[^A-Za-z0-9_\-]/g, "");
+/**
+ * La clave tal cual se pegó en Vercel, sin espacios, saltos de línea, caracteres invisibles ni comillas alrededor.
+ * Se respeta todo lo demás: las claves nuevas de Google llevan puntos u otros signos (p. ej. «AQ.…»).
+ */
+export const cleanKey = (raw: string | undefined) => (raw ?? "").replace(/[^\x21-\x7e]/g, "").replace(/^["'`]+|["'`]+$/g, "");
 export const geminiConfigured = () => cleanKey(process.env.GEMINI_API_KEY).length > 0;
 
 // Si Google retira un modelo, se prueba el siguiente. GEMINI_MODEL permite fijar otro desde Vercel.
@@ -54,7 +57,11 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
       const body = await res.text().catch(() => "");
       console.error(`[gemini] ${model}: ${body.slice(0, 300)}`);
       if (/thinking/i.test(body)) continue;
-      if (/API key|API_KEY|permission|PERMISSION/i.test(body)) return { error: "Google no acepta la clave de Gemini. Revisa GEMINI_API_KEY en Vercel y haz Redeploy." };
+      // Puede ser solo de este modelo (sin permiso para él): se prueba el siguiente antes de culpar a la clave
+      if (/API key|API_KEY|permission|PERMISSION/i.test(body)) {
+        last = "Google no acepta la clave de Gemini. Revisa GEMINI_API_KEY en Vercel y haz Redeploy.";
+        continue;
+      }
       if (/location|region|country/i.test(body)) return { error: "Google no permite usar Gemini gratis desde esta región." };
       last = "La IA no ha aceptado la petición. Prueba otra vez.";
       continue;
