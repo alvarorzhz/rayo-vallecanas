@@ -8,6 +8,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.2.4",
+    date: "2026-11-11",
+    title: "La IA de La Voz, con los nuevos Gemini",
+    quiet: true,
+    changes: [
+      "«Redactar borrador» pasa a usar Gemini 3.8 Flash y, si está ocupado, Gemini 3.5 Flash Lite, porque Google ya no deja usar los modelos anteriores.",
+    ],
+  },
+  {
     version: "4.2.3",
     date: "2026-11-11",
     title: "La IA de La Voz insiste cuando Google va saturado",
