@@ -176,7 +176,7 @@ const FIELD: Record<string, string> = {
 /** Campos que no aportan nada al leer un cambio. */
 const NOISE = new Set(["updated_at", "sale_seq", "refresh_token_hmac_key"]);
 
-export const fieldLabel = (key: string) => FIELD[key] ?? key.replace(/_/g, " ");
+const fieldLabel = (key: string) => FIELD[key] ?? key.replace(/_/g, " ");
 
 /** Valores con nombre propio según el campo (estados, tipos…). */
 const VALUES: Record<string, Record<string, string>> = {

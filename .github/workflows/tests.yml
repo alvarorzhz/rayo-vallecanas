@@ -17,3 +17,43 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npx tsc --noEmit
+      - run: npm run lint
+
+  # Prueba de humo: la app entera contra un Supabase local con los datos de ejemplo
+  # (supabase/seed.sql). No toca producción ni necesita ninguna clave.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Arrancar Supabase local con los datos de ejemplo
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      - name: Configurar la app contra ese Supabase
+        run: |
+          supabase status -o env > "$RUNNER_TEMP/supabase.env"
+          set -a; . "$RUNNER_TEMP/supabase.env"; set +a
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "NEXT_PUBLIC_SITE_URL=http://localhost:3000"
+          } > .env.local
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Arrancar la app
+        run: |
+          npm start > "$RUNNER_TEMP/app.log" 2>&1 &
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://localhost:3000/login && exit 0; sleep 1; done
+          cat "$RUNNER_TEMP/app.log"; exit 1
+      - run: npm run test:e2e
+      - name: Registro de la app (si algo falla)
+        if: failure()
+        run: cat "$RUNNER_TEMP/app.log"

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cronDenied } from "@/lib/cron";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
 import { replyButtons, usersOfPlayers } from "@/lib/callup-push";
@@ -16,10 +17,8 @@ export const maxDuration = 30;
  * De paso, avisa a los gestores de los plazos de patrocinio sin cobrar y de los acuerdos que vencen.
  */
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const denied = cronDenied(req);
+  if (denied) return denied;
   const admin = createAdminClient();
   const today = todayMadrid();
   const tomorrow = todayMadrid(new Date(Date.now() + 24 * 3600 * 1000));

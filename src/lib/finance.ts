@@ -1,3 +1,4 @@
+import { madridDay } from "./dates.ts";
 export type FinanceKind = "income" | "expense";
 
 export type Category = { id: string; kind: FinanceKind; name: string; sort: number; active: boolean };
@@ -46,7 +47,7 @@ export const kindFromSlug = (s?: string | null): FinanceKind | null => (s === "i
 
 /** Temporada deportiva (septiembre a agosto) de una fecha: "2026/27". Igual que finance_season() en la BD. */
 export function seasonOf(d: string | Date = new Date()): string {
-  const iso = typeof d === "string" ? d : new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(d);
+  const iso = typeof d === "string" ? d : madridDay(d);
   const [y, m] = iso.split("-").map(Number);
   const start = m >= 9 ? y : y - 1;
   return `${start}/${String((start + 1) % 100).padStart(2, "0")}`;
@@ -61,6 +62,6 @@ export function seasonRange(season: string): { from: string; to: string } | null
 }
 
 /** Fecha de hoy en Madrid, en formato AAAA-MM-DD. */
-export const today = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date());
+export const today = () => madridDay();
 
 export const MOVEMENT_SELECT = "*, category:finance_categories(name), author:profiles!finance_movements_created_by_fkey(full_name)";

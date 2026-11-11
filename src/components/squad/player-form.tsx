@@ -12,7 +12,7 @@ const SPOTS: Record<string, [number, number]> = {
 };
 
 /** Campo para elegir la posición tocando su sitio. */
-export function PositionPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function PositionPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div>
       <div className="relative mx-auto aspect-[3/4] w-full max-w-xs overflow-hidden rounded-2xl bg-[#1f7a3a] ring-4 ring-negro">

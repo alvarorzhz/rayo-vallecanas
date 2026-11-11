@@ -4,7 +4,7 @@
  */
 
 /** Salamanca capital. */
-export const SALAMANCA = { lat: 40.9701, lon: -5.6635 };
+const SALAMANCA = { lat: 40.9701, lon: -5.6635 };
 
 export type MatchWeather = {
   /** "2026-11-09T18:00": la hora de la previsión (la del pitido, redondeada). Sin hora del partido, null y se da el resumen del día. */

@@ -9,7 +9,7 @@ import { APP_VERSION } from "@/lib/changelog";
 const ICONS = { Sparkles, Home, CalendarDays, Shirt, Ticket, Wallet, Settings, UserRound, Trophy };
 const KEY = "rv-tutorial-visto";
 /** Evento para volver a lanzar el tutorial desde cualquier botón (ver TourButton). */
-export const TOUR_EVENT = "rv-tutorial";
+const TOUR_EVENT = "rv-tutorial";
 
 type Rect = { top: number; left: number; width: number; height: number };
 

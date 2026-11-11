@@ -1,5 +1,6 @@
 /** Votación del MVP de cada partido: tipos y cálculos (sin dependencias de servidor, para poder probarlos). */
 import { madridToUtc } from "./polls.ts";
+import { madridDay } from "./dates.ts";
 
 export type MvpBoard = {
   match_id: string;
@@ -25,8 +26,6 @@ export type MvpBoard = {
   candidates: string[];
 };
 
-/** Fecha de Madrid (AAAA-MM-DD) de un instante. */
-const madridDay = (at: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(at);
 
 /**
  * Cierre de la votación: las 23:59 (hora de Madrid) del día en que se abre.

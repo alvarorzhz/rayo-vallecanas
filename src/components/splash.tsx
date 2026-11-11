@@ -4,7 +4,7 @@ import { useEffect } from "react";
 const KEY = "rv-splash-visto";
 
 /** Oculta la pantalla de carga cuando la app ya está lista (como mínimo un instante para que se vea el escudo). */
-export function SplashHide() {
+function SplashHide() {
   useEffect(() => {
     const el = document.getElementById("splash");
     if (!el || el.classList.contains("splash-gone")) return;

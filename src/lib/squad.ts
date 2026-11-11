@@ -1,3 +1,4 @@
+import { madridDay } from "./dates.ts";
 export type SquadStatus = "active" | "injured" | "away" | "left";
 export type Foot = "right" | "left" | "both";
 export type Line = "GK" | "DEF" | "MID" | "FWD";
@@ -90,7 +91,6 @@ export const POSITIONS: { code: string; label: string; line: Line }[] = [
   { code: "DC", label: "Delantero centro", line: "FWD" },
 ];
 export const POSITION_LABEL: Record<string, string> = Object.fromEntries(POSITIONS.map((p) => [p.code, p.label]));
-export const POSITION_ORDER: Record<string, number> = Object.fromEntries(POSITIONS.map((p, i) => [p.code, i]));
 export const lineOf = (code: string): Line => POSITIONS.find((p) => p.code === code)?.line ?? "MID";
 
 export const LINES: { key: Line; label: string; plural: string; slug: string }[] = [
@@ -167,8 +167,6 @@ export const prevSeason = (s: string) => {
   const y = Number(s.slice(0, 4)) - 1;
   return `${y}/${String((y + 1) % 100).padStart(2, "0")}`;
 };
-/** Primer día de la temporada: "2026/27" -> "2026-09-01" */
-export const seasonStart = (s: string) => `${s.slice(0, 4)}-09-01`;
 
 // ---------------------------------------------------------------- Documentos
 export type DocKind = "dni" | "federation" | "medical" | "authorization" | "insurance" | "other";
@@ -200,7 +198,7 @@ export const DOC_MAX_BYTES = 5 * 1024 * 1024;
 export const DOC_MIME = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
 /** Estado de caducidad: vencido, vence en 30 días o en regla. */
-export function docExpiry(expires: string | null, today = new Date().toISOString().slice(0, 10)): "expired" | "soon" | "ok" | null {
+export function docExpiry(expires: string | null, today = madridDay()): "expired" | "soon" | "ok" | null {
   if (!expires) return null;
   if (expires < today) return "expired";
   const soon = new Date(`${today}T12:00:00Z`);

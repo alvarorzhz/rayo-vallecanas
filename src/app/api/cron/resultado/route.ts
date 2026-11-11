@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cronDenied } from "@/lib/cron";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncLeague } from "@/lib/league-sync";
 import { awaitingResult, madridNow, type WatchMatch } from "@/lib/result-watch";
@@ -13,10 +14,8 @@ export const maxDuration = 60;
  * Los demás días no hace nada: no se toca la web de la liga.
  */
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const denied = cronDenied(req);
+  if (denied) return denied;
   const admin = createAdminClient();
   const { data: cfg } = await admin.from("league_sync").select("id").eq("id", 1).maybeSingle();
   if (!cfg) return NextResponse.json({ status: "sin-liga" });

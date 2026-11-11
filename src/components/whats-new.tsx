@@ -2,18 +2,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, X } from "lucide-react";
-import { CHANGELOG, APP_VERSION } from "@/lib/changelog";
+import { APP_VERSION, releaseToAnnounce, type Release } from "@/lib/changelog";
 
 const KEY = "rv-version-vista";
 
 /** Muestra las novedades una vez cuando la app se actualiza a una versión nueva. */
 export function WhatsNew({ skip = false }: { skip?: boolean }) {
-  const [open, setOpen] = useState(false);
+  const [release, setRelease] = useState<Release | null>(null);
+  const open = release !== null;
   useEffect(() => {
     try {
-      if (localStorage.getItem(KEY) === APP_VERSION) return;
-      if (skip || CHANGELOG[0].quiet) localStorage.setItem(KEY, APP_VERSION);
-      else setOpen(true);
+      const news = skip ? null : releaseToAnnounce(localStorage.getItem(KEY));
+      if (news) setRelease(news);
+      else localStorage.setItem(KEY, APP_VERSION);
     } catch {}
   }, [skip]);
   useEffect(() => {
@@ -23,13 +24,13 @@ export function WhatsNew({ skip = false }: { skip?: boolean }) {
     return () => window.removeEventListener("keydown", onKey);
   });
   function close() {
-    setOpen(false);
+    setRelease(null);
     try {
       localStorage.setItem(KEY, APP_VERSION);
     } catch {}
   }
-  if (!open) return null;
-  const r = CHANGELOG[0];
+  if (!release) return null;
+  const r = release;
   return (
     <div className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-black/50 p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">
       <div className="max-h-[85dvh] w-full max-w-md animate-pop overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">

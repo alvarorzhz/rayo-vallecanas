@@ -2,16 +2,15 @@ import Link from "next/link";
 import { CalendarClock, MapPin } from "lucide-react";
 import {
   COMPETITION_LABEL, MATCH_STATUS_LABEL, MATCH_STATUS_TONE, OUTCOME_LABEL, OUTCOME_TONE,
-  hhmm, kickoffDate, longDay, mapsLink, outcomeOf, relativeDay, rivalShort, shortDay, sides, CLUB_SHORT,
+  hhmm, kickoffDate, longDay, outcomeOf, relativeDay, rivalShort, shortDay, sides, CLUB_SHORT,
   type MatchRow,
 } from "@/lib/matches";
 import { Crest } from "@/components/matches/crest";
 import { Countdown } from "@/components/matches/countdown";
-import { Ball } from "@/components/squad/ball";
 import { ordinal, pts, type MatchRanks, type Rank } from "@/lib/standings";
 
 /** «5º · 9 pts»: posición y puntos en la liga. */
-export function RankChip({ r, dark = false, className = "" }: { r: Rank; dark?: boolean; className?: string }) {
+function RankChip({ r, dark = false, className = "" }: { r: Rank; dark?: boolean; className?: string }) {
   const zone = r.zone?.color;
   return (
     <span title={`${ordinal(r.pos)} de ${r.total} en la liga con ${pts(r.points)}${r.zone ? ` · zona de ${r.zone.label}` : ""}`}
@@ -55,7 +54,7 @@ export function FormStrip({ rows, label = true }: { rows: MatchRow[]; label?: bo
   );
 }
 
-export function StatusBadge({ m }: { m: MatchRow }) {
+function StatusBadge({ m }: { m: MatchRow }) {
   if (m.status === "scheduled" || m.status === "played") return null;
   return <span className={`badge ${MATCH_STATUS_TONE[m.status]}`}>{MATCH_STATUS_LABEL[m.status]}</span>;
 }
@@ -152,24 +151,5 @@ export function MatchLine({ m, rank }: { m: MatchRow; rank?: Rank | null }) {
         <span className="sport shrink-0 rounded-lg bg-gris px-2.5 py-1 text-lg font-black tabular-nums text-negro/80">{time ?? "—"}</span>
       )}
     </Link>
-  );
-}
-
-/** Tarjeta del próximo partido para el inicio. */
-export function NextMatchCard({ m }: { m: MatchRow | null }) {
-  if (!m)
-    return (
-      <div className="flex items-center gap-3 rounded-2xl bg-white p-4 text-sm text-negro/65 ring-1 ring-black/5">
-        <Ball size={24} className="anim-bounce-ball" /> No hay ningún partido programado.
-      </div>
-    );
-  const link = mapsLink(m);
-  return (
-    <div>
-      <Link href={`/partidos/${m.id}`} prefetch className="block transition hover:-translate-y-0.5"><Scoreboard m={m} compact /></Link>
-      {link && (
-        <a href={link} target="_blank" rel="noopener" className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-rojo"><MapPin size={15} /> Cómo llegar</a>
-      )}
-    </div>
   );
 }

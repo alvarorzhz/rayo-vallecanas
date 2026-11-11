@@ -8,9 +8,9 @@
  */
 
 /** Minutos desde el pitido a partir de los que se empieza a mirar (partido de F7 + margen). */
-export const WAIT_AFTER_KICKOFF = 90;
+const WAIT_AFTER_KICKOFF = 90;
 /** Si el partido aún no tiene hora, se empieza a mirar a partir de esta hora de Madrid. */
-export const NO_KICKOFF_FROM = "14:00";
+const NO_KICKOFF_FROM = "14:00";
 
 export type WatchMatch = {
   id: string;

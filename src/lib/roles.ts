@@ -1,5 +1,5 @@
 import type { Act } from "@/lib/role-guide";
-import { ROLE_LABEL } from "@/lib/format";
+import { ROLE_LABEL } from "./format.ts";
 
 /** Perfiles: los tres de siempre (superadministrador, gestor y jugador) y los creados a medida. */
 export type Base = "superadmin" | "admin" | "player";

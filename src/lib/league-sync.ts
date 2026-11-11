@@ -11,8 +11,8 @@ import { resultNotice } from "@/lib/result-watch";
 import { alertLeagueProblem, recordLeagueFailure, type LeagueStatus } from "@/lib/league-alerts";
 
 // Los lectores de páginas viven en league-parse.ts (sin dependencias, con pruebas propias)
-export { competitionFromUrl, decode, parseCalendar, parsePlayer, parseSheet, parseTable, prettyTeam, titleCase } from "@/lib/league-parse";
-export type { LeaguePlayer, LeagueRow, SheetRow } from "@/lib/league-parse";
+export { competitionFromUrl } from "@/lib/league-parse";
+export type { SheetRow } from "@/lib/league-parse";
 
 const finance_season = (date: string) => seasonOf(new Date(`${date}T12:00:00Z`));
 

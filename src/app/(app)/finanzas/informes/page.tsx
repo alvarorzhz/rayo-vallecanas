@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { euros } from "@/lib/format";
 import { PageHeader, Stat } from "@/components/ui";
 import { BalanceLine, MonthlyBars, type MonthPoint } from "@/components/finance/charts";
-import { seasonOf, seasonRange, type FinanceSummary } from "@/lib/finance";
+import { seasonOf, seasonRange, today, type FinanceSummary } from "@/lib/finance";
 
 export const metadata = { title: "Informes de Finanzas" };
 
@@ -49,7 +49,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       long: `${MONTHS_LONG[i]} ${y}`,
       income: inMonth.filter((r) => r.kind === "income").reduce((a, r) => a + r.amount_cents, 0),
       expense: inMonth.filter((r) => r.kind === "expense").reduce((a, r) => a + r.amount_cents, 0),
-      balance: prefix <= new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date()).slice(0, 7) ? balanceAt(last) : null,
+      balance: prefix <= today().slice(0, 7) ? balanceAt(last) : null,
     };
   });
   const sIncome = months.reduce((a, m) => a + m.income, 0);
@@ -62,8 +62,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     const inc = rr.filter((r) => r.kind === "income").reduce((a, r) => a + r.amount_cents, 0);
     const exp = rr.filter((r) => r.kind === "expense").reduce((a, r) => a + r.amount_cents, 0);
     const end = seasonRange(t)!.to;
-    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date());
-    return { t, inc, exp, close: balanceAt(end < today ? end : today), current: end >= today };
+    const now = today();
+    return { t, inc, exp, close: balanceAt(end < now ? end : now), current: end >= now };
   });
 
   // Categorías de la temporada

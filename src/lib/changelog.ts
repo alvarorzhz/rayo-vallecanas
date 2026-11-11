@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.26.0",
+    date: "2026-11-11",
+    title: "Puesta a punto por dentro",
+    quiet: true,
+    changes: [
+      "Limpieza del código: fuera lo que ya no se usaba y cada cosa repetida (fechas, tareas programadas, respuestas desde los avisos, estilos de botones) queda en un solo sitio. La app se ve y funciona igual.",
+      "Más pruebas automáticas: pasan de 78 a 132 y ahora cubren también cuentas y temporadas, permisos de cada perfil, plantilla y cuotas, partidos y convocatorias.",
+      "Prueba de humo nueva: antes de publicar cada cambio, un robot entra en la app como superadministrador y como jugador, abre todas las secciones en tamaño de móvil, apunta un gasto, contesta una convocatoria y comprueba que un jugador no puede entrar en Finanzas ni en Gestión.",
+      "El aviso de novedades ya no se pierde si entre medias sale una versión sin cambios a la vista.",
+    ],
+  },
+  {
     version: "3.25.0",
     date: "2026-11-10",
     title: "Diseño renovado y con más movimiento",
@@ -541,3 +553,15 @@ export const CHANGELOG: Release[] = [
 ];
 
 export const APP_VERSION = CHANGELOG[0].version;
+
+/**
+ * Qué versión hay que anunciar a alguien que ya vio `seen`: la más reciente con algo que contar
+ * entre las que le faltan. Así una entrega sin cambios a la vista (quiet) no se come el aviso
+ * de la anterior para quien aún no había abierto la app.
+ */
+export function releaseToAnnounce(seen: string | null, log: Release[] = CHANGELOG): Release | null {
+  if (!log.length || seen === log[0].version) return null;
+  const at = seen ? log.findIndex((r) => r.version === seen) : -1;
+  const missed = at === -1 ? log : log.slice(0, at);
+  return missed.find((r) => !r.quiet) ?? null;
+}

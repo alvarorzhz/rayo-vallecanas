@@ -19,7 +19,7 @@ type AlertMark = { sig: string; at: string };
 const DAY = 24 * 3600 * 1000;
 
 /** Gestores que reciben el aviso. */
-export async function leagueAlertRecipients(except?: string) {
+async function leagueAlertRecipients(except?: string) {
   const admin = createAdminClient();
   const { data } = await admin.rpc("users_with_perm", { p_module: "matches", p_action: "update" });
   return ((data ?? []) as string[]).filter((id) => id !== except);

@@ -24,24 +24,6 @@ export type Campaign = {
   public_purpose: string | null;
 };
 
-export type Sale = {
-  id: string;
-  campaign_id: string;
-  reference: string;
-  buyer_id: string;
-  seller_id: string;
-  quantity: number;
-  unit_price_cents: number;
-  total_cents: number;
-  paid_cents: number;
-  payment_status: "pending" | "partial" | "paid" | "cancelled";
-  preferred_channel: "email" | "whatsapp" | null;
-  notes: string | null;
-  created_at: string;
-  cancelled_at: string | null;
-  cancel_reason: string | null;
-};
-
 export type Summary = {
   total: number;
   available: number;

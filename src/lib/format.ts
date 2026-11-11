@@ -88,10 +88,6 @@ export const NUMBERING_MODE_LABEL: Record<string, string> = {
   booklet: "Talonarios",
   manual: "Elección manual",
 };
-export const KIND_LABEL: Record<string, string> = {
-  lottery: "Lotería (un número)",
-  raffle: "Rifa (números del 1 al N)",
-};
 export const ROLE_LABEL: Record<string, string> = {
   superadmin: "Superadministrador",
   admin: "Gestor",
