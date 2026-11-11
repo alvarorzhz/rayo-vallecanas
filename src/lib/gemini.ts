@@ -12,11 +12,11 @@ import "server-only";
 export const cleanKey = (raw: string | undefined) => (raw ?? "").replace(/[^\x21-\x7e]/g, "").replace(/^["'`]+|["'`]+$/g, "");
 export const geminiConfigured = () => cleanKey(process.env.GEMINI_API_KEY).length > 0;
 
-// Si Google retira un modelo, se prueba el siguiente. GEMINI_MODEL permite fijar otro desde Vercel.
-// Primero los «flash» sin pensar en voz alta: son los más rápidos y sobran para una crónica.
-const MODELS = () => [process.env.GEMINI_MODEL?.trim(), "gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"].filter((m): m is string => !!m);
-/** Los 2.5 aceptan apagar el «razonamiento», que es lo que más tarda. A los demás no se les toca. */
-const thinkingOff = (model: string) => (/^gemini-2\.5-flash/.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {});
+// Si Google retira un modelo, se prueba el siguiente. GEMINI_MODEL permite fijar otro desde Vercel sin tocar el código.
+// En noviembre de 2026 Google ya no deja usar los 2.5 a claves nuevas: los actuales son 3.8 Flash y 3.5 Flash Lite.
+const MODELS = () => [process.env.GEMINI_MODEL?.trim(), "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest"].filter((m): m is string => !!m);
+/** Que razone poco: es lo que más tarda y para una crónica no hace falta. Si un modelo no lo admite, se repite sin ello. */
+const thinkingLow = (model: string) => (/^gemini-[3-9]/.test(model) ? { thinkingConfig: { thinkingLevel: "low" } } : {});
 /** Tiempo total para todos los intentos: la función de Vercel no debe morir antes de contestar. */
 const BUDGET_MS = 50_000;
 
@@ -43,6 +43,7 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
   const trail: string[] = [];
   let kind: "key" | "busy" | "net" | "other" = "other";
   const attempts = [...new Set(MODELS())].flatMap((m) => [m, m]); // cada modelo, hasta dos veces si Google está saturado
+  const plain = new Set<string>(); // modelos que no admiten thinkingLevel
   for (let i = 0; i < attempts.length; i++) {
     const model = attempts[i];
     const retry = i > 0 && attempts[i - 1] === model;
@@ -55,7 +56,8 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
         headers: { "Content-Type": "application/json", "x-goog-api-key": key },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: opts.temperature ?? 0.8, maxOutputTokens: opts.maxTokens ?? 8192, ...thinkingOff(model) },
+          // Google recomienda no tocar la temperatura en los Gemini 3 (con menos de 1 pueden repetirse)
+          generationConfig: { ...(/^gemini-[3-9]/.test(model) ? {} : { temperature: opts.temperature ?? 0.8 }), maxOutputTokens: opts.maxTokens ?? 8192, ...(plain.has(model) ? {} : thinkingLow(model)) },
         }),
         signal: AbortSignal.timeout(left),
         cache: "no-store",
@@ -83,6 +85,12 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
     }
     const detail = await why(res);
     console.error(`[gemini] ${model}: ${detail}`);
+    // No admite el ajuste de razonamiento: se repite el mismo modelo sin él
+    if (res.status === 400 && /thinking/i.test(detail) && !plain.has(model)) {
+      plain.add(model);
+      if (retry) attempts.splice(i + 1, 0, model);
+      continue;
+    }
     trail.push(`${model}: ${detail}`);
     // Saturado o fallo momentáneo de Google: se repite una vez tras una pausa corta
     if ((res.status === 500 || res.status === 503) && !retry) {
