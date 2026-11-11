@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { euros, fecha, fechaLarga, parseEuros, parseRanges, phoneE164, ranges } from "../format.ts";
+import { euros, fecha, ultimaConexion, fechaLarga, parseEuros, parseRanges, phoneE164, ranges } from "../format.ts";
 
 const plain = (s: string) => s.replace(/\s/g, " ");
 
@@ -52,4 +52,12 @@ test("las fechas salen en español y en la hora de Madrid", () => {
   // Las 23:30 UTC del día 14 ya son el día 15 en Madrid
   assert.match(fecha("2026-11-14T23:30:00Z"), /^15 nov 2026$/);
   assert.match(fecha("2026-11-14T18:30:00Z", true), /14 nov 2026.*19:30/);
+});
+
+test("la última conexión reciente se dice en minutos y la antigua con fecha", () => {
+  const now = Date.parse("2026-11-11T12:00:00Z");
+  assert.equal(ultimaConexion("2026-11-11T11:58:00Z", now), "Ahora mismo");
+  assert.equal(ultimaConexion("2026-11-11T11:35:00Z", now), "Hace 25 min");
+  assert.equal(ultimaConexion("2026-11-11T09:00:00Z", now), fecha("2026-11-11T09:00:00Z", true));
+  assert.equal(ultimaConexion(null, now), "—");
 });

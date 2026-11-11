@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fecha, ROLE_LABEL } from "@/lib/format";
+import { fecha, ROLE_LABEL, ultimaConexion } from "@/lib/format";
 import { Empty, PageHeader } from "@/components/ui";
 import { AuditTabs } from "@/components/audit/audit-tabs";
 import { DeviceLabel } from "@/components/audit/device-label";
@@ -17,7 +17,8 @@ export default async function SessionsPage() {
   const supabase = await createClient();
   const [{ data, error }, { data: claims }] = await Promise.all([supabase.rpc("admin_sessions"), supabase.auth.getClaims()]);
   const mine = (claims?.claims?.session_id as string | undefined) ?? null;
-  const rows = (data ?? []) as Row[];
+  // La más reciente primero (la base de datos ya las da así; por si acaso)
+  const rows = ((data ?? []) as Row[]).sort((a, b) => (b.last_seen ? Date.parse(b.last_seen) : 0) - (a.last_seen ? Date.parse(a.last_seen) : 0));
   const people = new Set(rows.map((r) => r.user_id)).size;
 
   return (
@@ -50,7 +51,7 @@ export default async function SessionsPage() {
                       {r.ip && <span>IP {r.ip}</span>}
                     </div>
                     <div className="mt-0.5 text-xs text-negro/55">
-                      Entró el {fecha(r.created_at, true)} · última actividad {fecha(r.last_seen, true)}
+                      Última conexión: {ultimaConexion(r.last_seen)} · entró el {fecha(r.created_at, true)}
                     </div>
                   </div>
                   {r.id !== mine && <CloseSessionButton id={r.id} who={r.full_name ?? "esta persona"} />}

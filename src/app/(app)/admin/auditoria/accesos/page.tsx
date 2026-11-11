@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fecha } from "@/lib/format";
+import { fecha, ultimaConexion } from "@/lib/format";
 import { ACCESS_EVENT_LABEL, ACCESS_EVENT_TONE, madridDayRange } from "@/lib/audit";
 import { Empty, PageHeader, Stat } from "@/components/ui";
 import { Pager } from "@/components/pager";
@@ -43,14 +43,23 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
   const rows = (data ?? []) as Access[];
   const names = new Map((people ?? []).map((p) => [p.id, p.full_name]));
 
-  // Último acceso de cada persona (lo guarda Supabase Auth, también de antes de esta versión)
+  // Última conexión de cada persona: la que apunta la app en cada página (desde 3.28.2)
+  // o, si es más reciente o no hay, la última vez que escribió la contraseña (Supabase Auth)
   let lastSeen: { id: string; name: string; at: string | null }[] = [];
   try {
-    const { data: users } = await createAdminClient().auth.admin.listUsers({ perPage: 500 });
-    const at = new Map((users?.users ?? []).map((u) => [u.id, u.last_sign_in_at ?? null]));
+    const [{ data: users }, { data: activity }] = await Promise.all([
+      createAdminClient().auth.admin.listUsers({ perPage: 500 }),
+      supabase.from("user_activity").select("user_id, last_seen_at"),
+    ]);
+    const at = new Map<string, string>();
+    const keep = (id: string, t: string | null | undefined) => {
+      if (t && (!at.has(id) || Date.parse(t) > Date.parse(at.get(id)!))) at.set(id, t);
+    };
+    for (const u of users?.users ?? []) keep(u.id, u.last_sign_in_at);
+    for (const a of activity ?? []) keep(a.user_id, a.last_seen_at);
     lastSeen = (people ?? []).filter((p) => p.active)
       .map((p) => ({ id: p.id, name: p.full_name, at: at.get(p.id) ?? null }))
-      .sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""));
+      .sort((a, b) => (b.at ? Date.parse(b.at) : 0) - (a.at ? Date.parse(a.at) : 0) || a.name.localeCompare(b.name, "es"));
   } catch {
     lastSeen = [];
   }
@@ -77,12 +86,12 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
 
           {lastSeen.length > 0 && (
             <details className="card mb-4">
-              <summary className="cursor-pointer select-none font-bold">Último acceso de cada persona</summary>
+              <summary className="cursor-pointer select-none font-bold">Última conexión de cada persona</summary>
               <ul className="mt-3 divide-y divide-black/5 text-sm">
                 {lastSeen.map((p) => (
                   <li key={p.id} className="flex items-baseline justify-between gap-3 py-1.5">
                     <Link href={`?u=${p.id}`} className="min-w-0 truncate font-semibold hover:text-rojo">{p.name}</Link>
-                    <span className="shrink-0 text-xs text-negro/65">{p.at ? fecha(p.at, true) : "Nunca ha entrado"}</span>
+                    <span className="shrink-0 text-xs text-negro/65">{p.at ? ultimaConexion(p.at) : "Nunca ha entrado"}</span>
                   </li>
                 ))}
               </ul>
