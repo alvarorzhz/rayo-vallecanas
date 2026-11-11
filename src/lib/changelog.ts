@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "3.28.2",
+    date: "2026-11-11",
+    title: "Última conexión al día",
+    quiet: true,
+    changes: [
+      "Auditoría: la última conexión de cada persona y la de cada sesión abierta ya se actualizan mientras se usa la app. Antes solo cambiaban al volver a escribir la contraseña, así que se quedaban congeladas.",
+      "Ambas listas se ordenan por última conexión, la más reciente primero, y lo reciente se dice como «Ahora mismo» o «Hace 25 min».",
+    ],
+  },
+  {
     version: "3.28.1",
     date: "2026-11-11",
     title: "Pestañas de Gestión más firmes",

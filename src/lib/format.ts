@@ -28,6 +28,15 @@ export const fecha = (d: string | Date | null | undefined, withTime = false) =>
       }).format(new Date(d))
     : "—";
 
+/** Última conexión: «Ahora mismo» (menos de 5 min), «Hace 25 min» (menos de una hora) o la fecha con hora. */
+export function ultimaConexion(d: string | null | undefined, now: number = Date.now()): string {
+  if (!d) return "—";
+  const min = Math.floor((now - new Date(d).getTime()) / 60_000);
+  if (min < 5) return "Ahora mismo";
+  if (min < 60) return `Hace ${min} min`;
+  return fecha(d, true);
+}
+
 /** Convierte una lista de números en rangos legibles: [1,2,3,7,9,10] -> "1-3, 7, 9-10" */
 export function ranges(nums: number[]): string {
   const sorted = [...nums].sort((a, b) => a - b);

@@ -50,8 +50,8 @@ La barra inferior del móvil tiene seis apartados: **Inicio · Partidos · Plant
 - **Avisos**: mensajes push al equipo, **votaciones sí/no** y registro de todos los avisos enviados.
 - **Auditoría** (solo superadministrador):
   - *Cambios*: quién cambió qué y cuándo, con el **valor anterior y el nuevo** de cada campo, en lenguaje claro. Filtros por apartado, acción, persona y fechas, e historial completo de cualquier registro.
-  - *Accesos*: entradas, salidas, intentos fallidos y cambios de contraseña, con dispositivo e IP; último acceso de cada persona.
-  - *Sesiones abiertas*: dispositivos con la sesión iniciada y botón para cerrarla al momento (por ejemplo, si alguien pierde el móvil).
+  - *Accesos*: entradas, salidas, intentos fallidos y cambios de contraseña, con dispositivo e IP; última conexión de cada persona (la apunta la app en cada página), de la más reciente a la más antigua.
+  - *Sesiones abiertas*: dispositivos con la sesión iniciada, ordenados por última conexión, y botón para cerrarla al momento (por ejemplo, si alguien pierde el móvil).
 - **Copia de seguridad** (solo superadministrador): todo en Excel o JSON.
 
 ### Para todos
