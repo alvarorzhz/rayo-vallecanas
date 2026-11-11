@@ -8,6 +8,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.2.2",
+    date: "2026-11-11",
+    title: "La IA de La Voz vuelve a reconocer la clave",
+    quiet: true,
+    changes: [
+      "Arreglado: desde la 4.2.1, «Redactar borrador» decía que Google no aceptaba la clave aunque estaba bien puesta.",
+    ],
+  },
+  {
     version: "4.2.1",
     date: "2026-11-11",
     title: "La IA de La Voz, más rápida",
