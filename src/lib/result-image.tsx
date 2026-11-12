@@ -17,15 +17,15 @@ import type { Outcome } from "@/lib/matches";
  */
 
 export type Format = "post" | "story";
-const SIZES: Record<Format, { w: number; h: number }> = { post: { w: 1080, h: 1350 }, story: { w: 1080, h: 1920 } };
+export const SIZES: Record<Format, { w: number; h: number }> = { post: { w: 1080, h: 1350 }, story: { w: 1080, h: 1920 } };
 
-const ROJO = "#D20D17";
-const ORO = "#D5AF32";
-const ORO_CLARO = "#F3D774";
-const NEGRO = "#080808";
+export const ROJO = "#D20D17";
+export const ORO = "#D5AF32";
+export const ORO_CLARO = "#F3D774";
+export const NEGRO = "#080808";
 
 export type Pic = { src: string; ratio: number };
-type Side = { name: string; short: string; color: string; crest: Pic | string | null; goals: number; isUs: boolean };
+export type Side = { name: string; short: string; color: string; crest: Pic | string | null; goals: number; isUs: boolean };
 export type PosterData = {
   outcome: Outcome;
   competition: string;           // «LIGA · JORNADA 7»
@@ -116,8 +116,7 @@ const FORM_LETTER: Record<Outcome, string> = { W: "V", D: "E", L: "D" };
 const FORM_BG: Record<Outcome, string> = { W: ORO, D: "#6b6b6b", L: ROJO };
 
 /** Fondo: negro con la franja diagonal roja y dorada de la camiseta, rayado fino y semitono. */
-function Backdrop({ w, h, o }: { w: number; h: number; o: Outcome }) {
-  const glow = o === "W" ? ORO : o === "L" ? ROJO : "#9aa3ad";
+export function Backdrop({ w, h, glow, glowY }: { w: number; h: number; glow: string; glowY?: number }) {
   // La franja va de abajo a la izquierda hacia arriba a la derecha, como en la camiseta
   const b = 230;                 // ancho de la franja roja
   const x0 = w * 0.18;           // dónde corta el borde de abajo
@@ -165,7 +164,7 @@ function Backdrop({ w, h, o }: { w: number; h: number; o: Outcome }) {
       {/* Semitono arriba a la derecha */}
       <rect width={w} height={h} fill="url(#dots)" mask="url(#dotMask)" />
       {/* Brillo detrás del marcador */}
-      <ellipse cx={w / 2} cy={h * (h > 1500 ? 0.36 : 0.37)} rx={w * 0.62} ry={h * 0.26} fill="url(#glow)" />
+      <ellipse cx={w / 2} cy={h * (glowY ?? (h > 1500 ? 0.36 : 0.37))} rx={w * 0.62} ry={h * 0.26} fill="url(#glow)" />
       {/* Franja del Rayo */}
       <polygon points={`${x0},${h} ${x0 + b},${h} ${x1 + b},0 ${x1},0`} fill="url(#red)" opacity="0.55" />
       <polygon points={`${x0 + b + 18},${h} ${x0 + b + 40},${h} ${x1 + b + 40},0 ${x1 + b + 18},0`} fill="url(#gold)" opacity="0.6" />
@@ -176,7 +175,7 @@ function Backdrop({ w, h, o }: { w: number; h: number; o: Outcome }) {
   );
 }
 
-const Bolt = ({ size = 34, color = ORO }: { size?: number; color?: string }) => (
+export const Bolt = ({ size = 34, color = ORO }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" fill={color} /></svg>
 );
 const BallIcon = ({ size = 30 }: { size?: number }) => (
@@ -196,7 +195,7 @@ const Glove = ({ size = 26 }: { size?: number }) => (
 );
 
 /** Escudo: imagen preparada, enlace o el escudo de colores con las iniciales. */
-function CrestImg({ crest, short, color, size }: { crest: Pic | string | null; short: string; color: string; size: number }) {
+export function CrestImg({ crest, short, color, size }: { crest: Pic | string | null; short: string; color: string; size: number }) {
   if (crest) {
     const src = typeof crest === "string" ? crest : crest.src;
     const r = typeof crest === "string" ? 1 : crest.ratio;
@@ -210,7 +209,7 @@ function CrestImg({ crest, short, color, size }: { crest: Pic | string | null; s
 }
 
 /** Camiseta del Rayo con el dorsal (para el MVP sin foto). */
-function Jersey({ goalkeeper, size }: { goalkeeper: boolean; size: number }) {
+export function Jersey({ goalkeeper, size }: { goalkeeper: boolean; size: number }) {
   const body = goalkeeper ? ORO : "#111111";
   return (
     <svg width={size} height={(size * 60) / 64} viewBox="0 0 64 60">
@@ -323,6 +322,61 @@ function MvpPending({ w, crest }: { w: number; crest: Pic }) {
   );
 }
 
+// ---------------------------------------------------------------- Cabecera y pie (comunes a todas las imágenes)
+
+const PAD = 60;
+
+/** Cabecera: escudo y club a la izquierda, competición y fecha a la derecha. */
+export function PosterHeader({ crest, competition, day, story }: { crest: Pic; competition: string; day: string; story: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${story ? 110 : 44}px ${PAD}px 0` }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <CrestImg crest={crest} short="RVA" color={ROJO} size={story ? 92 : 78} />
+        <div style={{ display: "flex", flexDirection: "column", marginLeft: 16 }}>
+          <span style={{ fontFamily: "Display", fontSize: story ? 40 : 36, lineHeight: 1 }}>RAYO <span style={{ color: ORO, marginLeft: 10 }}>VALLECAÑAS</span></span>
+          <span style={{ fontSize: 19, letterSpacing: 5, color: "rgba(255,255,255,0.55)", marginTop: 4 }}>FÚTBOL 7 · SALAMANCA</span>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+        <div style={{ display: "flex", alignItems: "center", background: ROJO, padding: "6px 16px", borderRadius: 6, fontFamily: "Display", fontSize: 26, letterSpacing: 3 }}>{competition}</div>
+        <span style={{ fontSize: 22, color: "rgba(255,255,255,0.75)", marginTop: 8 }}>{day}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Pie: patrocinador principal (o el campo), lema y campo. */
+export function PosterFooter({ sponsor, venue, story }: { sponsor: Pic | null; venue: string | null; story: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `22px ${PAD}px ${story ? 90 : 28}px`, borderTop: `5px solid ${ORO}`, background: "rgba(0,0,0,0.85)" }}>
+      {sponsor ? (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ display: "flex", flexDirection: "column", fontSize: 15, letterSpacing: 4, color: "rgba(255,255,255,0.55)", marginRight: 16 }}><span>CON EL</span><span>APOYO DE</span></span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={sponsor.src} width={Math.round(Math.min(220, Math.max(60, 64 * sponsor.ratio)))} height={64} style={{ objectFit: "contain" }} alt="" />
+        </div>
+      ) : (
+        <span style={{ fontSize: 22, color: "rgba(255,255,255,0.7)" }}>{venue ?? ""}</span>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+        <span style={{ display: "flex", alignItems: "center", fontFamily: "Display", fontSize: 34, letterSpacing: 3, color: ORO }}>#AÚPARAYO <div style={{ display: "flex", marginLeft: 8 }}><Bolt size={30} /></div></span>
+        {sponsor && venue && <span style={{ fontSize: 18, color: "rgba(255,255,255,0.55)" }}>{venue}</span>}
+      </div>
+    </div>
+  );
+}
+
+/** Rótulo pequeño en dorado entre dos filetes («RESULTADO FINAL», «CONVOCATORIA»…). */
+export function Kicker({ text }: { text: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", fontSize: 24, letterSpacing: 9, color: ORO }}>
+      <div style={{ display: "flex", height: 3, width: 70, background: `linear-gradient(90deg, rgba(213,175,50,0), ${ORO})`, marginRight: 18 }} />
+      {text}
+      <div style={{ display: "flex", height: 3, width: 70, background: `linear-gradient(90deg, ${ORO}, rgba(213,175,50,0))`, marginLeft: 18 }} />
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- Póster
 
 function renderPoster(d: PosterData, format: Format) {
@@ -332,22 +386,7 @@ function renderPoster(d: PosterData, format: Format) {
   const gold = (t: Side) => t.isUs && o === "W";
   const pad = 60;
 
-  // ---- Cabecera: escudo y club a la izquierda, competición y fecha a la derecha
-  const header = (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${story ? 110 : 44}px ${pad}px 0` }}>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <CrestImg crest={d.crest} short="RVA" color={ROJO} size={story ? 92 : 78} />
-        <div style={{ display: "flex", flexDirection: "column", marginLeft: 16 }}>
-          <span style={{ fontFamily: "Display", fontSize: story ? 40 : 36, lineHeight: 1 }}>RAYO <span style={{ color: ORO, marginLeft: 10 }}>VALLECAÑAS</span></span>
-          <span style={{ fontSize: 19, letterSpacing: 5, color: "rgba(255,255,255,0.55)", marginTop: 4 }}>FÚTBOL 7 · SALAMANCA</span>
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-        <div style={{ display: "flex", alignItems: "center", background: ROJO, padding: "6px 16px", borderRadius: 6, fontFamily: "Display", fontSize: 26, letterSpacing: 3 }}>{d.competition}</div>
-        <span style={{ fontSize: 22, color: "rgba(255,255,255,0.75)", marginTop: 8 }}>{d.day}</span>
-      </div>
-    </div>
-  );
+  const header = <PosterHeader crest={d.crest} competition={d.competition} day={d.day} story={story} />;
 
   // ---- Titular con la palabra gigante de fondo
   const headline = (
@@ -496,24 +535,7 @@ function renderPoster(d: PosterData, format: Format) {
     </div>
   );
 
-  // ---- Pie: patrocinador, campo y lema
-  const footer = (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `22px ${pad}px ${story ? 90 : 28}px`, borderTop: `5px solid ${ORO}`, background: "rgba(0,0,0,0.85)" }}>
-      {d.sponsor ? (
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <span style={{ display: "flex", flexDirection: "column", fontSize: 15, letterSpacing: 4, color: "rgba(255,255,255,0.55)", marginRight: 16 }}><span>CON EL</span><span>APOYO DE</span></span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={d.sponsor.src} width={Math.round(Math.min(220, Math.max(60, 64 * d.sponsor.ratio)))} height={64} style={{ objectFit: "contain" }} alt="" />
-        </div>
-      ) : (
-        <span style={{ fontSize: 22, color: "rgba(255,255,255,0.7)" }}>{d.venue ?? ""}</span>
-      )}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-        <span style={{ display: "flex", alignItems: "center", fontFamily: "Display", fontSize: 34, letterSpacing: 3, color: ORO }}>#AÚPARAYO <div style={{ display: "flex", marginLeft: 8 }}><Bolt size={30} /></div></span>
-        {d.sponsor && d.venue && <span style={{ fontSize: 18, color: "rgba(255,255,255,0.55)" }}>{d.venue}</span>}
-      </div>
-    </div>
-  );
+  const footer = <PosterFooter sponsor={d.sponsor} venue={d.venue} story={story} />;
 
   const body = (
     <div style={{ display: "flex", flexGrow: 1, alignItems: "center", padding: `0 ${pad}px` }}>
@@ -526,7 +548,7 @@ function renderPoster(d: PosterData, format: Format) {
 
   const tree = (
     <div style={{ display: "flex", flexDirection: "column", width: W, height: H, background: "#070707", color: "white", fontFamily: "Text", position: "relative" }}>
-      <Backdrop w={W} h={H} o={o} />
+      <Backdrop w={W} h={H} glow={o === "W" ? ORO : o === "L" ? ROJO : "#9aa3ad"} />
       {header}
       {headline}
       {scoreboard}
@@ -539,12 +561,11 @@ function renderPoster(d: PosterData, format: Format) {
 }
 
 /**
- * Dibuja el póster: satori lo pasa a SVG y sharp (nativo) lo convierte en JPEG. Es bastante más
+ * Dibuja un póster: satori lo pasa a SVG y sharp (nativo) lo convierte en JPEG. Es bastante más
  * rápido que el dibujo de next/og y el JPEG pesa una fracción del PNG, así se comparte antes.
  */
-export async function drawPoster(d: PosterData, format: Format): Promise<{ body: Buffer; type: string }> {
+export async function drawTree(tree: React.ReactElement, width: number, height: number): Promise<{ body: Buffer; type: string }> {
   const { black, semi } = await loadAssets();
-  const { tree, width, height } = renderPoster(d, format);
   const fonts = [
     { name: "Display", data: black, weight: 900 as const, style: "normal" as const },
     { name: "Text", data: semi, weight: 600 as const, style: "normal" as const },
@@ -557,10 +578,16 @@ export async function drawPoster(d: PosterData, format: Format): Promise<{ body:
         .jpeg({ quality: 90, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer();
       return { body, type: "image/jpeg" };
     } catch (e) {
-      console.error("Imagen del resultado: sharp ha fallado, se usa el dibujo de next/og", e);
+      console.error("Imagen para compartir: sharp ha fallado, se usa el dibujo de next/og", e);
     }
   }
   // Plan B (más lento, PNG): el dibujo de next/og con el mismo diseño
   const res = new ImageResponse(tree, { width, height, fonts });
   return { body: Buffer.from(await res.arrayBuffer()), type: "image/png" };
+}
+
+/** Imagen del resultado. */
+export async function drawPoster(d: PosterData, format: Format): Promise<{ body: Buffer; type: string }> {
+  const { tree, width, height } = renderPoster(d, format);
+  return drawTree(tree, width, height);
 }

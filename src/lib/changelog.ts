@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.4.0",
+    date: "2026-11-12",
+    title: "Imágenes para compartir: convocatoria y «Hoy jugamos»",
+    changes: [
+      "Nueva imagen de la convocatoria, con el mismo estilo póster que la del resultado: los dos escudos frente a frente (con su posición y puntos si es de liga), el día, la hora y el campo, y todos los convocados con su camiseta, dorsal y apodo, por líneas. No salen ni la quedada ni las notas.",
+      "Nueva imagen «Hoy jugamos» para el día del partido: el rival, la hora del pitido en grande, el campo y cómo llegamos (nuestra racha, la clasificación y el tiempo previsto). Si se saca antes, dice «¡Mañana jugamos!» o el día de la semana.",
+      "En la ficha de cada partido, un apartado nuevo «Imágenes para compartir» reúne todas las imágenes del partido (convocatoria, «Hoy jugamos» y resultado), cada una en formato publicación o historia.",
+      "La convocatoria también tiene su botón «Imagen» junto al de WhatsApp.",
+      "El interruptor de Patrocinadores pasa a llamarse «En las imágenes para compartir» y vale para todas.",
+    ],
+  },
+  {
     version: "4.3.0",
     date: "2026-11-11",
     title: "La Voz del Rayo, con más vida y con promociones",

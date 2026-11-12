@@ -252,7 +252,7 @@ export function DeleteButton({ action, label, confirmText, small = false }: { ac
   );
 }
 
-/** Dónde se enseñan los logos: Inicio e imagen del resultado. */
+/** Dónde se enseñan los logos: Inicio e imágenes para compartir. */
 export function DisplayForm({ action, display, canEdit }: { action: A; display: { show_home: boolean; show_result: boolean }; canEdit: boolean }) {
   const [state, formAction] = useActionState(action, undefined);
   const opt = (name: string, checked: boolean, title: string, hint: string) => (
@@ -265,7 +265,7 @@ export function DisplayForm({ action, display, canEdit }: { action: A; display: 
     <form action={formAction} className="space-y-3">
       <div className="grid gap-2 sm:grid-cols-2">
         {opt("show_home", display.show_home, "Al pie de Inicio", "Una línea discreta «Con el apoyo de» con los logos en gris, al final de la página.")}
-        {opt("show_result", display.show_result, "En la imagen del resultado", "El logo del patrocinador principal, pequeño, encima del pie de la imagen para compartir.")}
+        {opt("show_result", display.show_result, "En las imágenes para compartir", "El logo del patrocinador principal, pequeño, al pie de las imágenes del partido (convocatoria, «Hoy jugamos» y resultado).")}
       </div>
       {canEdit && <SubmitButton className="btn-dark w-full sm:w-auto" pendingText="Guardando…">Guardar</SubmitButton>}
       <FormMessage state={state} />

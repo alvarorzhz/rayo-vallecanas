@@ -19,6 +19,7 @@ import { CallupSection } from "@/components/matches/callup-section";
 import { ReportSection } from "@/components/matches/report-section";
 import { MvpSection } from "@/components/matches/mvp-section";
 import { CallupHistory } from "@/components/matches/callup-history";
+import { ShareImages } from "@/components/matches/share-images";
 import { callupClosed } from "@/lib/callups";
 import { seasonOf } from "@/lib/finance";
 import { getStandings } from "@/lib/league-table";
@@ -96,6 +97,8 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
           {callupClosed(m)
             ? <CallupHistory m={m} rows={callups} report={report} myPlayerId={myPlayerId} />
             : <CallupSection m={m} rows={callups} myPlayerId={myPlayerId} canEdit={canEdit} url={`https://rayo-vallecanas.vercel.app/partidos/${m.id}`} />}
+
+          <ShareImages m={m} hasCallup={!!m.callup_published_at && callups.length > 0} />
 
           <section className="card space-y-3">
             <h2>Dónde y cuándo</h2>

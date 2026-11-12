@@ -3,6 +3,7 @@ import { Clock, ClipboardList, Pencil, StickyNote } from "lucide-react";
 import { Jersey } from "@/components/squad/jersey";
 import { LineupPitch } from "@/components/matches/lineup-pitch";
 import { ShareButton } from "@/components/matches/share-button";
+import { ShareImageButton } from "@/components/matches/share-image";
 import { RemindButton, ReplyBox, ReplyForSelect } from "@/components/matches/callup-forms";
 import { remindPending, replyCallup, setReplyFor } from "@/app/(app)/partidos/callup-actions";
 import { REPLY_LABEL, REPLY_TONE, callupShareText, tally, type CallupRow, type Reply } from "@/lib/callups";
@@ -77,6 +78,7 @@ export function CallupSection({ m, rows, myPlayerId, canEdit, url }: { m: MatchR
         </h2>
         <div className="flex flex-wrap gap-2">
           {published && <ShareButton text={callupShareText(m, rows, url)} label="WhatsApp" />}
+          {published && rows.length > 0 && <ShareImageButton url={`/api/partidos/${m.id}/imagen/convocatoria`} name={`convocatoria-${m.match_date}.jpg`} title="Imagen de la convocatoria" />}
           {canEdit && !closed && (
             <Link href={`/partidos/${m.id}/convocatoria`} prefetch className={rows.length ? "btn-ghost px-3 py-1.5 text-sm" : "btn-primary"}>
               {rows.length ? <><Pencil size={15} /> Editar</> : <><ClipboardList size={16} /> Preparar convocatoria</>}

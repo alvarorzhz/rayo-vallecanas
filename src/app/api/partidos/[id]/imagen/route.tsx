@@ -1,48 +1,13 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { createClient } from "@/lib/supabase/server";
 import { fetchMatch, fetchReport } from "@/lib/match-queries";
 import { CLUB_NAME, COMPETITION_LABEL, byKickoff, hhmm, longDay, outcomeOf, rivalColor, rivalShort, shortDay, type MatchRow, type Outcome } from "@/lib/matches";
 import { shirtName } from "@/lib/squad";
-import { fetchDisplay, type Showcase } from "@/lib/sponsors";
+import { mainSponsorLogo, rivalCrest, within, embed } from "@/lib/poster-sources";
 import { fetchMvpBoard } from "@/lib/mvp-server";
 import { getLeagueTable } from "@/lib/league-table";
-import { drawPoster, loadAssets, prepareImage, type Format, type Pic, type PosterData } from "@/lib/result-image";
+import { drawPoster, loadAssets, type Format, type PosterData } from "@/lib/result-image";
 
 export const runtime = "nodejs";
-
-/**
- * Lee una imagen y la prepara para el póster. Solo ficheros de la propia app o de nuestro
- * almacenamiento: así nadie puede hacer que el servidor pida una dirección cualquiera.
- */
-async function embed(url: string | null | undefined, buckets: string[], opts: Parameters<typeof prepareImage>[1]): Promise<Pic | null> {
-  if (!url) return null;
-  try {
-    let buf: Buffer;
-    if (url.startsWith("/")) {
-      if (!/^\/patrocinadores\/[\w.-]+\.(png|jpe?g|webp)$/.test(url)) return null;
-      buf = await readFile(join(process.cwd(), "public", url));
-    } else {
-      const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/$/, "");
-      if (!base || !buckets.some((b) => url.startsWith(`${base}/storage/v1/object/public/${b}/`))) return null;
-      const r = await fetch(url, { signal: AbortSignal.timeout(4000) });
-      if (!r.ok) return null;
-      buf = Buffer.from(await r.arrayBuffer());
-    }
-    return await prepareImage(buf, opts);
-  } catch {
-    return null;
-  }
-}
-
-/** Escudo de un rival: el nuestro preparado si está en el almacenamiento; si no, el enlace tal cual. */
-async function rivalCrest(url: string | null, size: number): Promise<Pic | string | null> {
-  if (!url) return null;
-  return (await embed(url, ["rival-crests"], { max: size })) ?? (/^https:\/\//.test(url) ? url : null);
-}
-
-/** Lo que tarde la clasificación (la web de la liga) no puede frenar la imagen. */
-const within = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<null>((ok) => setTimeout(() => ok(null), ms))]);
 
 /**
  * Imagen del resultado para compartir: ?formato=historia para la de 1080 × 1920 (estados e historias);
@@ -61,11 +26,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!m || m.status !== "played") return new Response("No encontrado", { status: 404 });
   const o = outcomeOf(m)!;
 
-  const [report, { crest }, display, showcase, season, league] = await Promise.all([
+  const [report, { crest }, season, league] = await Promise.all([
     fetchReport(supabase, m),
     loadAssets(),
-    fetchDisplay(supabase),
-    supabase.rpc("sponsor_showcase"),
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("season", m.season).in("status", ["played", "scheduled"]).returns<MatchRow[]>().then((r) => r.data ?? []),
     supabase.from("league_sync").select("competition, team").eq("id", 1).maybeSingle<{ competition: string; team: string }>().then((r) => r.data),
   ]);
@@ -81,9 +44,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     ? within(getLeagueTable(league.competition), 2500).then((t) => t?.rows.find((r) => r.teamId === league.team) ?? null)
     : Promise.resolve(null);
 
-  const main = display.show_result ? ((showcase.data ?? []) as Showcase[]).find((x) => x.tier === "main" && x.logo_url) : undefined;
   const [sponsor, mvpPhoto, themCrest, nextCrest, row] = await Promise.all([
-    main ? embed(main.logo_url, ["sponsor-logos"], { max: 280 }) : null,
+    mainSponsorLogo(supabase),
     embed(report.mvp?.player.photo_url, ["player-photos"], { max: 0, photo: { w: 300, h: 310 } }),
     rivalCrest(m.rival.crest_url, format === "story" ? 240 : 200),
     next ? rivalCrest(next.rival.crest_url, 60) : null,
