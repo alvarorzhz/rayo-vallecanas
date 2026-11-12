@@ -8,6 +8,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.4.1",
+    date: "2026-11-12",
+    title: "La imagen de la convocatoria, solo con los que van",
+    changes: [
+      "En la imagen de la convocatoria ya solo salen los jugadores que han dicho «Voy». Los que dudan, no van o no han contestado no aparecen.",
+      "La imagen se puede sacar en cuanto al menos un jugador ha dicho «Voy».",
+    ],
+  },
+  {
     version: "4.4.0",
     date: "2026-11-12",
     title: "Imágenes para compartir: convocatoria y «Hoy jugamos»",

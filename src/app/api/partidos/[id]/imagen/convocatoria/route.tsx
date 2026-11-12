@@ -10,8 +10,8 @@ export const runtime = "nodejs";
 
 /**
  * Imagen de la convocatoria para compartir (v4.4.0): ?formato=historia para la de 1080 × 1920;
- * si no, la publicación de 1080 × 1350. Solo con la convocatoria publicada. Salen todos los
- * convocados por igual, por líneas (sin titulares ni suplentes), y ni la quedada ni las notas.
+ * si no, la publicación de 1080 × 1350. Solo con la convocatoria publicada. Salen solo los que han
+ * dicho «Voy» (4.4.1), por igual y por líneas (sin titulares ni suplentes), y ni la quedada ni las notas.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,7 +22,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const m = await fetchMatch(supabase, id);
   if (!m || !m.callup_published_at) return new Response("No encontrado", { status: 404 });
-  const [rows, { crest }, sponsor] = await Promise.all([fetchCallups(supabase, m), loadAssets(), mainSponsorLogo(supabase)]);
+  const [all, { crest }, sponsor] = await Promise.all([fetchCallups(supabase, m), loadAssets(), mainSponsorLogo(supabase)]);
+  const rows = all.filter((r) => r.reply === "yes");
   if (!rows.length) return new Response("No encontrado", { status: 404 });
   const { home, away } = await posterTeams(supabase, m, crest, format === "story" ? 220 : 150);
 

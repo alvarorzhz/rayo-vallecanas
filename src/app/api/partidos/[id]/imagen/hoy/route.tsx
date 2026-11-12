@@ -42,13 +42,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const today = todayMadrid();
   const soon = m.match_date >= today && m.match_date <= addDays(today, 10);
-  const [{ crest }, sponsor, season, weather] = await Promise.all([
-    loadAssets(),
+  const { crest } = await loadAssets();
+  // Todo a la vez: lo que tarden el tiempo y la web de la liga no se suma
+  const [{ home, away, ranks }, sponsor, season, weather] = await Promise.all([
+    posterTeams(supabase, m, crest, format === "story" ? 260 : 200),
     mainSponsorLogo(supabase),
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("season", m.season).eq("status", "played").returns<MatchRow[]>().then((r) => r.data ?? []),
     soon ? within(fetchMatchWeather(m.match_date, m.kickoff), 3000) : null,
   ]);
-  const { home, away, ranks } = await posterTeams(supabase, m, crest, format === "story" ? 260 : 200);
 
   const form = [...season].filter((x) => x.match_date <= m.match_date).sort(byKickoff)
     .map((x) => outcomeOf(x)).filter((x): x is Outcome => !!x).slice(-5);

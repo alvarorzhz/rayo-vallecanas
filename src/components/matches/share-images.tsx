@@ -10,7 +10,7 @@ import type { MatchRow } from "@/lib/matches";
 export function ShareImages({ m, hasCallup }: { m: MatchRow; hasCallup: boolean }) {
   const base = `/api/partidos/${m.id}/imagen`;
   const tiles = [
-    hasCallup && { key: "convocatoria", url: `${base}/convocatoria`, name: `convocatoria-${m.match_date}.jpg`, title: "Convocatoria", hint: "Los convocados por líneas, con el día, la hora y el campo.", word: "CONVOCATORIA", glow: "oro" as const },
+    hasCallup && { key: "convocatoria", url: `${base}/convocatoria`, name: `convocatoria-${m.match_date}.jpg`, title: "Convocatoria", hint: "Los que han dicho «Voy», por líneas, con el día, la hora y el campo.", word: "CONVOCATORIA", glow: "oro" as const },
     m.status === "scheduled" && { key: "hoy", url: `${base}/hoy`, name: `hoy-jugamos-${m.match_date}.jpg`, title: "Hoy jugamos", hint: "El rival, la hora, el campo y cómo llegamos.", word: "¡HOY JUGAMOS!", glow: "rojo" as const },
     m.status === "played" && { key: "resultado", url: base, name: `resultado-${m.match_date}.jpg`, title: "Resultado", hint: "El marcador, los goles y el MVP.", word: "RESULTADO", glow: "oro" as const },
   ].filter((t) => !!t);
