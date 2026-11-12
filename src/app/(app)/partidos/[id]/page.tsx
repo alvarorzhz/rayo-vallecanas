@@ -98,7 +98,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
             ? <CallupHistory m={m} rows={callups} report={report} myPlayerId={myPlayerId} />
             : <CallupSection m={m} rows={callups} myPlayerId={myPlayerId} canEdit={canEdit} url={`https://rayo-vallecanas.vercel.app/partidos/${m.id}`} />}
 
-          <ShareImages m={m} hasCallup={!!m.callup_published_at && callups.length > 0} />
+          <ShareImages m={m} hasCallup={!!m.callup_published_at && callups.some((c) => c.reply === "yes")} />
 
           <section className="card space-y-3">
             <h2>Dónde y cuándo</h2>

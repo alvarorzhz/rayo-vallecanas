@@ -78,7 +78,7 @@ export function CallupSection({ m, rows, myPlayerId, canEdit, url }: { m: MatchR
         </h2>
         <div className="flex flex-wrap gap-2">
           {published && <ShareButton text={callupShareText(m, rows, url)} label="WhatsApp" />}
-          {published && rows.length > 0 && <ShareImageButton url={`/api/partidos/${m.id}/imagen/convocatoria`} name={`convocatoria-${m.match_date}.jpg`} title="Imagen de la convocatoria" />}
+          {published && t.yes > 0 && <ShareImageButton url={`/api/partidos/${m.id}/imagen/convocatoria`} name={`convocatoria-${m.match_date}.jpg`} title="Imagen de la convocatoria" />}
           {canEdit && !closed && (
             <Link href={`/partidos/${m.id}/convocatoria`} prefetch className={rows.length ? "btn-ghost px-3 py-1.5 text-sm" : "btn-primary"}>
               {rows.length ? <><Pencil size={15} /> Editar</> : <><ClipboardList size={16} /> Preparar convocatoria</>}
