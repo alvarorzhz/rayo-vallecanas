@@ -10,6 +10,25 @@ import { DEFAULT_BYLINE, FEATURED_HOURS, KINDS, MAX_QUESTION, MAX_QUESTIONS, ima
 import type { Interview, MatchOption, PlayerOption, SponsorCard } from "@/lib/news-queries";
 import type { AiDraft, NewsState } from "@/app/(app)/la-voz/actions";
 
+/**
+ * Lo más que se espera a la IA desde el móvil. El servidor corta a los 120 s; si el móvil se duerme o pierde
+ * la conexión, la respuesta puede no llegar nunca y los botones de publicar se quedaban apagados para siempre.
+ */
+const AI_WAIT_MS = 125_000;
+const AI_LOST = "La IA no ha contestado a tiempo (o el móvil ha perdido la conexión). Vuelve a probar o escribe tú el texto.";
+/** Espera a la IA con tope de tiempo y sin reventar la página si se cae la conexión. */
+async function waitAi<T extends { error?: string }>(call: () => Promise<T>): Promise<T> {
+  const lost = { error: AI_LOST } as T;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([call(), new Promise<T>((ok) => { timer = setTimeout(() => ok(lost), AI_WAIT_MS); })]);
+  } catch {
+    return lost;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 type AiInput = { kind: string; matchId?: string | null; playerId?: string | null; sponsorId?: string | null; notes?: string | null; articleId?: string | null };
 
 type Props = {
@@ -151,7 +170,7 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
     setAiMsg(undefined);
     start(async () => {
       try {
-        const r = await draftWithAi({ kind, matchId: matchId || null, playerId: playerId || null, sponsorId: sponsorId || null, notes, articleId: a?.id ?? null });
+        const r = await waitAi(() => draftWithAi({ kind, matchId: matchId || null, playerId: playerId || null, sponsorId: sponsorId || null, notes, articleId: a?.id ?? null }));
         if (r.error || !r.body) return setAiMsg({ error: r.error ?? "La IA no ha podido redactarlo" });
         fill(r);
         setTab("write");
@@ -168,7 +187,7 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
     setIvMsg(undefined);
     start(async () => {
       try {
-        const r = await suggestQuestions({ playerId: playerId || null, notes });
+        const r = await waitAi(() => suggestQuestions({ playerId: playerId || null, notes }));
         if (r.error || !r.questions) return setIvMsg({ error: r.error ?? "La IA no ha propuesto preguntas" });
         setQuestions(r.questions);
         setIvMsg({ ok: "Preguntas propuestas. Quita, cambia o añade las que quieras antes de mandarlas." });
@@ -400,6 +419,12 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
           </label>
         )}
         <FormMessage state={msg ?? state} />
+        {busy && (
+          <p role="status" className="flex items-center gap-2 rounded-xl bg-dorado/15 px-3 py-2 text-sm font-semibold text-negro/80 ring-1 ring-dorado/40">
+            <span aria-hidden className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" />
+            {busy === "ai" ? "La IA está redactando: podrás guardar o publicar en cuanto termine." : busy === "questions" ? "La IA está pensando las preguntas: podrás guardar o publicar en cuanto termine." : "Subiendo la foto: podrás guardar o publicar en cuanto termine."}
+          </p>
+        )}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           {remove && (
             <button type="button" onClick={() => runOther(remove, "¿Eliminar esta pieza? No se puede deshacer.")} disabled={pending} className="btn-ghost text-rojo sm:mr-auto">

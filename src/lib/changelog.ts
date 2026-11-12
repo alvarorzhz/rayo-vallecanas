@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.4.2",
+    date: "2026-11-12",
+    title: "Novedades y La Voz, sin cosas raras",
+    quiet: true,
+    changes: [
+      "Arreglado: en Novedades el número de la versión ya no se queda cortado cuando el título es largo.",
+      "Arreglado: en el editor de La Voz, mientras la IA redacta o se sube una foto, los botones «Publicar» y «Guardar borrador» se apagaban sin decir por qué. Ahora sale un aviso explicándolo, y si la IA no contesta en unos dos minutos (o el móvil pierde la conexión) se vuelven a encender solos.",
+    ],
+  },
+  {
     version: "4.4.1",
     date: "2026-11-12",
     title: "La imagen de la convocatoria, solo con los que van",
