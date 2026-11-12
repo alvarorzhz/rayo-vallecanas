@@ -7,10 +7,10 @@ import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { ArticleBody } from "@/components/news/article-body";
 import { DEFAULT_BYLINE, FEATURED_HOURS, KINDS, MAX_QUESTION, MAX_QUESTIONS, imageLine, interviewToBody, parseAiReply, type Article, type NewsKind } from "@/lib/news";
-import type { Interview, MatchOption, PlayerOption } from "@/lib/news-queries";
+import type { Interview, MatchOption, PlayerOption, SponsorCard } from "@/lib/news-queries";
 import type { AiDraft, NewsState } from "@/app/(app)/la-voz/actions";
 
-type AiInput = { kind: string; matchId?: string | null; playerId?: string | null; notes?: string | null; articleId?: string | null };
+type AiInput = { kind: string; matchId?: string | null; playerId?: string | null; sponsorId?: string | null; notes?: string | null; articleId?: string | null };
 
 type Props = {
   action: (s: NewsState, f: FormData) => Promise<NewsState>;
@@ -28,6 +28,7 @@ type Props = {
   init?: { kind?: NewsKind | null; matchId?: string | null; playerId?: string | null };
   matches: MatchOption[];
   players: PlayerOption[];
+  sponsors: SponsorCard[];
   canPublish: boolean;
 };
 
@@ -43,11 +44,12 @@ async function upload(file: File): Promise<string> {
   return sb.storage.from("news-photos").getPublicUrl(path).data.publicUrl;
 }
 
-export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, aiReady, interview, interviewFlash, unpublish, remove, article: a, init, matches, players, canPublish }: Props) {
+export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, aiReady, interview, interviewFlash, unpublish, remove, article: a, init, matches, players, sponsors, canPublish }: Props) {
   const [state, formAction] = useActionState(action, undefined);
   const [kind, setKind] = useState<NewsKind>(a?.kind ?? init?.kind ?? "cronica");
   const [matchId, setMatchId] = useState(a?.match_id ?? init?.matchId ?? "");
   const [playerId, setPlayerId] = useState(a?.player_id ?? init?.playerId ?? "");
+  const [sponsorId, setSponsorId] = useState(a?.sponsor_id ?? "");
   const [kicker, setKicker] = useState(a?.kicker ?? "");
   const [title, setTitle] = useState(a?.title ?? "");
   const [summary, setSummary] = useState(a?.summary ?? "");
@@ -124,7 +126,7 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
   const makePrompt = () =>
     start(async () => {
       setMsg(undefined);
-      const r = await promptFor({ kind, matchId: matchId || null, playerId: playerId || null, notes });
+      const r = await promptFor({ kind, matchId: matchId || null, playerId: playerId || null, sponsorId: sponsorId || null, notes });
       if (r.error || !r.prompt) return setMsg({ error: r.error ?? "No se pudo preparar" });
       setPrompt(r.prompt);
       try {
@@ -149,7 +151,7 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
     setAiMsg(undefined);
     start(async () => {
       try {
-        const r = await draftWithAi({ kind, matchId: matchId || null, playerId: playerId || null, notes, articleId: a?.id ?? null });
+        const r = await draftWithAi({ kind, matchId: matchId || null, playerId: playerId || null, sponsorId: sponsorId || null, notes, articleId: a?.id ?? null });
         if (r.error || !r.body) return setAiMsg({ error: r.error ?? "La IA no ha podido redactarlo" });
         fill(r);
         setTab("write");
@@ -239,6 +241,17 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
             </select>
           </div>
         )}
+        {meta.needs === "sponsor" && (
+          <div className="mt-4">
+            <label className="label" htmlFor="sponsor_id">Patrocinador</label>
+            <select id="sponsor_id" name="sponsor_id" className="input" value={sponsorId} onChange={(e) => { setSponsorId(e.target.value); setPrompt(null); }}>
+              <option value="">Elige el patrocinador…</option>
+              {sponsors.map((sp) => <option key={sp.id} value={sp.id}>{sp.name}{sp.tier === "main" ? " · principal" : ""}</option>)}
+              {sponsorId && !sponsors.some((sp) => sp.id === sponsorId) && <option value={sponsorId}>El patrocinador de esta pieza</option>}
+            </select>
+            <p className="mt-1 text-xs text-negro/60">Su logo y su web salen solos al final de la pieza, con el sello «Promoción».</p>
+          </div>
+        )}
       </fieldset>
 
       {/* Entrevista que contesta el propio jugador desde la app */}
@@ -257,12 +270,12 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
         <h2 className="relative flex items-center gap-2"><Sparkles size={18} className="text-dorado" /> 2 · Que te ayude una IA (opcional)</h2>
         <p className="relative mt-1 text-sm text-white/70">
           {aiReady
-            ? <>Escribe lo que viste o lo que quieres contar. La app añade los datos del {meta.needs === "player" ? "jugador" : meta.needs === "match" ? "partido" : "club"} (solo apodos) y la IA te redacta un borrador que luego cambias a tu gusto. Nunca publica sola.</>
-            : <>Escribe lo que viste o lo que quieres contar. La app añade los datos del {meta.needs === "player" ? "jugador" : meta.needs === "match" ? "partido" : "club"} (solo apodos) y te prepara las instrucciones para pegarlas en ChatGPT, Gemini o Claude.</>}
+            ? <>Escribe lo que viste o lo que quieres contar. La app añade los datos del {meta.needs === "player" ? "jugador" : meta.needs === "match" ? "partido" : meta.needs === "sponsor" ? "patrocinador" : "club"} (solo apodos) y la IA te redacta un borrador que luego cambias a tu gusto. Nunca publica sola.</>
+            : <>Escribe lo que viste o lo que quieres contar. La app añade los datos del {meta.needs === "player" ? "jugador" : meta.needs === "match" ? "partido" : meta.needs === "sponsor" ? "patrocinador" : "club"} (solo apodos) y te prepara las instrucciones para pegarlas en ChatGPT, Gemini o Claude.</>}
         </p>
         <label className="label relative mt-3 !text-white/80" htmlFor="ai_notes">Tus notas</label>
         <textarea id="ai_notes" name="ai_notes" rows={4} maxLength={3000} value={notes} onChange={(e) => setNotes(e.target.value)} className="input relative !bg-white/95 !text-negro"
-          placeholder={kind === "entrevista" ? "Preguntas que quieres hacerle o sus respuestas, si ya las tienes…" : kind === "comunicado" ? "Qué quiere comunicar el club…" : "Ej.: Llovía muchísimo. Empezamos perdiendo y Chino lo remontó con dos golazos. Gran partido de Gato bajo palos…"} />
+          placeholder={kind === "entrevista" ? "Preguntas que quieres hacerle o sus respuestas, si ya las tienes…" : kind === "comunicado" ? "Qué quiere comunicar el club…" : kind === "promocion" ? "Ej.: 2x1 en cañas los domingos después del partido presentando el carné del club…" : "Ej.: Llovía muchísimo. Empezamos perdiendo y Chino lo remontó con dos golazos. Gran partido de Gato bajo palos…"} />
         <p className="relative mt-1 text-xs text-white/50">Solo las ve la redacción: nunca salen en la noticia.</p>
         <div className="relative mt-3 flex flex-wrap gap-2">
           {aiReady && (

@@ -27,6 +27,6 @@ export default async function PublicArticlePage({ params }: { params: Promise<{ 
   return (
     <ArticleView a={p.card} sheet={p.sheet} player={p.player} others={list.filter((x) => x.id !== p.card.id).slice(0, 3)}
       home="/noticias" hrefOf={(x) => `/noticias/${x.id}`} sheetLink={false}
-      actions={<ShareButton title={p.card.title} />} />
+      actions={<ShareButton title={p.card.title} />} share={<ShareButton title={p.card.title} />} />
   );
 }

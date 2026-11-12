@@ -1,5 +1,6 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { seasonOf } from "@/lib/finance";
 import { COMPETITION_LABEL, form, hhmm, longDay, outcomeOf, type MatchRow } from "@/lib/matches";
 import { fetchCallups, fetchMatch, fetchReport } from "@/lib/match-queries";
@@ -15,7 +16,34 @@ type DB = Awaited<ReturnType<typeof createClient>>;
 export type ArticleCard = Article & {
   match: (Pick<MatchRow, "id" | "match_date" | "is_home" | "goals_for" | "goals_against" | "status" | "round" | "competition"> & { rival: Pick<MatchRow["rival"], "name" | "short_name" | "crest_url" | "color"> }) | null;
   player: Pick<Player, "id" | "first_name" | "last_name" | "nickname" | "photo_url"> | null;
+  /** Promoción: lo público del patrocinador (nunca su contacto ni su acuerdo). */
+  sponsor?: SponsorCard | null;
 };
+
+export type SponsorCard = { id: string; name: string; tier: "main" | "partner"; logo_url: string | null; website: string | null };
+
+/**
+ * Nombre, logo y web de los patrocinadores de las promociones. Los jugadores no pueden leer la tabla de
+ * patrocinadores (tiene contactos y dinero), así que se leen aquí solo estos campos.
+ */
+export async function sponsorCards(ids: (string | null | undefined)[]): Promise<Map<string, SponsorCard>> {
+  const list = [...new Set(ids.filter((x): x is string => !!x))];
+  if (!list.length) return new Map();
+  const { data } = await createAdminClient().from("sponsors").select("id, name, tier, logo_url, website").in("id", list).returns<SponsorCard[]>();
+  return new Map((data ?? []).map((x) => [x.id, x]));
+}
+
+/** Añade el patrocinador a las promociones. */
+export async function withSponsors<T extends ArticleCard>(cards: T[]): Promise<T[]> {
+  const map = await sponsorCards(cards.filter((c) => c.kind === "promocion").map((c) => c.sponsor_id));
+  return map.size ? cards.map((c) => (c.sponsor_id ? { ...c, sponsor: map.get(c.sponsor_id) ?? null } : c)) : cards;
+}
+
+/** Patrocinadores para elegir en el editor (los activos). */
+export async function fetchSponsorOptions(supabase: DB): Promise<SponsorCard[]> {
+  const { data } = await supabase.rpc("sponsor_showcase");
+  return ((data ?? []) as SponsorCard[]);
+}
 
 const CARD = "*, match:matches(id, match_date, is_home, goals_for, goals_against, status, round, competition, rival:rivals(name, short_name, crest_url, color)), player:players(id, first_name, last_name, nickname, photo_url)";
 
@@ -24,19 +52,19 @@ export async function fetchPublished(supabase: DB, opts: { kind?: NewsKind | nul
   let q = supabase.from("news_articles").select(CARD).eq("status", "published");
   if (opts.kind) q = q.eq("kind", opts.kind);
   const { data } = await q.order("published_at", { ascending: false }).limit(opts.limit ?? 40).returns<ArticleCard[]>();
-  return data ?? [];
+  return withSponsors(data ?? []);
 }
 
 /** Borradores (solo los ve quien puede escribir: la base de datos lo filtra). */
 export async function fetchDrafts(supabase: DB): Promise<ArticleCard[]> {
   const { data } = await supabase.from("news_articles").select(CARD).eq("status", "draft").order("updated_at", { ascending: false }).limit(30).returns<ArticleCard[]>();
-  return data ?? [];
+  return withSponsors(data ?? []);
 }
 
 export async function fetchArticle(supabase: DB, id: string): Promise<ArticleCard | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const { data } = await supabase.from("news_articles").select(CARD).eq("id", id).maybeSingle<ArticleCard>();
-  return data;
+  return data ? (await withSponsors([data]))[0] : null;
 }
 
 /** Cuántas piezas hay publicadas (el número de la cabecera). */

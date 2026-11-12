@@ -3,7 +3,7 @@
  * Tipos, etiquetas, el formato del texto y el prompt para la IA (sin dependencias del servidor).
  */
 
-export type NewsKind = "cronica" | "previa" | "entrevista" | "comunicado";
+export type NewsKind = "cronica" | "previa" | "entrevista" | "comunicado" | "promocion";
 export type NewsStatus = "draft" | "published";
 
 export type Article = {
@@ -15,6 +15,8 @@ export type Article = {
   body: string;
   match_id: string | null;
   player_id: string | null;
+  /** Promoción: el patrocinador del que se habla (4.3.0). */
+  sponsor_id?: string | null;
   cover_url: string | null;
   cover_caption: string | null;
   byline: string;
@@ -33,11 +35,12 @@ export type Article = {
 
 export const NEWS_NAME = "La Voz del Rayo";
 
-export const KINDS: { key: NewsKind; label: string; plural: string; hint: string; needs: "match" | "player" | null }[] = [
+export const KINDS: { key: NewsKind; label: string; plural: string; hint: string; needs: "match" | "player" | "sponsor" | null }[] = [
   { key: "cronica", label: "Crónica", plural: "Crónicas", hint: "Lo que pasó en el partido. La ficha técnica sale sola del acta.", needs: "match" },
   { key: "previa", label: "Previa", plural: "Previas", hint: "Cómo llegamos al próximo partido: rival, clasificación y convocatoria.", needs: "match" },
   { key: "entrevista", label: "Entrevista", plural: "Entrevistas", hint: "Preguntas y respuestas con un jugador de la plantilla.", needs: "player" },
   { key: "comunicado", label: "Comunicado oficial", plural: "Comunicados", hint: "Un anuncio oficial del club, firmado por la directiva.", needs: null },
+  { key: "promocion", label: "Promoción", plural: "Promociones", hint: "Para dar a conocer a un patrocinador: su negocio, una oferta o un evento.", needs: "sponsor" },
 ];
 export const KIND_LABEL = Object.fromEntries(KINDS.map((k) => [k.key, k.label])) as Record<NewsKind, string>;
 export const kindOf = (s?: string | null): NewsKind | null => KINDS.find((k) => k.key === s)?.key ?? null;
@@ -47,6 +50,7 @@ export const DEFAULT_BYLINE: Record<NewsKind, string> = {
   previa: "Redacción",
   entrevista: "Redacción",
   comunicado: "La directiva",
+  promocion: "Redacción",
 };
 
 // ------------------------------------------------------------------ Texto
@@ -157,9 +161,12 @@ export type PromptInput = {
   kind: NewsKind;
   match?: MatchFacts | null;
   player?: PlayerFacts | null;
+  /** Promoción: solo el nombre comercial, si es principal o colaborador y su web. */
+  sponsor?: SponsorFacts | null;
   notes?: string | null;
   club?: string;
 };
+export type SponsorFacts = { name: string; main: boolean; website: string | null };
 
 const list = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`);
 
@@ -182,9 +189,6 @@ function matchLines(m: MatchFacts, club: string): string[] {
     if (goals.length) l.push(`- Goles del ${club}: ${list(goals)}.`);
     else if (m.goalsFor > 0) l.push(`- Goleadores del ${club}: sin apuntar.`);
     if (m.assists.length) l.push(`- Asistencias: ${list(m.assists.map((a) => (a.count > 1 ? `${a.name} (${a.count})` : a.name)))}.`);
-    if (m.starters.length) l.push(`- Titulares: ${list(m.starters)}.`);
-    if (m.subs.length) l.push(`- Entraron desde el banquillo: ${list(m.subs)}.`);
-    if (m.goalkeeper) l.push(`- Portero: ${m.goalkeeper}.`);
     const cards = m.cards.map((c) => `${c.name} (${c.red ? "roja" : c.yellows > 1 ? `${c.yellows} amarillas` : "amarilla"})`);
     if (cards.length) l.push(`- Tarjetas: ${list(cards)}.`);
     if (m.mvp) l.push(`- MVP del partido (votado por el propio equipo): ${m.mvp}.`);
@@ -202,16 +206,18 @@ const TASK: Record<NewsKind, string> = {
   previa: "Escribe la previa del próximo partido para el periódico del club.",
   entrevista: "Prepara una entrevista con un jugador para el periódico del club. Si en mis notas hay respuestas del jugador, úsalas tal cual (puedes pulir la redacción, sin cambiar el sentido). Si no las hay, propón entre 6 y 8 preguntas y deja cada respuesta como «R: (respuesta del jugador)».",
   comunicado: "Redacta un comunicado oficial del club a partir de mis notas.",
+  promocion: "Escribe una pieza promocional sobre un patrocinador del club para el periódico del club.",
 };
 const TONE: Record<NewsKind, string> = {
   cronica: "Tono de prensa deportiva local: cercano, con emoción y algo de épica de barrio, pero creíble. Entre 250 y 450 palabras.",
   previa: "Tono de prensa deportiva local, con ganas de partido. Entre 180 y 320 palabras.",
   entrevista: "Tono cercano y con humor sano. Una introducción corta de 2 o 3 frases y después las preguntas y respuestas.",
   comunicado: "Tono institucional, claro y breve (entre 80 y 200 palabras). Sin adornos ni emojis.",
+  promocion: "Tono cercano y agradecido, de barrio, que invite a conocer el negocio sin sonar a anuncio exagerado. Entre 120 y 250 palabras. No inventes precios, horarios, ofertas ni direcciones que no estén en mis notas.",
 };
 
 /** Prompt listo para pegar en ChatGPT, Gemini o Claude. Solo lleva apodos, nunca nombres completos ni datos personales. */
-export function buildPrompt({ kind, match, player, notes, club = "Rayo Vallecañas" }: PromptInput): string {
+export function buildPrompt({ kind, match, player, sponsor, notes, club = "Rayo Vallecañas" }: PromptInput): string {
   const l: string[] = [];
   l.push(`Eres el redactor de «${NEWS_NAME}», el periódico del ${club}, un equipo amateur de fútbol 7 de Salamanca (colores rojo, negro y dorado).`);
   l.push(TASK[kind]);
@@ -228,6 +234,12 @@ export function buildPrompt({ kind, match, player, notes, club = "Rayo Vallecañ
     l.push(`- Temporada ${player.season}: ${s.apps} partidos, ${s.goals} goles, ${s.assists} asistencias, ${s.mvps} veces MVP.`);
     l.push("");
   }
+  if (sponsor) {
+    l.push("EL PATROCINADOR:");
+    l.push(`- ${sponsor.name}, ${sponsor.main ? "patrocinador principal" : "colaborador"} del ${club}.`);
+    if (sponsor.website) l.push(`- Web: ${sponsor.website}`);
+    l.push("");
+  }
   const n = notes?.trim();
   if (n) {
     l.push("MIS NOTAS (lo que vimos y lo que quiero contar; tienen prioridad):");
@@ -235,6 +247,9 @@ export function buildPrompt({ kind, match, player, notes, club = "Rayo Vallecañ
     l.push("");
   } else if (kind === "comunicado") {
     l.push("MIS NOTAS: (escribe aquí qué quiere comunicar el club)");
+    l.push("");
+  } else if (kind === "promocion") {
+    l.push("MIS NOTAS: (escribe aquí qué quieres contar del patrocinador: qué hace, alguna oferta, un evento…)");
     l.push("");
   }
   l.push("REGLAS:");
@@ -293,6 +308,7 @@ export type ArticleDraft = {
   body: string;
   match_id: string | null;
   player_id: string | null;
+  sponsor_id: string | null;
   cover_caption: string | null;
   byline: string;
   ai_notes: string | null;
@@ -311,10 +327,12 @@ export function readDraft(f: { get: (k: string) => unknown }, publish: boolean):
   const meta = KINDS.find((k) => k.key === kind)!;
   const match_id = meta.needs === "match" ? uuidOrNull(f.get("match_id")) : null;
   const player_id = meta.needs === "player" ? uuidOrNull(f.get("player_id")) : null;
+  const sponsor_id = meta.needs === "sponsor" ? uuidOrNull(f.get("sponsor_id")) : null;
   const body = str(f.get("body"), 30000);
   if (publish) {
     if (meta.needs === "match" && !match_id) return { error: `Elige el partido de la ${meta.label.toLowerCase()}` };
     if (meta.needs === "player" && !player_id) return { error: "Elige al jugador entrevistado" };
+    if (meta.needs === "sponsor" && !sponsor_id) return { error: "Elige el patrocinador de la promoción" };
     if (body.length < 40) return { error: "El texto es demasiado corto para publicarlo" };
   }
   return {
@@ -326,6 +344,7 @@ export function readDraft(f: { get: (k: string) => unknown }, publish: boolean):
       body,
       match_id,
       player_id,
+      sponsor_id,
       cover_caption: str(f.get("cover_caption"), 140) || null,
       byline: str(f.get("byline"), 60).length >= 2 ? str(f.get("byline"), 60) : DEFAULT_BYLINE[kind],
       ai_notes: str(f.get("ai_notes"), 3000) || null,

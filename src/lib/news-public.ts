@@ -4,7 +4,22 @@ import { createClient } from "@/lib/supabase/server";
 import { COMPETITION_LABEL, hhmm, longDay, type Competition, type MatchRow } from "@/lib/matches";
 import { POSITION_LABEL } from "@/lib/squad";
 import { isNewsSlug, type NewsKind } from "@/lib/news";
-import type { ArticleCard, MatchSheet } from "@/lib/news-queries";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sponsorCards, type ArticleCard, type MatchSheet } from "@/lib/news-queries";
+
+/** Las promociones públicas llevan su patrocinador (nombre, logo y web). */
+async function withPublicSponsors(cards: ArticleCard[]): Promise<ArticleCard[]> {
+  const promos = cards.filter((c) => c.kind === "promocion" && c.public_slug);
+  if (!promos.length) return cards;
+  const { data } = await createAdminClient().from("news_articles").select("public_slug, sponsor_id").eq("is_public", true).in("public_slug", promos.map((c) => c.public_slug!))
+    .returns<{ public_slug: string; sponsor_id: string | null }[]>();
+  const bySlug = new Map((data ?? []).map((r) => [r.public_slug, r.sponsor_id]));
+  const map = await sponsorCards([...bySlug.values()]);
+  return cards.map((c) => {
+    const sid = c.public_slug ? bySlug.get(c.public_slug) : null;
+    return sid ? { ...c, sponsor_id: sid, sponsor: map.get(sid) ?? null } : c;
+  });
+}
 
 /** Lo que devuelve la base de datos para una pieza pública (jugadores solo por su apodo). */
 type PublicRow = {
@@ -68,7 +83,7 @@ export const loadPublicArticle = cache(async (slug: string): Promise<PublicArtic
   const r = data as PublicRow;
   const pi = r.player_info;
   return {
-    card: toCard(r),
+    card: (await withPublicSponsors([toCard(r)]))[0],
     sheet: toSheet(r),
     player: r.player && pi ? { name: r.player.name, number: pi.number, position: POSITION_LABEL[pi.position] ?? "Jugador", apps: pi.apps, goals: pi.goals } : null,
   };
@@ -77,5 +92,5 @@ export const loadPublicArticle = cache(async (slug: string): Promise<PublicArtic
 export const loadPublicList = cache(async (limit = 30): Promise<ArticleCard[]> => {
   const supabase = await createClient();
   const { data } = await supabase.rpc("news_public_list", { p_limit: limit });
-  return ((data ?? []) as PublicRow[]).map(toCard);
+  return withPublicSponsors(((data ?? []) as PublicRow[]).map(toCard));
 });
