@@ -2,8 +2,8 @@ import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { seasonOf } from "@/lib/finance";
-import { COMPETITION_LABEL, form, hhmm, longDay, outcomeOf, type MatchRow } from "@/lib/matches";
-import { fetchCallups, fetchMatch, fetchReport } from "@/lib/match-queries";
+import { COMPETITION_LABEL, form, hhmm, longDay, outcomeOf, relativeDay, shortDay, type MatchRow } from "@/lib/matches";
+import { fetchCallups, fetchMatch, fetchMatchday, fetchReport } from "@/lib/match-queries";
 import { getStandings } from "@/lib/league-table";
 import { rivalRow } from "@/lib/standings";
 import { POSITION_LABEL, shirtName, type Membership, type Player } from "@/lib/squad";
@@ -222,4 +222,28 @@ export async function fetchMyPendingInterviews(supabase: DB, userId: string): Pr
   const { data } = await supabase.from("news_interviews").select("id, questions, sent_at, player:players!inner(user_id)").eq("status", "pending").eq("player.user_id", userId)
     .order("sent_at", { ascending: false }).limit(3).returns<(Pick<Interview, "id" | "questions" | "sent_at">)[]>();
   return data ?? [];
+}
+
+// ------------------------------------------------------------------ 4.7.0: la franja de datos de la portada
+export type NewsStrip = {
+  last: { id: string; score: string; outcome: "W" | "D" | "L"; rival: string } | null;
+  league: { pos: number; points: number } | null;
+  next: { id: string; day: string; time: string | null; rival: string; home: boolean } | null;
+};
+
+/** Último resultado, puesto en liga y próximo partido: los tres datos de un vistazo bajo la cabecera. */
+export async function fetchNewsStrip(supabase: DB): Promise<NewsStrip | null> {
+  const [{ next, recent }, standings] = await Promise.all([fetchMatchday(supabase, 1), getStandings(supabase, 1500)]);
+  const l = recent[0];
+  const lastOutcome = l ? outcomeOf(l) : null;
+  const us = standings?.table.rows.find((r) => r.teamId === standings.us) ?? null;
+  const strip: NewsStrip = {
+    last: l && lastOutcome
+      ? { id: l.id, score: l.is_home ? `${l.goals_for}-${l.goals_against}` : `${l.goals_against}-${l.goals_for}`, outcome: lastOutcome, rival: l.rival.name }
+      : null,
+    league: us ? { pos: us.pos, points: us.points } : null,
+    // «Hoy», «Mañana» o «lun 16» (corto, para que quepa en el móvil)
+    next: next ? { id: next.id, day: ["Hoy", "Mañana"].includes(relativeDay(next.match_date) ?? "") ? relativeDay(next.match_date)! : shortDay(next.match_date).replace(/\s\S+$/, "").replace(",", ""), time: hhmm(next.kickoff), rival: next.rival.name, home: next.is_home } : null,
+  };
+  return strip.last || strip.league || strip.next ? strip : null;
 }

@@ -4,8 +4,10 @@ import { PenLine, Sparkles } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { KINDS, NEWS_NAME, kindOf } from "@/lib/news";
-import { countPublished, fetchDrafts, fetchPendingChronicle, fetchPublished } from "@/lib/news-queries";
-import { Masthead } from "@/components/news/masthead";
+import { countPublished, fetchDrafts, fetchNewsStrip, fetchPendingChronicle, fetchPublished } from "@/lib/news-queries";
+import { Masthead, editionStamp } from "@/components/news/masthead";
+import { NewsStripBar } from "@/components/news/strip";
+import { Rotativa } from "@/components/news/rotativa";
 import { LeadStory, StoryCard, StoryLine, kickerOf, newsDate } from "@/components/news/story";
 
 export const metadata: Metadata = { title: NEWS_NAME };
@@ -16,22 +18,28 @@ export default async function NewsFront({ searchParams }: { searchParams: Promis
   const supabase = await createClient();
   const kind = kindOf(sp.tipo);
   const writer = s.can("news", "create") || s.can("news", "update");
-  const [items, total, drafts, pending] = await Promise.all([
+  const [items, total, drafts, pending, strip, newest] = await Promise.all([
     fetchPublished(supabase, { kind, limit: 40 }),
     countPublished(supabase),
     writer ? fetchDrafts(supabase) : Promise.resolve([]),
     writer && s.can("news", "create") ? fetchPendingChronicle(supabase) : Promise.resolve(null),
+    // 4.7.0: los tres datos del equipo bajo la cabecera (solo quien ve Partidos)
+    s.can("matches") ? fetchNewsStrip(supabase) : Promise.resolve(null),
+    // El sello de la edición va por la última pieza publicada, sea de la sección que sea
+    kind ? fetchPublished(supabase, { limit: 1 }) : Promise.resolve(null),
   ]);
   const [lead, ...rest] = items;
   const cards = rest.slice(0, 4);
   const lines = rest.slice(4);
+  const stamp = editionStamp((newest ?? items)[0]?.published_at);
 
   return (
-    <div className="paper -mx-4 -mt-5 px-4 pb-8 pt-5 sm:mx-0 sm:mt-0 sm:rounded-sm sm:px-8 sm:pt-6 sm:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.45)] lg:px-10">
-      <Masthead count={total} />
+    <Rotativa className="paper -mx-4 -mt-5 px-4 pb-8 pt-5 sm:mx-0 sm:mt-0 sm:rounded-sm sm:px-8 sm:pt-6 sm:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.45)] lg:px-10">
+      <Masthead count={total} stamp={stamp} />
+      {strip && <NewsStripBar strip={strip} />}
 
       {/* Secciones del periódico */}
-      <nav aria-label="Secciones" className="news-rule-thin mt-3 flex gap-1 overflow-x-auto pb-1 pt-2 text-[13px] font-bold">
+      <nav aria-label="Secciones" className={`${strip ? "" : "news-rule-thin "}mt-3 flex gap-1 overflow-x-auto pb-1 pt-2 text-[13px] font-bold`}>
         <Link href="/la-voz" prefetch className={`shrink-0 rounded-full px-3 py-1 ${!kind ? "bg-[#141210] text-white" : "hover:bg-black/5"}`}>Portada</Link>
         {KINDS.map((k) => (
           <Link key={k.key} href={`/la-voz?tipo=${k.key}`} prefetch className={`shrink-0 rounded-full px-3 py-1 ${kind === k.key ? "bg-[#141210] text-white" : "hover:bg-black/5"}`}>{k.plural}</Link>
@@ -91,6 +99,6 @@ export default async function NewsFront({ searchParams }: { searchParams: Promis
           )}
         </>
       )}
-    </div>
+    </Rotativa>
   );
 }

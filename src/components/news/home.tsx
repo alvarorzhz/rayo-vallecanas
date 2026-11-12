@@ -2,14 +2,14 @@ import Link from "next/link";
 import { Newspaper, Sparkles } from "lucide-react";
 import { NEWS_NAME } from "@/lib/news";
 import type { ArticleCard } from "@/lib/news-queries";
-import { Masthead } from "@/components/news/masthead";
+import { Masthead, editionStamp } from "@/components/news/masthead";
 import { LeadStory, StoryLine, kickerOf, newsDate } from "@/components/news/story";
 
 /** Inicio en modo periódico: la portada de La Voz del Rayo con la noticia destacada. */
 export function HomeFront({ lead, others, count }: { lead: ArticleCard; others: ArticleCard[]; count: number }) {
   return (
     <section aria-label={NEWS_NAME} className="paper mb-6 rounded-sm px-4 pb-5 pt-4 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.5)] sm:px-6">
-      <Masthead count={count} size="sm" href="/la-voz" />
+      <Masthead count={count} size="sm" href="/la-voz" stamp={editionStamp(lead.published_at)} />
       <div className="news-rule mt-4 pt-4"><LeadStory a={lead} /></div>
       {others.length > 0 && (
         <div className="news-rule mt-5 grid divide-y divide-[#141210]/10 pt-1 sm:grid-cols-2 sm:gap-x-6 sm:divide-y-0">

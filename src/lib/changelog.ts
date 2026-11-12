@@ -8,6 +8,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.7.0",
+    date: "2026-11-12",
+    title: "La Voz del Rayo sale de la rotativa",
+    changes: [
+      "Al abrir La Voz del Rayo, la portada llega girando como en las películas y se estampa. La vuelta completa sale la primera vez de cada visita; después la portada solo se imprime.",
+      "Sello de la edición en la cabecera: «¡Recién salido!» si hay noticia de los dos últimos días o, si no, la fecha de la última edición. El rayo de la cabecera se enciende al entrar.",
+      "Bajo la cabecera, el equipo de un vistazo: último resultado, puesto en liga y próximo partido. Cada dato lleva a su sitio en Partidos.",
+      "La portada del periódico en Inicio también lleva el sello y el rayo encendido.",
+    ],
+  },
+  {
     version: "4.6.1",
     date: "2026-11-12",
     title: "Avisos más claros y La Voz más segura",
