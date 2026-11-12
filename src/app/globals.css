@@ -892,3 +892,8 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
 .share-thumb-oro { background: radial-gradient(circle at 50% 35%, rgba(213, 175, 50, 0.35), transparent 65%), linear-gradient(160deg, #1a0a0c 0%, #0a0a0b 60%, #050505 100%); }
 .share-thumb-rojo { background: radial-gradient(circle at 50% 35%, rgba(210, 13, 23, 0.45), transparent 65%), linear-gradient(160deg, #1a0a0c 0%, #0a0a0b 60%, #050505 100%); }
 .share-thumb > span { z-index: 1; }
+
+/* 4.8.0 · Pantalla de avisos: la campana se mueve un poco al salir */
+@keyframes rv-ring { 0%, 60%, 100% { transform: rotate(0); } 10%, 30%, 50% { transform: rotate(-14deg); } 20%, 40% { transform: rotate(14deg); } }
+.anim-ring { animation: rv-ring 1.6s ease-in-out 0.4s 2; transform-origin: 50% 10%; }
+@media (prefers-reduced-motion: reduce) { .anim-ring { animation: none; } }

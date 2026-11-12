@@ -66,3 +66,22 @@ export async function fetchFees(supabase: DB, season: string, playerId?: string)
     paid,
   };
 }
+
+/**
+ * «Mi cuota»: la cuota de la temporada de UN jugador, para enseñársela a él en Mi perfil.
+ * Los jugadores no pueden leer Finanzas (RLS), así que se lee con la clave de servicio y SOLO
+ * para el jugador enlazado a este usuario: nunca se enseña la de otro.
+ */
+export async function fetchMyFee(userId: string, season = seasonOf()) {
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const { data: player } = await admin.from("players").select("id").eq("user_id", userId).maybeSingle<{ id: string }>();
+  if (!player) return null;
+  const { data: member } = await admin.from("squad_members").select("status").eq("player_id", player.id).eq("season", season).maybeSingle<{ status: string }>();
+  const fees = await fetchFees(admin as unknown as DB, season, player.id);
+  const override = fees.overrides.get(player.id) ?? null;
+  const paid = fees.paid.get(player.id) ?? 0;
+  // Fuera de la plantilla y sin pagos: no hay nada que enseñar
+  if (!member && !paid) return null;
+  return { season, plan: fees.plan, override, paid, payments: fees.payments };
+}

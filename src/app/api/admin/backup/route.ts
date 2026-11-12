@@ -1,36 +1,12 @@
 import ExcelJS from "exceljs";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { BACKUP_TABLES as TABLES } from "@/lib/backup-tables";
+import { readTables } from "@/lib/backup";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** Tablas que se copian, con el nombre de la hoja en el Excel. */
-const TABLES: [string, string][] = [
-  ["profiles", "Usuarios"],
-  ["role_permissions", "Permisos por perfil"],
-  ["user_permissions", "Permisos personalizados"],
-  ["lottery_campaigns", "Campañas"],
-  ["lottery_campaign_sellers", "Vendedores asignados"],
-  ["lottery_booklets", "Talonarios"],
-  ["buyers", "Compradores"],
-  ["lottery_sales", "Ventas"],
-  ["lottery_shares", "Participaciones y números"],
-  ["lottery_payments", "Cobros"],
-  ["notifications", "Justificantes enviados"],
-  ["finance_settings", "Finanzas · saldo inicial"],
-  ["finance_categories", "Finanzas · categorías"],
-  ["finance_movements", "Finanzas · movimientos"],
-  ["players", "Plantilla · jugadores"],
-  ["player_private", "Plantilla · datos personales"],
-  ["squad_members", "Plantilla · temporadas"],
-  ["player_documents", "Plantilla · documentos"],
-  ["squad_fee_plans", "Plantilla · cuotas"],
-  ["squad_fee_overrides", "Plantilla · cuotas especiales"],
-  ["news_articles", "La Voz del Rayo · noticias"],
-  ["audit_log", "Auditoría"],
-  ["access_log", "Auditoría · accesos"],
-];
 
 /**
  * Copia de seguridad completa de los datos de la app (solo superadministradores).
@@ -43,16 +19,11 @@ export async function GET(req: Request) {
   const { error: denied } = await supabase.rpc("log_backup", { p_format: format });
   if (denied) return NextResponse.json({ error: "Solo un superadministrador puede descargar la copia de seguridad" }, { status: 403 });
 
-  const data: Record<string, Record<string, unknown>[]> = {};
-  for (const [table] of TABLES) {
-    const rows: Record<string, unknown>[] = [];
-    for (let from = 0; ; from += 1000) {
-      const { data: page, error } = await supabase.from(table).select("*").range(from, from + 999);
-      if (error) return NextResponse.json({ error: `No se pudo leer ${table}: ${error.message}` }, { status: 500 });
-      rows.push(...(page ?? []));
-      if (!page || page.length < 1000) break;
-    }
-    data[table] = rows;
+  let data: Record<string, Record<string, unknown>[]>;
+  try {
+    data = await readTables(supabase);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 
   const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "").replace(/^(\d{8})(\d{4})$/, "$1-$2");
