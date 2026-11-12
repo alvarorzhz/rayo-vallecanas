@@ -153,6 +153,35 @@ export function sortRoster<T extends { position: string; number: number | null; 
   );
 }
 
+/** Cómo se ordenan los cromos de la plantilla. */
+export type SquadOrder = "lineas" | "dorsal" | "goles" | "partidos";
+export const SQUAD_ORDERS: { key: SquadOrder; label: string }[] = [
+  { key: "lineas", label: "Por líneas" },
+  { key: "dorsal", label: "Dorsal" },
+  { key: "goles", label: "Goles" },
+  { key: "partidos", label: "Partidos" },
+];
+export const orderFromSlug = (s?: string | null): SquadOrder => SQUAD_ORDERS.find((o) => o.key === s)?.key ?? "lineas";
+
+/**
+ * Ordena la plantilla. «Por líneas» es el orden de siempre (portero → delantero y dorsal);
+ * «Goles» desempata por asistencias y «Partidos» por goles; al final, por dorsal.
+ */
+export function orderRoster<T extends { position: string; number: number | null; player: Player; goals: number; assists: number; apps: number }>(rows: T[], order: SquadOrder): T[] {
+  const base = sortRoster(rows);
+  const dorsal = (a: T, b: T) => (a.number ?? 100) - (b.number ?? 100) || fullName(a.player).localeCompare(fullName(b.player), "es");
+  if (order === "dorsal") return [...base].sort(dorsal);
+  if (order === "goles") return [...base].sort((a, b) => b.goals - a.goals || b.assists - a.assists || dorsal(a, b));
+  if (order === "partidos") return [...base].sort((a, b) => b.apps - a.apps || b.goals - a.goals || dorsal(a, b));
+  return base;
+}
+
+/** La plantilla repartida por líneas, en orden de campo. Las líneas vacías no salen. */
+export function groupByLine<T extends { position: string; number: number | null; player: Player }>(rows: T[]): { line: (typeof LINES)[number]; rows: T[] }[] {
+  const sorted = sortRoster(rows);
+  return LINES.map((line) => ({ line, rows: sorted.filter((r) => lineOf(r.position) === line.key) })).filter((g) => g.rows.length > 0);
+}
+
 /** Temporada en la URL: "2026/27" <-> "2026-27". */
 export const seasonSlug = (s: string) => s.replace("/", "-");
 export const seasonFromSlug = (s?: string | null) => (s && /^\d{4}-\d{2}$/.test(s) ? s.replace("-", "/") : null);
