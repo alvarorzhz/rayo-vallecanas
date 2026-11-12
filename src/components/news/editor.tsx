@@ -1,5 +1,6 @@
 "use client";
-import { useActionState, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { Bold, Check, ClipboardCopy, Heading2, ImagePlus, MessageCircleQuestion, Plus, Quote, Send, Sparkles, Trash2, Undo2, Wand2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { shrinkImage } from "@/lib/shrink-image";
@@ -91,9 +92,53 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
   const coverInput = useRef<HTMLInputElement>(null);
   const bodyInput = useRef<HTMLInputElement>(null);
 
+  // Copia en el móvil de lo que se está escribiendo: si algo falla (sin cobertura, error), no se pierde nada
+  const snap: Snap = { kind, matchId, playerId, sponsorId, kicker, title, summary, body, byline, notes, cover, caption, questions };
+  const snapJson = JSON.stringify(snap);
+  const firstSnap = useRef(snapJson);
+  const draftKey = `rv-voz-${a?.id ?? "nueva"}`;
+  const [recover, setRecover] = useState<{ snap: Snap; at: number } | null>(null);
+  useEffect(() => {
+    const saved = readLocal(draftKey);
+    if (a) forgetSavedCopies(a);
+    if (!saved) return;
+    if (JSON.stringify(saved.snap) === firstSnap.current || (a && saved.at <= Date.parse(a.updated_at))) dropLocal(draftKey);
+    else setRecover(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const latest = useRef<string | null>(null);
+  latest.current = recover || snapJson === firstSnap.current ? null : snapJson;
+  const flush = () => { if (latest.current) writeLocal(draftKey, latest.current); };
+  useEffect(() => {
+    if (!latest.current) return;
+    const t = setTimeout(flush, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapJson, recover]);
+  useEffect(() => {
+    // Al salir, cerrar la app o mandar el formulario, se guarda ya (sin esperar)
+    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHide);
+    return () => { window.removeEventListener("pagehide", flush); document.removeEventListener("visibilitychange", onHide); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const restore = () => {
+    if (!recover) return;
+    const r = recover.snap;
+    setKind(r.kind); setMatchId(r.matchId); setPlayerId(r.playerId); setSponsorId(r.sponsorId); setKicker(r.kicker); setTitle(r.title);
+    setSummary(r.summary); setBody(r.body); setByline(r.byline); setNotes(r.notes); setCover(r.cover); setCaption(r.caption); setQuestions(r.questions);
+    setRecover(null);
+  };
+  const discard = () => { dropLocal(draftKey); setRecover(null); };
+
   const meta = KINDS.find((k) => k.key === kind)!;
   const published = a?.status === "published";
+  // Con preguntas ya mandadas, la pieza se queda como entrevista de ese jugador: si no, sus respuestas se quedarían colgadas
+  const locked = !!interview && a?.kind === "entrevista";
+  const lockedName = locked ? players.find((p) => p.id === interview!.player_id)?.name ?? "el jugador" : "";
   const pickKind = (k: NewsKind) => {
+    if (locked && k !== "entrevista") return;
     if (byline === DEFAULT_BYLINE[kind]) setByline(DEFAULT_BYLINE[k]);
     setKind(k);
     setPrompt(null);
@@ -222,7 +267,16 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
   };
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} onSubmit={flush} className="space-y-5">
+      {recover && (
+        <div role="status" className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-amber-600/25">
+          <p><b>Tienes cambios sin guardar</b> del {new Date(recover.at).toLocaleString("es-ES", { weekday: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}. ¿Los recuperamos?</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" onClick={restore} className="btn-primary"><Undo2 size={16} /> Recuperarlos</button>
+            <button type="button" onClick={discard} className="btn-ghost">Descartarlos</button>
+          </div>
+        </div>
+      )}
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="cover_url" value={cover} />
 
@@ -232,13 +286,19 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
         <h2 className="mb-3">1 · ¿Qué vas a escribir?</h2>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {KINDS.map((k) => (
-            <button key={k.key} type="button" onClick={() => pickKind(k.key)} aria-pressed={kind === k.key}
-              className={`rounded-xl p-3 text-left ring-1 transition ${kind === k.key ? "bg-negro text-white ring-negro" : "bg-[#f7f7f4] ring-black/10 hover:ring-black/30"}`}>
+            <button key={k.key} type="button" onClick={() => pickKind(k.key)} aria-pressed={kind === k.key} disabled={locked && k.key !== kind}
+              className={`rounded-xl p-3 text-left ring-1 transition disabled:cursor-not-allowed disabled:opacity-40 ${kind === k.key ? "bg-negro text-white ring-negro" : "bg-[#f7f7f4] ring-black/10 hover:ring-black/30"}`}>
               <span className="news-head block text-lg font-black leading-tight">{k.label}</span>
               <span className={`mt-0.5 block text-xs leading-snug ${kind === k.key ? "text-white/70" : "text-negro/60"}`}>{k.hint}</span>
             </button>
           ))}
         </div>
+        {locked && (
+          <p className="mt-3 rounded-xl bg-[#f7f7f4] px-3 py-2 text-sm text-negro/75 ring-1 ring-black/5">
+            Esta pieza es la entrevista de {lockedName}: ya le has mandado las preguntas, así que no se puede convertir en otra cosa.{" "}
+            <Link href="/la-voz/nueva" className="font-bold text-rojo underline underline-offset-2">Escribir otra pieza</Link>
+          </p>
+        )}
         {meta.needs === "match" && (
           <div className="mt-4">
             <label className="label" htmlFor="match_id">Partido</label>
@@ -253,7 +313,8 @@ export function NewsEditor({ action, promptFor, draftWithAi, suggestQuestions, a
         {meta.needs === "player" && (
           <div className="mt-4">
             <label className="label" htmlFor="player_id">Jugador entrevistado</label>
-            <select id="player_id" name="player_id" className="input" value={playerId} onChange={(e) => { setPlayerId(e.target.value); setPrompt(null); }}>
+            {locked && <input type="hidden" name="player_id" value={playerId} />}
+            <select id="player_id" name={locked ? undefined : "player_id"} className="input disabled:opacity-60" value={playerId} disabled={locked} onChange={(e) => { setPlayerId(e.target.value); setPrompt(null); }}>
               <option value="">Elige al jugador…</option>
               {players.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
               {playerId && !players.some((p) => p.id === playerId) && <option value={playerId}>El jugador de esta pieza</option>}
@@ -456,6 +517,36 @@ function Tool({ onClick, icon, label, disabled }: { onClick: () => void; icon: R
   );
 }
 
+type Snap = { kind: NewsKind; matchId: string; playerId: string; sponsorId: string; kicker: string; title: string; summary: string; body: string; byline: string; notes: string; cover: string; caption: string; questions: string[] };
+function readLocal(key: string): { snap: Snap; at: number } | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(key) ?? "null");
+    return v && typeof v.at === "number" && v.snap && typeof v.snap.body === "string" && Array.isArray(v.snap.questions) ? v : null;
+  } catch {
+    return null;
+  }
+}
+function writeLocal(key: string, snapJson: string) {
+  try { localStorage.setItem(key, `{"at":${Date.now()},"snap":${snapJson}}`); } catch {}
+}
+function dropLocal(key: string) {
+  try { localStorage.removeItem(key); } catch {}
+}
+
+/** La pieza ya está guardada en el servidor: las copias del móvil que coinciden con ella sobran. */
+function forgetSavedCopies(a: Pick<Article, "id" | "kind" | "title" | "body" | "player_id" | "updated_at">) {
+  const fresh = readLocal("rv-voz-nueva");
+  if (fresh && fresh.snap.kind === a.kind && fresh.snap.body.trim() === a.body.trim() && (fresh.snap.title.trim() === a.title || fresh.snap.playerId === a.player_id)) dropLocal("rv-voz-nueva");
+  const own = readLocal(`rv-voz-${a.id}`);
+  if (own && own.at <= Date.parse(a.updated_at)) dropLocal(`rv-voz-${a.id}`);
+}
+
+/** En la página de la pieza (al publicar se llega aquí): limpia las copias del editor que ya no hacen falta. */
+export function ForgetLocalDraft({ a }: { a: Pick<Article, "id" | "kind" | "title" | "body" | "player_id" | "updated_at"> }) {
+  useEffect(() => forgetSavedCopies(a), [a]);
+  return null;
+}
+
 function fmtDay(iso: string) {
   return new Date(iso).toLocaleString("es-ES", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
 }
@@ -552,7 +643,8 @@ function InterviewBox({ player, interview: iv, questions, setQuestions, aiReady,
       {aiReady && <p className="text-xs text-negro/60">La IA solo recibe su apodo, su posición y sus números de la temporada, más tus notas de abajo si las hay.</p>}
       <FormMessage state={msg} />
       {clean.length > 0 && !(iv && sentSame) && (
-        <SubmitButton name="intent" value="interview" formNoValidate className="btn-primary w-full sm:w-auto" pendingText="Mandando…" disabled={!!busy}>
+        <SubmitButton name="intent" value="interview" formNoValidate className="btn-primary w-full sm:w-auto" pendingText="Mandando…" disabled={!!busy}
+          onClick={(e) => { if (answered && !confirm(`${name} ya ha contestado ${answered} ${answered === 1 ? "pregunta" : "preguntas"}. Se conservan las respuestas de las preguntas que no cambies; las de las que cambies o quites se pierden. ¿Se la mandamos otra vez?`)) e.preventDefault(); }}>
           <Send size={18} /> {iv ? `Volver a mandársela a ${name}` : `Mandar las preguntas a ${name}`}
         </SubmitButton>
       )}

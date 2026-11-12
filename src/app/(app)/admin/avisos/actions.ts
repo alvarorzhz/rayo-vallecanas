@@ -16,7 +16,9 @@ export async function sendNotice(_: NoticeState, f: FormData): Promise<NoticeSta
 
   const admin = createAdminClient();
   let q = admin.from("profiles").select("id").eq("active", true);
-  if (to === "player" || to === "admin") q = q.eq("role", to);
+  // «Solo gestores» incluye a los superadministradores (que también gestionan)
+  if (to === "player") q = q.eq("role", "player");
+  else if (to === "admin") q = q.in("role", ["admin", "superadmin"]);
   const { data: people } = await q;
   const ids = (people ?? []).map((p) => p.id);
   const n = await sendPush(ids, { title, body, url: "/" });

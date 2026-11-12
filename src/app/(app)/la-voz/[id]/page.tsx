@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NEWS_NAME } from "@/lib/news";
 import { fetchArticle, fetchMatchSheet, fetchPlayerFacts, fetchPublished } from "@/lib/news-queries";
 import { ArticleView } from "@/components/news/article-view";
+import { ForgetLocalDraft } from "@/components/news/editor";
 import { ShareButton } from "@/components/news/share-button";
 import { PublicPanel } from "@/components/news/public-panel";
 import { setNewsPublic } from "../actions";
@@ -34,6 +35,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
 
   return (
     <>
+      {canEdit && <ForgetLocalDraft a={{ id: a.id, kind: a.kind, title: a.title, body: a.body, player_id: a.player_id, updated_at: a.updated_at }} />}
       <ArticleView a={a} sheet={sheet} player={player} others={more.filter((x) => x.id !== a.id).slice(0, 3)} home="/la-voz" hrefOf={(x) => `/la-voz/${x.id}`}
         notice={
           <>

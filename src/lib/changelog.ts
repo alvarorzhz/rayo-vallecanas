@@ -8,6 +8,22 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.6.1",
+    date: "2026-11-12",
+    title: "Avisos más claros y La Voz más segura",
+    changes: [
+      "Una entrevista con las preguntas ya mandadas ya no se puede convertir en otro tipo de pieza ni cambiar de jugador, para que sus respuestas no se queden colgadas. Sale un enlace para escribir otra pieza.",
+      "El editor de La Voz guarda en el móvil lo que vas escribiendo: si algo falla o se cierra la app, al volver te ofrece recuperarlo.",
+      "Si algo falla, sale una pantalla del club con «Volver a intentar» en vez de una pantalla en blanco. Si la app se ha actualizado mientras estaba abierta, se recarga sola.",
+      "El aviso del resultado lleva el marcador en el título (por ejemplo, «✅ ¡Victoria! 3-1 ante Charros FC»).",
+      "La mañana del partido, los convocados que no han contestado reciben «Hoy jugamos: ¿vas?», con los botones Voy y No voy.",
+      "«Aviso al equipo» a «Solo gestores» ahora también llega a los superadministradores.",
+      "El aviso de «ha contestado la entrevista» dice cuántas respuestas hay y dónde están.",
+      "La ventana para activar los avisos explica lo que de verdad llega: convocatorias, resultados, MVP y noticias.",
+      "Gestión → Avisos: el catálogo incluye los avisos de entrevistas, «Hoy jugamos: ¿vas?» y «Hay liga nueva».",
+    ],
+  },
+  {
     version: "4.6.0",
     date: "2026-11-12",
     title: "Plantilla más ordenada",

@@ -59,6 +59,8 @@ export function awaitingResult(matches: WatchMatch[], now = madridNow()) {
 export function resultNotice(o: { gf: number; ga: number; home: boolean; club: string; rival: string }) {
   const { gf, ga, home, club, rival } = o;
   const score = home ? `${club} ${gf} - ${ga} ${rival}` : `${rival} ${ga} - ${gf} ${club}`;
-  const title = gf > ga ? "✅ ¡Victoria! Ya están los datos del partido" : gf < ga ? "⚽ Ya están los datos del partido" : "🤝 Empate · Ya están los datos del partido";
-  return { title, body: `${score}. Toca para ver el partido.` };
+  // El marcador va en el título (lo que se lee en la pantalla bloqueada), siempre con nuestros goles primero
+  const ours = `${gf}-${ga} ante ${rival}`;
+  const title = gf > ga ? `✅ ¡Victoria! ${ours}` : gf < ga ? `⚽ Final: ${ours}` : `🤝 Empate ${ours}`;
+  return { title, body: `${score} · Ya están los datos del partido.` };
 }
