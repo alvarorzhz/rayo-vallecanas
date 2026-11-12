@@ -34,7 +34,7 @@ export const NOTICE_CATALOG: NoticeKind[] = [
   { area: "matches", title: "📅 Nuevo partido en el calendario", when: "Al crear un partido a mano, si se deja marcado «Avisar».", who: "Todo el equipo (menos quien lo crea).", how: "opt" },
   { area: "matches", title: "🔁 Cambio en el partido", when: "Si cambia la fecha o la hora: desde la liga, siempre; a mano, si se deja marcado «Avisar».", who: "Todo el equipo.", how: "auto" },
   { area: "matches", title: "⏸️ Aplazado · ⛔ Suspendido · 📅 Nueva fecha", when: "Al cambiar el estado del partido, si se deja marcado «Avisar».", who: "Todo el equipo.", how: "opt" },
-  { area: "matches", title: "⚽ Ya están los datos del partido", when: "En cuanto entra el resultado. El día del partido la app mira sola la web de la liga (14:00, 17:00, 20:00 y 22:30, y las 8:00 del día siguiente; una hora más tarde en verano), empezando hora y media después del pitido. También al sincronizar a mano o, si se deja marcado «Avisar», al ponerlo a mano. Nunca sale dos veces para el mismo partido.", who: "Todo el equipo.", how: "auto" },
+  { area: "matches", title: "✅ ¡Victoria! · 🤝 Empate · ⚽ Final (con el marcador)", when: "En cuanto entra el resultado: «Ya están los datos del partido». El día del partido la app mira sola la web de la liga (14:00, 17:00, 20:00 y 22:30, y las 8:00 del día siguiente; una hora más tarde en verano), empezando hora y media después del pitido. También al sincronizar a mano o, si se deja marcado «Avisar», al ponerlo a mano. Nunca sale dos veces para el mismo partido.", who: "Todo el equipo.", how: "auto" },
   { area: "matches", title: "⭐ Vota al MVP del partido", when: "Al guardar el acta por primera vez (o al abrir la votación a mano). Si se deja marcado «Avisar», lleva también el resultado y los goleadores.", who: "Todo el equipo (menos quien la abre).", how: "auto" },
   { area: "matches", title: "⭐ MVP del partido", when: "Al cerrarse la votación (a las 23:59), con el ganador y sus votos.", who: "Todo el equipo.", how: "auto" },
   { area: "matches", title: "⭐ Empate en el MVP: decide tú", when: "Si la votación acaba empatada a votos y a goles.", who: "Quien puede editar Partidos.", how: "auto" },
@@ -43,8 +43,11 @@ export const NOTICE_CATALOG: NoticeKind[] = [
   { area: "matches", title: "⏰ ¿Vas al partido?", when: "Con «Recordar» en la convocatoria.", who: "Los convocados que no han contestado.", how: "manual" },
   { area: "matches", title: "⏰ Mañana hay partido: ¿vas?", when: "Cada mañana a las 9:00 (10:00 en verano), la víspera del partido.", who: "Los convocados que no han contestado.", how: "auto" },
   { area: "matches", title: "⚽ ¡Hoy jugamos!", when: "La mañana del partido, con la hora y el sitio de quedada.", who: "Los convocados que van o dudan.", how: "auto" },
+  { area: "matches", title: "⚽ Hoy jugamos: ¿vas?", when: "La mañana del partido, con la hora y el sitio de quedada. Con botones «Voy» y «No voy».", who: "Los convocados que aún no han contestado.", how: "auto" },
 
   { area: "news", title: "🗞️ La Voz del Rayo", when: "Al publicar una pieza por primera vez, si se deja marcado «Avisar al equipo». Lleva el titular y el principio del texto.", who: "Todo el que puede leer La Voz del Rayo (menos quien publica).", how: "opt" },
+  { area: "news", title: "🎙️ La Voz del Rayo quiere entrevistarte", when: "Al mandarle las preguntas de una entrevista (o al volver a mandárselas).", who: "El jugador entrevistado.", how: "manual" },
+  { area: "news", title: "🎙️ … ha contestado la entrevista", when: "Cuando el jugador entrega sus respuestas. Dice cuántas ha contestado.", who: "Quien le mandó las preguntas.", how: "auto" },
 
   { area: "lottery", title: "¡Ya puedes vender! 🎟️", when: "Al abrir un sorteo.", who: "Sus vendedores.", how: "auto" },
   { area: "lottery", title: "Nueva venta 💶", when: "Con cada venta.", who: "Los gestores de sorteos que lo tienen activado en Mi perfil.", how: "auto" },
@@ -52,6 +55,7 @@ export const NOTICE_CATALOG: NoticeKind[] = [
 
   { area: "sponsors", title: "🤝 Patrocinadores", when: "Cada mañana, si un plazo pasa de fecha sin cobrar (como mucho uno a la semana) o falta un mes para que venza un acuerdo.", who: "Quien puede editar Patrocinadores.", how: "auto" },
 
+  { area: "league", title: "🏆 Hay liga nueva en futormes", when: "Al acabar la liga, cuando la app encuentra al Rayo en otra competición (una sola vez por competición).", who: "Quien puede editar Partidos.", how: "auto" },
   { area: "league", title: "Problema con la liga", when: "Si la importación de la liga falla o se queda a medias (como mucho uno al día por el mismo problema).", who: "Quien puede editar Partidos.", how: "auto" },
 ];
 

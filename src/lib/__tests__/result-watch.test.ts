@@ -37,10 +37,11 @@ test("no se mira si ya hay resultado, si es otro día o si no viene de la liga",
 
 test("el aviso pone el marcador en el orden de casa y fuera", () => {
   const home = resultNotice({ gf: 3, ga: 1, home: true, club: "Rayo", rival: "Peñaranda" });
-  assert.match(home.title, /Victoria/);
+  assert.equal(home.title, "✅ ¡Victoria! 3-1 ante Peñaranda");
   assert.match(home.body, /^Rayo 3 - 1 Peñaranda/);
   const away = resultNotice({ gf: 0, ga: 2, home: false, club: "Rayo", rival: "Peñaranda" });
-  assert.match(away.title, /Ya están los datos/);
+  assert.equal(away.title, "⚽ Final: 0-2 ante Peñaranda");
+  assert.match(away.body, /Ya están los datos del partido\.$/);
   assert.match(away.body, /^Peñaranda 2 - 0 Rayo/);
   assert.match(resultNotice({ gf: 1, ga: 1, home: true, club: "R", rival: "P" }).title, /Empate/);
 });

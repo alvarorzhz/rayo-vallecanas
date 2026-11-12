@@ -67,7 +67,7 @@ export function PushPrompt() {
         <div className="min-w-0">
           <h2 id="push-title" className="sport text-lg font-black">¿Activamos los avisos?</h2>
           {mode === "ask" ? (
-            <p className="text-sm text-white/70">Te avisaremos cuando se abra un sorteo, cuando haya ventas nuevas y cuando salga el número ganador.</p>
+            <p className="text-sm text-white/70">Te llegarán las convocatorias (y podrás decir si vas desde el propio aviso), los resultados, las votaciones del MVP y las noticias del club.</p>
           ) : (
             <p className="text-sm text-white/70">
               En iPhone, primero instala la app: pulsa <Share size={14} className="inline" /> <b>Compartir</b> y luego

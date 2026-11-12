@@ -12,7 +12,7 @@ export const maxDuration = 30;
 /**
  * Recordatorio diario de las convocatorias (lo lanza Vercel Cron cada mañana).
  * · Víspera: a los convocados que no han contestado.
- * · Día del partido: a los que van o dudan, con la hora de quedada.
+ * · Día del partido: a los que van o dudan, con la hora de quedada; a los que no han contestado, lo mismo preguntando si van.
  * Cada partido recibe como mucho un recordatorio al día, así que repetir la llamada no molesta a nadie.
  * De paso, avisa a los gestores de los plazos de patrocinio sin cobrar y de los acuerdos que vencen.
  */
@@ -33,14 +33,21 @@ export async function GET(req: Request) {
     const isToday = m.match_date === today;
     const { data: rows } = await admin.from("match_callups").select("player_id, reply").eq("match_id", m.id)
       .in("reply", isToday ? ["yes", "maybe", "pending"] : ["pending"]);
-    const users = await usersOfPlayers((rows ?? []).map((r) => r.player_id as string));
-    if (!users.length) continue;
     const vs = m.is_home ? `${CLUB_NAME} vs ${m.rival.name}` : `${m.rival.name} vs ${CLUB_NAME}`;
+    const at = `${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}`;
     const meet = m.meet_time || m.meet_place ? ` Quedamos${m.meet_time ? ` a las ${hhmm(m.meet_time)}` : ""}${m.meet_place ? ` en ${m.meet_place}` : ""}.` : "";
-    sent += await sendPush(users, isToday
-      ? { title: "⚽ ¡Hoy jugamos!", body: `${vs}${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}${m.venue ? ` · ${m.venue}` : ""}.${meet}`, url: `/partidos/${m.id}`, tag: `convocatoria-${m.id}` }
-      : { title: "⏰ Mañana hay partido: ¿vas?", body: `${vs}${m.kickoff ? ` a las ${hhmm(m.kickoff)}` : ""}. Aún no has contestado a la convocatoria.`, url: `/partidos/${m.id}`, tag: `convocatoria-${m.id}` },
-      isToday ? undefined : await replyButtons(m.id, m.match_date));
+    const base = { url: `/partidos/${m.id}`, tag: `convocatoria-${m.id}` };
+    const pending = await usersOfPlayers((rows ?? []).filter((r) => r.reply === "pending").map((r) => r.player_id as string));
+    if (isToday) {
+      // Los que van o dudan: hora y quedada. Los que no han contestado: lo mismo, pero preguntando y con los botones.
+      const going = await usersOfPlayers((rows ?? []).filter((r) => r.reply !== "pending").map((r) => r.player_id as string));
+      sent += await sendPush(going, { ...base, title: "⚽ ¡Hoy jugamos!", body: `${vs}${at}${m.venue ? ` · ${m.venue}` : ""}.${meet}` });
+      sent += await sendPush(pending, { ...base, title: "⚽ Hoy jugamos: ¿vas?", body: `${vs}${at}${m.venue ? ` · ${m.venue}` : ""}.${meet} Aún no has contestado a la convocatoria.` },
+        await replyButtons(m.id, m.match_date));
+    } else {
+      sent += await sendPush(pending, { ...base, title: "⏰ Mañana hay partido: ¿vas?", body: `${vs}${at}. Aún no has contestado a la convocatoria.` },
+        await replyButtons(m.id, m.match_date));
+    }
   }
   const sponsors = await sponsorReminders(today);
   return NextResponse.json({ ok: true, matches: matches?.length ?? 0, sent, sponsors });

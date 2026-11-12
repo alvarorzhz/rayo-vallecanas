@@ -66,6 +66,10 @@ export async function saveArticle(id: string | null, _: NewsState, f: FormData):
 
   let aid = id;
   if (id) {
+    // Si ya se le mandaron las preguntas a un jugador, la pieza sigue siendo su entrevista (si no, sus respuestas se quedan colgadas)
+    const iv = await fetchInterview(supabase, id);
+    if (iv && draft.kind !== "entrevista") return { error: "Esta pieza es una entrevista con preguntas ya mandadas: no se puede convertir en otra cosa. Para escribir otra pieza, empieza una nueva." };
+    if (iv && draft.player_id !== iv.player_id) return { error: "Ya le mandaste las preguntas a otro jugador: no se puede cambiar el entrevistado. Para entrevistar a otro, empieza una pieza nueva." };
     const { data: old } = await supabase.from("news_articles").select("status, published_at").eq("id", id).maybeSingle();
     if (!old) return { error: "Esta pieza ya no existe" };
     const status = publish ? "published" : old.status;
@@ -215,7 +219,8 @@ export async function answerInterview(id: string, answers: string[], submit: boo
     const qas: InterviewQA[] = iv.questions.map((x, i) => ({ q: x.q, a: clean[i] || null }));
     // Si el borrador aún no tiene texto, las respuestas se montan solas como P/R
     const { data: a } = await admin.from("news_articles").select("id, body, created_by").eq("id", iv.article_id).maybeSingle<{ id: string; body: string; created_by: string | null }>();
-    if (a && !a.body.trim()) await admin.from("news_articles").update({ body: interviewToBody(qas) }).eq("id", a.id);
+    const filled = !!a && !a.body.trim();
+    if (filled) await admin.from("news_articles").update({ body: interviewToBody(qas) }).eq("id", a.id);
     let to = [iv.sent_by ?? a?.created_by].filter((u): u is string => !!u);
     if (!to.length) {
       const { data: writers } = await admin.rpc("users_with_perm", { p_module: "news", p_action: "update" });
@@ -223,7 +228,7 @@ export async function answerInterview(id: string, answers: string[], submit: boo
     }
     await sendPush(to.filter((u) => u !== s.user.id), {
       title: `🎙️ ${shirtName(iv.player)} ha contestado la entrevista`,
-      body: "Sus respuestas ya están en el borrador. Repásalas y publícala.",
+      body: `${clean.filter(Boolean).length} de ${clean.length} respuestas. ${filled ? "Ya están en el texto del borrador: repásalas y publícala." : "Las tienes en el borrador: mételas en el texto cuando quieras."}`,
       url: `/la-voz/${iv.article_id}/editar`,
       tag: `entrevista-${id}`,
     });
