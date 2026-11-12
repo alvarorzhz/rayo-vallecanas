@@ -7,6 +7,8 @@ import Link from "next/link";
 import { Shirt, Vote } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { removeAvatar, uploadAvatar } from "./actions";
+import { fetchMyFee } from "@/lib/squad-queries";
+import { MyFeeCard } from "@/components/squad/my-fee";
 
 export const metadata = { title: "Mi perfil" };
 
@@ -14,7 +16,10 @@ export default async function ProfilePage() {
   const s = await getSession();
   const p = s.profile;
   const supabase = await createClient();
-  const { data: player } = s.can("squad") ? await supabase.from("players").select("id").eq("user_id", s.user.id).maybeSingle() : { data: null };
+  const [{ data: player }, myFee] = await Promise.all([
+    s.can("squad") ? supabase.from("players").select("id").eq("user_id", s.user.id).maybeSingle() : Promise.resolve({ data: null }),
+    fetchMyFee(s.user.id).catch(() => null),
+  ]);
   return (
     <>
       <PageHeader title="Mi perfil" subtitle="Tu foto aparece en el menú, en la lista de usuarios y en tu ficha de jugador." />
@@ -36,6 +41,7 @@ export default async function ProfilePage() {
             <span className="text-rojo transition-transform duration-200 group-hover:translate-x-1">→</span>
           </Link>
         )}
+        {myFee && <MyFeeCard fee={myFee} />}
         <Link href="/votaciones" prefetch className="card group flex items-center gap-3 hover:ring-rojo/40">
           <Vote size={22} className="text-rojo" />
           <span className="flex-1">

@@ -13,7 +13,8 @@ import { Jersey } from "@/components/squad/jersey";
 import { Ball } from "@/components/squad/ball";
 import { CountUp } from "@/components/squad/count-up";
 import { FeeOverrideForm, FeePaymentForm, FeePlanForm } from "@/components/squad/fee-forms";
-import { registerFeePayment, saveFeeOverride, saveFeePlan } from "./actions";
+import { registerFeePayment, remindFees, saveFeeOverride, saveFeePlan } from "./actions";
+import { FeeReminder } from "@/components/squad/fee-reminder";
 
 export const metadata = { title: "Cuotas de la plantilla" };
 
@@ -97,6 +98,8 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
         )}
       </section>
 
+      {(canPay || canEdit) && owing.length > 0 && season === seasonOf() && <FeeReminder action={remindFees.bind(null, season)} owing={owing.length} />}
+
       {canEdit && (
         <section className="card mb-6">
           <h2 className="mb-1">Cuota general de {season}</h2>
@@ -170,7 +173,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
           })}
         </ul>
       )}
-      <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-negro/65"><Wallet size={14} /> Los jugadores no ven las cuotas: solo quien tiene acceso a Finanzas.</p>
+      <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-negro/65"><Wallet size={14} /> Cada jugador ve solo la suya, en Mi perfil. La lista completa solo la ve quien tiene acceso a Finanzas.</p>
     </>
   );
 }

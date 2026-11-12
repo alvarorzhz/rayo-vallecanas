@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.8.0",
+    date: "2026-11-12",
+    title: "Mi cuota, avisos para todos y copias automáticas",
+    changes: [
+      "Mi cuota: en Mi perfil cada jugador ve su cuota de la temporada, lo que ha pagado, lo que le falta y la fecha límite. Solo la suya: Finanzas sigue cerrada para los jugadores.",
+      "Cuotas: nuevo botón «Recordar a los que deben». Manda un aviso solo a quien debe, con lo que le falta a cada uno (como mucho una vez al día). A los que no tienen avisos se les prepara un WhatsApp con el mensaje ya escrito.",
+      "Nueva pantalla para activar los avisos, solo para quien no los tiene en ese móvil. Sin agobiar: con «Ahora no» no vuelve en 30 días y, tras dos veces, ya no sale más. En iPhone explica paso a paso cómo instalar la app, y si los avisos están bloqueados, cómo desbloquearlos.",
+      "Copia de seguridad automática cada lunes: todos los datos y también las fotos, escudos, justificantes y documentos. Se guardan las 8 últimas y se pueden descargar desde Copia de seguridad. También hay un botón «Hacer copia ahora». Si una falla, avisa al superadministrador.",
+      "La copia de seguridad ahora incluye todo: antes se quedaban fuera los partidos, convocatorias, actas, patrocinadores, votaciones, entrevistas y perfiles a medida.",
+    ],
+  },
+  {
     version: "4.7.0",
     date: "2026-11-12",
     title: "La Voz del Rayo sale de la rotativa",

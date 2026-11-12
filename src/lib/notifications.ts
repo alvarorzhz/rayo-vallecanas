@@ -3,7 +3,7 @@
  * Al añadir un aviso nuevo en el código (sendPush), añádelo aquí también.
  */
 
-export type NoticeArea = "manual" | "polls" | "matches" | "news" | "lottery" | "sponsors" | "league";
+export type NoticeArea = "manual" | "polls" | "matches" | "news" | "lottery" | "sponsors" | "league" | "fees" | "backup";
 
 export const AREA_LABEL: Record<NoticeArea, string> = {
   manual: "Avisos y votaciones",
@@ -13,6 +13,8 @@ export const AREA_LABEL: Record<NoticeArea, string> = {
   lottery: "Sorteos",
   sponsors: "Patrocinadores",
   league: "Liga",
+  fees: "Cuotas",
+  backup: "Copia de seguridad",
 };
 
 export type NoticeKind = {
@@ -56,6 +58,10 @@ export const NOTICE_CATALOG: NoticeKind[] = [
   { area: "sponsors", title: "🤝 Patrocinadores", when: "Cada mañana, si un plazo pasa de fecha sin cobrar (como mucho uno a la semana) o falta un mes para que venza un acuerdo.", who: "Quien puede editar Patrocinadores.", how: "auto" },
 
   { area: "league", title: "🏆 Hay liga nueva en futormes", when: "Al acabar la liga, cuando la app encuentra al Rayo en otra competición (una sola vez por competición).", who: "Quien puede editar Partidos.", how: "auto" },
+  { area: "fees", title: "💶 Cuota del Rayo", when: "Con «Recordar a los que deben» en Plantilla → Cuotas (como mucho una vez al día). Dice a cada uno lo que le falta.", who: "Solo los jugadores que deben cuota esta temporada.", how: "manual" },
+
+  { area: "backup", title: "⚠️ La copia de seguridad ha fallado", when: "Si falla la copia automática de los lunes.", who: "Los superadministradores.", how: "auto" },
+
   { area: "league", title: "Problema con la liga", when: "Si la importación de la liga falla o se queda a medias (como mucho uno al día por el mismo problema).", who: "Quien puede editar Partidos.", how: "auto" },
 ];
 
@@ -65,6 +71,8 @@ export const HOW_LABEL: Record<NoticeKind["how"], string> = { auto: "Automático
 export function areaOf(url: string | null, tag: string | null): NoticeArea {
   const u = url ?? "/";
   if (u.startsWith("/votaciones")) return "polls";
+  if (tag?.startsWith("cuota-")) return "fees";
+  if (u.startsWith("/admin/copia")) return "backup";
   if (tag === "liga-sincronizacion" || u.startsWith("/partidos/liga")) return "league";
   if (u.startsWith("/partidos")) return "matches";
   if (u.startsWith("/la-voz")) return "news";

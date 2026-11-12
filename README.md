@@ -3,7 +3,7 @@
 App web instalable (PWA) para llevar todo el Rayo Vallecañas, equipo amateur de **fútbol 7**, en un único sitio: sorteos, dinero, plantilla, partidos, patrocinadores y avisos al móvil. Sustituye a los Excel y a los procesos a mano.
 
 - **Producción:** <https://rayo-vallecanas.vercel.app>
-- **Versión actual:** 3.21.0 (el historial completo está en la propia app, en *Novedades*, y en `src/lib/changelog.ts`).
+- **Versión actual:** 4.8.0 (el historial completo está en la propia app, en *Novedades*, y en `src/lib/changelog.ts`).
 - **Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS 4 · Supabase (Postgres, Auth, Storage, RLS) · Web Push · Vercel (región Frankfurt).
 
 ## Qué hace la app
@@ -26,7 +26,7 @@ La barra inferior del móvil tiene seis apartados: **Inicio · Partidos · Plant
 ### Plantilla
 - Fichas estilo **cromo** con foto, posición, dorsal y estadísticas, por temporada; vista de campo por líneas.
 - Datos personales y contactos de emergencia (solo con permiso), documentos con caducidad (DNI, ficha, reconocimiento médico…).
-- **Cuotas** por temporada, cuotas especiales y su cobro (pasa a Finanzas).
+- **Cuotas** por temporada, cuotas especiales y su cobro (pasa a Finanzas). Botón para recordar la cuota a los que deben; cada jugador ve la suya en Mi perfil.
 - Preparar la temporada nueva, historia del club, **presentación animada de fichajes** y exportación a Excel/PDF.
 
 ### Sorteos (lotería y rifas)
@@ -52,7 +52,7 @@ La barra inferior del móvil tiene seis apartados: **Inicio · Partidos · Plant
   - *Cambios*: quién cambió qué y cuándo, con el **valor anterior y el nuevo** de cada campo, en lenguaje claro. Filtros por apartado, acción, persona y fechas, e historial completo de cualquier registro.
   - *Accesos*: entradas, salidas, intentos fallidos y cambios de contraseña, con dispositivo e IP; última conexión de cada persona (la apunta la app en cada página), de la más reciente a la más antigua.
   - *Sesiones abiertas*: dispositivos con la sesión iniciada, ordenados por última conexión, y botón para cerrarla al momento (por ejemplo, si alguien pierde el móvil).
-- **Copia de seguridad** (solo superadministrador): todo en Excel o JSON.
+- **Copia de seguridad** (solo superadministrador): todo en Excel o JSON, y copia automática cada lunes con los archivos (en Vercel Blob si está `BLOB_READ_WRITE_TOKEN`; si no, en un cajón privado de Supabase), guardando las 8 últimas.
 
 ### Para todos
 - PWA instalable con el escudo, funciona en móvil y ordenador, pantallas ya vistas sin conexión.
