@@ -15,9 +15,10 @@ import { MatchLine, Scoreboard } from "@/components/matches/match-bits";
 import { DeleteButton, ResultForm, StatusForm } from "@/components/matches/match-forms";
 import { ShareButton } from "@/components/matches/share-button";
 import { Crest } from "@/components/matches/crest";
-import { CallupSection } from "@/components/matches/callup-section";
+import { CallupSection, callupOpen } from "@/components/matches/callup-section";
 import { ReportSection } from "@/components/matches/report-section";
 import { MvpSection } from "@/components/matches/mvp-section";
+import { PorraSection } from "@/components/matches/porra";
 import { CallupHistory } from "@/components/matches/callup-history";
 import { ShareImages } from "@/components/matches/share-images";
 import { callupClosed } from "@/lib/callups";
@@ -97,6 +98,8 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
           {callupClosed(m)
             ? <CallupHistory m={m} rows={callups} report={report} myPlayerId={myPlayerId} />
             : <CallupSection m={m} rows={callups} myPlayerId={myPlayerId} canEdit={canEdit} url={`https://rayo-vallecanas.vercel.app/partidos/${m.id}`} />}
+
+          <PorraSection m={m} inlineShown={!callupClosed(m) && callupOpen(m) && callups.some((c) => c.player_id === myPlayerId)} />
 
           <ShareImages m={m} hasCallup={!!m.callup_published_at && callups.some((c) => c.reply === "yes")} />
 

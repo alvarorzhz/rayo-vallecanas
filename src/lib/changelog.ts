@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.9.0",
+    date: "2026-11-12",
+    title: "La porra y el resumen de temporada",
+    changes: [
+      "La porra del partido: pon el resultado que crees que va a salir. Está justo debajo de «Voy / No voy» en la tarjeta de convocado, y para quien no va convocado sale en Inicio y en la ficha del partido. Se puede cambiar hasta el pitido inicial.",
+      "3 puntos por clavar el resultado y 1 por acertar quién gana o el empate. Hasta el pitido cada uno ve solo el suyo; después se ven los de todos y, con el resultado, los puntos.",
+      "Clasificación de la porra de la temporada, con podio, en Partidos → Porra.",
+      "Resumen de temporada: cada jugador tiene el suyo, con partidos, goles, asistencias, MVP, su mejor partido, sus convocatorias, sus puntos en la porra y un título (Pichichi, El Muro, Fijo…). Se puede ver el de cualquier compañero y sacar la imagen para compartir, en publicación o historia.",
+      "Por temporada o por liga (el Apertura, por ejemplo). Al acabar una liga, Inicio enseña durante tres semanas «Mira tu resumen». También está en Estadísticas.",
+    ],
+  },
+  {
     version: "4.8.0",
     date: "2026-11-12",
     title: "Mi cuota, avisos para todos y copias automáticas",

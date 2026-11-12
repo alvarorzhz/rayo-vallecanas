@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { BarChart3, Mic, ShoppingCart, Shirt, Ticket, Wallet } from "lucide-react";
+import { Award, BarChart3, Mic, ShoppingCart, Shirt, Ticket, Wallet } from "lucide-react";
 import { fetchCallups, fetchMatchday, fetchMatchdayFocus, fetchMatchdayPreview, fetchMyPlayerId, fetchPlayerLog, fetchReport } from "@/lib/match-queries";
 import { MatchdayDetails, MatchdayHero } from "@/components/matches/matchday";
 import { fetchMatchWeather } from "@/lib/weather";
 import { MyCallupCard, callupOpen } from "@/components/matches/callup-section";
+import { PorraCard } from "@/components/matches/porra";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha } from "@/lib/format";
@@ -21,6 +22,7 @@ import { fetchMvpBoard } from "@/lib/mvp-server";
 import { countPublished, fetchMyPendingInterviews, fetchPendingChronicle, fetchPublished } from "@/lib/news-queries";
 import { isFeaturedNow } from "@/lib/news";
 import { HomeFront, HomeLatest } from "@/components/news/home";
+import { competitionShort } from "@/lib/season-summary-queries";
 
 const LG_COLS: Record<number, string> = { 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" };
 
@@ -111,6 +113,15 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const [news, newsCount, pendingChronicle] = s.can("news")
     ? await Promise.all([fetchPublished(supabase, { limit: 6 }), countPublished(supabase), s.can("news", "create") ? fetchPendingChronicle(supabase) : null])
     : [[], 0, null];
+  // ¿Se acaba de terminar una liga (el Apertura…)? Tres semanas con el acceso a «Tu resumen»
+  let ended: { competition: string; name: string } | null = null;
+  if (s.can("matches")) {
+    const { data: done } = await supabase.from("league_competitions").select("competition, name").eq("finished", true);
+    for (const c of done ?? []) {
+      const { data: lastM } = await supabase.from("matches").select("match_date").eq("league_competition", c.competition).eq("status", "played").order("match_date", { ascending: false }).limit(1).maybeSingle();
+      if (lastM && Date.now() - new Date(lastM.match_date + "T12:00:00").getTime() < 21 * 86_400_000) { ended = { competition: c.competition, name: competitionShort(c.name) }; break; }
+    }
+  }
   // Entrevistas que me ha mandado la redacción y aún no he entregado
   const myInterviews = await fetchMyPendingInterviews(supabase, s.user.id);
   const featured = news.find((a) => isFeaturedNow(a)) ?? null;
@@ -149,6 +160,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <>
           <MatchdayHero m={md.m} phase={md.phase} greeting={greeting} form={recentForm} next={afterMatch ? matchday?.next ?? null : null} weather={md.weather} />
           {myCallup && matchday?.next && <div className="mb-6"><MyCallupCard m={matchday.next} mine={myCallup} withMatch /></div>}
+          {/* La porra para quien no la tiene ya en su tarjeta de convocado */}
+          {afterMatch && !myCallup && matchday?.next && <PorraCard m={matchday.next} withMatch />}
+          {!afterMatch && (md.phase === "eve" || md.phase === "day") && !(md.myPlayerId && md.callups.some((c) => c.player_id === md.myPlayerId) && callupOpen(md.m)) && <PorraCard m={md.m} />}
           <MatchdayDetails m={md.m} phase={md.phase} callups={md.callups} myPlayerId={md.myPlayerId} canEdit={s.can("matches", "update")}
             recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} mvp={md.mvp}
             hot={md.hot} ranks={md.ranks} stake={md.stake} />
@@ -156,7 +170,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       ) : matchday?.next ? (
         <>
           <MatchdayHero m={matchday.next} phase="week" greeting={greeting} form={recentForm} />
-          {myCallup && <div className="mb-6"><MyCallupCard m={matchday.next} mine={myCallup} meet={false} /></div>}
+          {myCallup ? <div className="mb-6"><MyCallupCard m={matchday.next} mine={myCallup} meet={false} /></div> : <PorraCard m={matchday.next} />}
         </>
       ) : (
         <section className="franja relative mb-6 overflow-hidden rounded-3xl bg-negro p-6 text-white shadow-xl sm:p-8">
@@ -190,6 +204,19 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <span className="shrink-0 text-sm font-bold text-rojo transition group-hover:translate-x-0.5">Contestar →</span>
         </Link>
       ))}
+
+      {/* Se acabó la liga: el resumen de cada uno */}
+      {ended && (
+        <Link href={`/partidos/resumen?de=c${ended.competition}`} prefetch className="group franja relative mb-6 flex items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:shadow-xl">
+          <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full bg-dorado/15 ring-2 ring-dorado"><Award size={24} className="text-dorado" /></span>
+          <span className="relative min-w-0 flex-1">
+            <span className="sport block text-xs font-black tracking-[0.2em] text-dorado">¡SE ACABÓ EL {ended.name.toUpperCase()}!</span>
+            <span className="sport block text-2xl font-black leading-tight">Mira tu resumen</span>
+            <span className="block text-sm text-white/75">Tus partidos, goles, MVP y tu mejor partido, en una imagen para compartir.</span>
+          </span>
+          <span className="relative shrink-0 text-sm font-bold text-dorado transition group-hover:translate-x-0.5">→</span>
+        </Link>
+      )}
 
       {/* Votaciones abiertas */}
       {polls.length > 0 && (
