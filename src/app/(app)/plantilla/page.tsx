@@ -1,13 +1,12 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarPlus, Download, FileSpreadsheet, FileText, FolderLock, History, LayoutGrid, List, Plus, Search, Shirt, Trophy, Wallet } from "lucide-react";
+import { CalendarPlus, Download, FileSpreadsheet, FileText, FolderLock, History, LayoutGrid, List, Plus, Search, Shirt, Wallet, type LucideIcon } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
 import { fetchRoster, fetchSeasons } from "@/lib/squad-queries";
 import {
-  FOOT_LABEL, LINES, LINE_TONE, STATUSES, STATUS_LABEL, STATUS_TONE, POSITION_LABEL,
-  fullName, lineFromSlug, lineOf, nextSeason, prevSeason, seasonFromSlug, seasonSlug, shirtName, statusFromSlug,
-  type RosterEntry,
+  FOOT_LABEL, LINES, LINE_TONE, SQUAD_ORDERS, STATUSES, STATUS_LABEL, STATUS_TONE, POSITION_LABEL,
+  fullName, groupByLine, lineFromSlug, lineOf, nextSeason, orderFromSlug, orderRoster, prevSeason, seasonFromSlug, seasonSlug, shirtName, statusFromSlug,
 } from "@/lib/squad";
 import { Empty, PageHeader } from "@/components/ui";
 import { Armband, PlayerCard, PositionChip } from "@/components/squad/player-card";
@@ -18,7 +17,7 @@ import { CountUp } from "@/components/squad/count-up";
 
 export const metadata = { title: "Plantilla" };
 
-type SP = { temporada?: string; vista?: string; linea?: string; estado?: string; q?: string; preparada?: string; sindorsal?: string };
+type SP = { temporada?: string; vista?: string; linea?: string; estado?: string; orden?: string; q?: string; preparada?: string; sindorsal?: string };
 
 export default async function SquadPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
@@ -29,31 +28,36 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
   const line = lineFromSlug(sp.linea);
   const status = sp.estado === "todos" ? "all" : statusFromSlug(sp.estado);
   const q = (sp.q ?? "").trim().toLowerCase();
+  const order = orderFromSlug(sp.orden);
 
   const canPrivate = s.can("squad_private", "read");
   const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
-  const [roster, seasons, stats, docAlerts] = await Promise.all([
+  const [roster, seasons, stats, docAlerts, lastMvp] = await Promise.all([
     fetchRoster(supabase, season),
     fetchSeasons(supabase),
     supabase.rpc("squad_season_stats", { p_season: season }).then((r) => r.data as { avg_age: number | null; with_birth: number } | null),
     canPrivate
       ? supabase.from("player_documents").select("id", { count: "exact", head: true }).lte("expires_on", in30).then((r) => r.count ?? 0)
       : Promise.resolve(0),
+    // «En forma»: el MVP del último partido jugado de la temporada (si ya está elegido)
+    supabase.from("matches").select("mvp_player_id").eq("season", season).eq("status", "played")
+      .order("match_date", { ascending: false }).order("kickoff", { ascending: false, nullsFirst: false }).limit(1)
+      .then((r) => (r.data?.[0]?.mvp_player_id as string | null | undefined) ?? null),
   ]);
 
   const inSquad = roster.filter((r) => r.status !== "left");
-  const shown = roster.filter(
+  const shown = orderRoster(roster.filter(
     (r) =>
       (status === "all" ? true : status ? r.status === status : r.status !== "left") &&
       (!line || lineOf(r.position) === line) &&
       (!q || `${fullName(r.player)} ${r.player.nickname ?? ""} ${r.number ?? ""}`.toLowerCase().includes(q)),
-  );
+  ), order);
 
   const canCreate = s.can("squad", "create");
   const current = season === seasonOf();
   const link = (p: Partial<SP>) => {
-    const next = { temporada: seasonSlug(season), vista: view, linea: sp.linea, estado: sp.estado, q: sp.q, ...p };
-    const qs = new URLSearchParams(Object.entries(next).filter(([k, v]) => v && !(k === "vista" && v === "cromos")) as [string, string][]);
+    const next = { temporada: seasonSlug(season), vista: view, linea: sp.linea, estado: sp.estado, orden: sp.orden, q: sp.q, ...p };
+    const qs = new URLSearchParams(Object.entries(next).filter(([k, v]) => v && !(k === "vista" && v === "cromos") && !(k === "orden" && v === "lineas")) as [string, string][]);
     return `/plantilla?${qs}`;
   };
   const hrefFor = (id: string) => `/plantilla/${id}?temporada=${seasonSlug(season)}`;
@@ -64,27 +68,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
       <PageHeader
         title="Plantilla"
         subtitle={<>Temporada <b>{season}</b>{current ? " · actual" : ""}</>}
-        actions={<>
-          <Link href="/plantilla/historia" prefetch className="btn-ghost"><History size={18} /> Historia</Link>
-          {s.can("finances", "read") && <Link href={`/plantilla/cuotas?temporada=${seasonSlug(season)}`} prefetch className="btn-ghost"><Wallet size={18} /> Cuotas</Link>}
-          {canPrivate && <Link href="/plantilla/documentos" prefetch className="btn-ghost"><FolderLock size={18} /> Documentos</Link>}
-          {s.can("squad", "update") && roster.length > 0 && (
-            <details className="relative">
-              <summary className="btn-ghost cursor-pointer list-none [&::-webkit-details-marker]:hidden"><Download size={18} /> Exportar</summary>
-              <div className="anim-rise fixed inset-x-4 bottom-24 z-40 space-y-1 rounded-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:mt-2 sm:w-64 space-y-1 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-black/10">
-                <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=xlsx`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileSpreadsheet size={16} className="text-green-700" /> Excel de la plantilla</a>
-                <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=pdf`} target="_blank" rel="noopener" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileText size={16} className="text-rojo" /> PDF de la plantilla</a>
-                {canPrivate && (
-                  <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=xlsx&datos=1`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FolderLock size={16} /> Excel con datos personales</a>
-                )}
-              </div>
-            </details>
-          )}
-          {canCreate && !seasons.includes(nextSeason(season)) && roster.length > 0 && (
-            <Link href={`/plantilla/nueva-temporada?desde=${seasonSlug(season)}`} prefetch className="btn-dark"><CalendarPlus size={18} /> Preparar {nextSeason(season)}</Link>
-          )}
-          {canCreate && <Link href={`/plantilla/nuevo?temporada=${seasonSlug(season)}`} prefetch className="btn-primary"><Plus size={18} /> Nuevo jugador</Link>}
-        </>}
+        actions={canCreate && <Link href={`/plantilla/nuevo?temporada=${seasonSlug(season)}`} prefetch className="btn-primary"><Plus size={18} /> Fichar</Link>}
       />
       {sp.preparada && (
         <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">
@@ -92,11 +76,32 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         </p>
       )}
 
-      {docAlerts > 0 && (
-        <Link href="/plantilla/documentos?filtro=caducan" className="anim-rise mb-4 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900 ring-1 ring-amber-200 hover:ring-amber-400">
-          <AlertTriangle size={16} /> {docAlerts === 1 ? "Hay 1 documento caducado o que caduca" : `Hay ${docAlerts} documentos caducados o que caducan`} en los próximos 30 días. Revisar →
-        </Link>
-      )}
+      {/* Mesa de la plantilla: las herramientas en baldosas */}
+      <nav aria-label="Herramientas de la plantilla" className="relative z-20 mb-6 grid grid-cols-[repeat(auto-fill,minmax(3.9rem,1fr))] gap-1.5 sm:max-w-2xl sm:grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] sm:gap-3">
+        <DeskTile href="/plantilla/historia" icon={History} label="Historia" />
+        {s.can("finances", "read") && <DeskTile href={`/plantilla/cuotas?temporada=${seasonSlug(season)}`} icon={Wallet} label="Cuotas" />}
+        {canPrivate && (
+          <DeskTile href={docAlerts > 0 ? "/plantilla/documentos?filtro=caducan" : "/plantilla/documentos"} icon={FolderLock} label="Documentos"
+            badge={docAlerts || undefined} note={docAlerts > 0 ? (docAlerts === 1 ? "1 caduca" : `${docAlerts} caducan`) : undefined} />
+        )}
+        {canCreate && !seasons.includes(nextSeason(season)) && roster.length > 0 && (
+          <DeskTile href={`/plantilla/nueva-temporada?desde=${seasonSlug(season)}`} icon={CalendarPlus} label={`Preparar ${nextSeason(season)}`} />
+        )}
+        {s.can("squad", "update") && roster.length > 0 && (
+          <details className="relative open:z-50">
+            <summary className={`${TILE} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+              <TileIcon icon={Download} /> Exportar
+            </summary>
+            <div className="anim-rise absolute right-0 top-full z-40 mt-2 w-64 space-y-1 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-black/10">
+              <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=xlsx`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileSpreadsheet size={16} className="text-green-700" /> Excel de la plantilla</a>
+              <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=pdf`} target="_blank" rel="noopener" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileText size={16} className="text-rojo" /> PDF de la plantilla</a>
+              {canPrivate && (
+                <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=xlsx&datos=1`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FolderLock size={16} /> Excel con datos personales</a>
+              )}
+            </div>
+          </details>
+        )}
+      </nav>
 
       {/* Marcador de la plantilla */}
       <section className="franja relative mb-6 overflow-hidden rounded-3xl bg-negro p-5 text-white shadow-xl sm:p-6">
@@ -131,8 +136,6 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         )}
       </section>
 
-      <Leaders roster={inSquad} hrefFor={hrefFor} />
-
       {/* Vista, temporada y filtros */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex rounded-xl bg-white p-1 shadow-sm ring-1 ring-black/5">
@@ -143,6 +146,16 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
             </Link>
           ))}
         </div>
+        {view !== "campo" && (
+          <div className="flex gap-1" role="group" aria-label="Ordenar">
+            {SQUAD_ORDERS.map((o) => (
+              <Link key={o.key} href={link({ orden: o.key })} prefetch aria-current={order === o.key ? "true" : undefined}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${order === o.key ? "tab-on bg-negro text-white" : "bg-white text-negro/70 ring-1 ring-black/10 hover:ring-negro/30"}`}>
+                {o.label}
+              </Link>
+            ))}
+          </div>
+        )}
         {seasons.length > 1 && (
           <div className="flex flex-wrap gap-1">
             {seasons.map((t) => (
@@ -156,6 +169,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
         <form action="/plantilla" className="relative ml-auto w-full sm:w-56">
           <input type="hidden" name="temporada" value={seasonSlug(season)} />
           {view !== "cromos" && <input type="hidden" name="vista" value={view} />}
+          {order !== "lineas" && <input type="hidden" name="orden" value={order} />}
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-negro/60" />
           <input name="q" defaultValue={sp.q} placeholder="Buscar nombre o dorsal" className="input pl-9" />
         </form>
@@ -234,9 +248,25 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
             </tbody>
           </table>
         </div>
+      ) : order === "lineas" ? (
+        <div className="space-y-7">
+          {groupByLine(shown).map(({ line: l, rows }, gi) => (
+            <section key={l.key} aria-labelledby={`linea-${l.slug}`}>
+              <div className="anim-rise mb-3 flex items-center gap-3" style={{ animationDelay: `${gi * 60}ms` }}>
+                <span className={`h-3 w-3 shrink-0 rounded-full ${LINE_TONE[l.key].dot}`} />
+                <h2 id={`linea-${l.slug}`} className="sport text-2xl font-black leading-none">{l.plural}</h2>
+                <span className="sport text-lg font-black text-negro/60">{rows.length}</span>
+                <span aria-hidden className="h-0.5 flex-1 bg-[linear-gradient(90deg,var(--color-dorado),transparent)]" />
+              </div>
+              <div className={CARD_GRID}>
+                {rows.map((r, i) => <PlayerCard key={r.id} entry={r} href={hrefFor(r.player_id)} index={i} form={r.player_id === lastMvp} />)}
+              </div>
+            </section>
+          ))}
+        </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-6 md:grid-cols-4 xl:grid-cols-5">
-          {shown.map((r, i) => <PlayerCard key={r.id} entry={r} href={hrefFor(r.player_id)} index={i} />)}
+        <div className={CARD_GRID}>
+          {shown.map((r, i) => <PlayerCard key={r.id} entry={r} href={hrefFor(r.player_id)} index={i} form={r.player_id === lastMvp} />)}
         </div>
       )}
 
@@ -256,40 +286,28 @@ function Chip({ href, on, dot, children }: { href: string; on: boolean; dot?: st
   );
 }
 
-/** Líderes de la temporada: goleador, asistente, más partidos y más veces mejor del partido. */
-function Leaders({ roster, hrefFor }: { roster: RosterEntry[]; hrefFor: (id: string) => string }) {
-  const cats: { key: "goals" | "assists" | "apps" | "mvps"; label: string; unit: string }[] = [
-    { key: "goals", label: "Pichichi", unit: "goles" },
-    { key: "assists", label: "Asistente", unit: "asist." },
-    { key: "apps", label: "Más partidos", unit: "PJ" },
-    { key: "mvps", label: "MVP", unit: "veces" },
-  ];
-  const top = cats
-    .map((c) => ({ ...c, r: [...roster].sort((a, b) => b[c.key] - a[c.key] || (a.number ?? 99) - (b.number ?? 99))[0] }))
-    .filter((c) => c.r && c.r[c.key] > 0);
-  if (!top.length) return null;
+const CARD_GRID = "grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-6 md:grid-cols-4 xl:grid-cols-5";
+
+/** Baldosa de la mesa de la plantilla (como los cajones de Gestión, en pequeño). */
+const TILE = "group relative flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl bg-white px-0.5 py-3 text-center text-[10.5px] font-bold tracking-tight sm:px-1 sm:text-xs sm:tracking-normal leading-tight shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-dorado active:scale-[0.97]";
+
+function TileIcon({ icon: Icon }: { icon: LucideIcon }) {
   return (
-    <section className="mb-6">
-      <h2 className="sport mb-3 text-2xl font-black">Líderes de la temporada</h2>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {top.map(({ key, label, unit, r }, i) => (
-          <Link key={key} href={hrefFor(r.player_id)} prefetch style={{ animationDelay: `${i * 80}ms` }}
-            className="anim-rise group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-dorado">
-            <span aria-hidden className="absolute -right-3 top-0 h-full w-5 -skew-x-[20deg] bg-dorado" />
-            {r.player.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={r.player.photo_url} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-dorado" />
-            ) : (
-              <span className="shrink-0"><Jersey number={r.number} goalkeeper={lineOf(r.position) === "GK"} size={46} /></span>
-            )}
-            <span className="relative min-w-0">
-              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-negro/65">{i === 0 && <Trophy size={12} className="anim-trophy text-dorado" />}{label}</span>
-              <span className="sport block truncate text-lg font-black leading-tight">{shirtName(r.player)}</span>
-              <span className="block text-xs text-negro/60"><b className="sport text-base text-rojo">{r[key]}</b> {unit}</span>
-            </span>
-          </Link>
-        ))}
-      </div>
-    </section>
+    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gris text-rojo ring-1 ring-black/5 transition group-hover:bg-rojo group-hover:text-white">
+      <Icon size={19} />
+    </span>
+  );
+}
+
+function DeskTile({ href, icon, label, badge, note }: { href: string; icon: LucideIcon; label: string; badge?: number; note?: string }) {
+  return (
+    <Link href={href} prefetch className={TILE}>
+      <TileIcon icon={icon} />
+      <span>{label}</span>
+      {note && <span className="-mt-1 text-[10px] font-semibold text-amber-700">{note}</span>}
+      {badge != null && (
+        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-black text-white ring-2 ring-gris">{badge}</span>
+      )}
+    </Link>
   );
 }

@@ -8,6 +8,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.6.0",
+    date: "2026-11-12",
+    title: "Plantilla más ordenada",
+    changes: [
+      "Historia, Cuotas, Documentos, Exportar y Preparar temporada pasan a baldosas debajo del título, como en Gestión. Arriba solo queda el botón «Fichar».",
+      "Si hay documentos que caducan, la baldosa de Documentos lo marca con un número.",
+      "Los cromos salen agrupados por líneas: porteros, defensas, centrocampistas y delanteros, cada grupo con su título.",
+      "Nuevo: ordenar la plantilla por dorsal, por goles o por partidos jugados (también en la vista de lista).",
+      "Cromo «En forma»: el MVP de la última jornada sale en un cromo rojo y negro con letras doradas.",
+      "Fuera «Líderes de la temporada», que ya está en Estadísticas.",
+    ],
+  },
+  {
     version: "4.5.0",
     date: "2026-11-12",
     title: "Estadísticas nuevas, con aire del Rayo",

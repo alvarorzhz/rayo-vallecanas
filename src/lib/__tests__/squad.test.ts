@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ageOf, docExpiry, feeOf, feeStatus, fileSize, fullName, lineOf, nextSeason, prevSeason, ratio, seasonFromSlug, seasonSlug, shirtName, sortRoster, type Player } from "../squad.ts";
+import { ageOf, docExpiry, feeOf, feeStatus, fileSize, fullName, lineOf, nextSeason, prevSeason, ratio, seasonFromSlug, seasonSlug, shirtName, sortRoster, orderRoster, orderFromSlug, groupByLine, type Player } from "../squad.ts";
 
 const player = (first_name: string, last_name: string, nickname: string | null = null) => ({ first_name, last_name, nickname }) as Player;
 
@@ -73,4 +73,26 @@ test("tamaños de archivo y medias legibles", () => {
   assert.equal(fileSize(1.5 * 1024 * 1024), "1,5 MB");
   assert.equal(ratio(9, 4), "2,25");
   assert.equal(ratio(3, 0), "–");
+});
+
+const row = (nick: string, position: string, number: number | null, goals = 0, assists = 0, apps = 0) =>
+  ({ position, number, goals, assists, apps, player: player(nick, "X", nick) });
+const roster = [row("Lucho", "DC", 10, 8, 3, 13), row("Martín", "POR", 1, 0, 0, 13), row("Pérez", "LD", 2, 0, 1, 10), row("Fuentes", "DC", 9, 10, 1, 10), row("Sin", "MCO", null, 0, 0, 2)];
+const names = (rows: { player: Player }[]) => rows.map((r) => r.player.nickname);
+
+test("orden de los cromos de la plantilla", () => {
+  assert.deepEqual(names(orderRoster(roster, "lineas")), ["Martín", "Pérez", "Sin", "Fuentes", "Lucho"]);
+  assert.deepEqual(names(orderRoster(roster, "dorsal")), ["Martín", "Pérez", "Fuentes", "Lucho", "Sin"]);
+  assert.deepEqual(names(orderRoster(roster, "goles")), ["Fuentes", "Lucho", "Pérez", "Martín", "Sin"]);
+  // Empate a 13 partidos: desempata por goles
+  assert.deepEqual(names(orderRoster(roster, "partidos")), ["Lucho", "Martín", "Fuentes", "Pérez", "Sin"]);
+  assert.equal(orderFromSlug("goles"), "goles");
+  assert.equal(orderFromSlug("raro"), "lineas");
+  assert.equal(orderFromSlug(undefined), "lineas");
+});
+
+test("la plantilla por líneas no enseña líneas vacías", () => {
+  const g = groupByLine(roster);
+  assert.deepEqual(g.map((x) => [x.line.key, names(x.rows)]), [["GK", ["Martín"]], ["DEF", ["Pérez"]], ["MID", ["Sin"]], ["FWD", ["Fuentes", "Lucho"]]]);
+  assert.deepEqual(groupByLine([row("A", "DC", 9)]).map((x) => x.line.key), ["FWD"]);
 });
