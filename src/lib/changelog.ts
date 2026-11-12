@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.5.0",
+    date: "2026-11-12",
+    title: "Estadísticas nuevas, con aire del Rayo",
+    changes: [
+      "Balance del equipo en un panel nuevo: puntos, puesto en la liga, partidos ganados, empatados y perdidos, goles marcados y recibidos con su media y los últimos resultados. Todo escrito con palabras, sin siglas.",
+      "Cuadro de honor: el Pichichi y el máximo asistente salen en un cromo dorado con su foto, y una frase explica la cifra (por ejemplo, qué parte de los goles del Rayo ha marcado).",
+      "Tarjetas de MVP, goles + asistencias, Zamora, los fijos y las tarjetas, cada una con una línea que dice qué mide.",
+      "Las temporadas pasadas se ven en tarjetas con su balance en vez de en una tabla.",
+      "Fuera «Más veces titular», que ya no se usa.",
+    ],
+  },
+  {
     version: "4.4.2",
     date: "2026-11-12",
     title: "Novedades y La Voz, sin cosas raras",
