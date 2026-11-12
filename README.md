@@ -21,7 +21,7 @@ La barra inferior del móvil tiene seis apartados: **Inicio · Partidos · Plant
 - **Convocatorias**: lista, hora y lugar de quedada, notas; cada jugador responde Voy / No voy / Duda, también desde el propio aviso del móvil. Recordatorio automático e historial.
 - **Actas**: alineación, goles, asistencias, tarjetas, portero y goles encajados. Las estadísticas de la temporada se calculan solas.
 - **MVP votado por el equipo**: al guardar el acta se abre la votación (voto secreto, hasta las 23:59), con desempate por goles o por un gestor.
-- **Imagen del resultado** para compartir en WhatsApp o Instagram (con los patrocinadores si se quiere).
+- **Imágenes para compartir** en WhatsApp o Instagram, reunidas en la ficha del partido: convocatoria, «Hoy jugamos» y resultado, en formato publicación o historia (con los patrocinadores si se quiere).
 
 ### Plantilla
 - Fichas estilo **cromo** con foto, posición, dorsal y estadísticas, por temporada; vista de campo por líneas.

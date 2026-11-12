@@ -841,3 +841,11 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
   from { clip-path: inset(0 0 100% 0); opacity: 0.4; }
   to { clip-path: inset(0 0 0 0); opacity: 1; }
 }
+
+/* 4.4.0: miniatura de póster en «Imágenes para compartir» (negro con la franja roja y dorada) */
+.share-thumb { background: linear-gradient(160deg, #1a0a0c 0%, #0a0a0b 60%, #050505 100%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.share-thumb::before { content: ""; position: absolute; inset: -20% auto -20% 38%; width: 28%; background: linear-gradient(0deg, rgba(210, 13, 23, 0.1), rgba(210, 13, 23, 0.85)); transform: skewX(-32deg); }
+.share-thumb::after { content: ""; position: absolute; inset: -20% auto -20% 72%; width: 6%; background: var(--color-dorado); opacity: 0.75; transform: skewX(-32deg); }
+.share-thumb-oro { background: radial-gradient(circle at 50% 35%, rgba(213, 175, 50, 0.35), transparent 65%), linear-gradient(160deg, #1a0a0c 0%, #0a0a0b 60%, #050505 100%); }
+.share-thumb-rojo { background: radial-gradient(circle at 50% 35%, rgba(210, 13, 23, 0.45), transparent 65%), linear-gradient(160deg, #1a0a0c 0%, #0a0a0b 60%, #050505 100%); }
+.share-thumb > span { z-index: 1; }

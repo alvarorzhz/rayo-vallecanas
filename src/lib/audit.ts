@@ -173,7 +173,7 @@ const FIELD: Record<string, string> = {
   contact_phone: "Teléfono de contacto", contact_email: "Email de contacto", sponsor_id: "Patrocinador",
   in_kind: "En especie", in_kind_value_cents: "Valor en especie", benefits: "Contrapartidas", starts_on: "Empieza",
   ends_on: "Termina", contract_path: "Contrato", contract_name: "Nombre del contrato", expiry_reminded_at: "Aviso de fin enviado",
-  agreement_id: "Acuerdo", reminded_at: "Recordatorio enviado", show_home: "Logos en Inicio", show_result: "Logos en la imagen del resultado",
+  agreement_id: "Acuerdo", reminded_at: "Recordatorio enviado", show_home: "Logos en Inicio", show_result: "Logos en las imágenes para compartir",
   // Votaciones
   question: "Pregunta", details: "Detalles", audience: "Para quién", anonymous: "Anónima",
   created_by: "Creado por", created_at: "Creado el", ext_id: "Id en la liga",
