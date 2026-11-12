@@ -18,7 +18,7 @@ export default function NovedadesPage() {
             <div className={`card reveal ${i === 0 ? "ring-2 ring-rojo/30" : ""}`}>
               <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="flex items-center gap-2 font-bold">
-                  <span className={`badge -skew-x-[10deg] font-mono ${i === 0 ? "bg-rojo text-white" : "bg-negro text-white"}`}>v{r.version}</span>
+                  <span className={`badge shrink-0 -skew-x-[10deg] px-2.5 font-mono not-italic ${i === 0 ? "bg-rojo text-white" : "bg-negro text-white"}`}>v{r.version}</span>
                   {r.title}
                 </h2>
                 <span className="text-xs text-negro/65">{fecha(r.date)}{i === 0 ? " · versión actual" : ""}</span>
