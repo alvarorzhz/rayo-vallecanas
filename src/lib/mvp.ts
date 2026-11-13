@@ -65,3 +65,13 @@ export function mvpStage(b: MvpBoard): "open" | "counting" | "winner" | "tie" | 
 }
 
 export const votesLabel = (n: number) => `${n} ${n === 1 ? "voto" : "votos"}`;
+
+/** Días tras el cierre en los que la gala del MVP aún sale sola al entrar. */
+export const GALA_DAYS = 4;
+
+/** ¿Sale sola la gala? Solo con ganador y en los días siguientes al cierre. */
+export function galaFresh(b: Pick<MvpBoard, "counted" | "winner_id" | "closes_at">, now = new Date()): boolean {
+  if (!b.counted || !b.winner_id) return false;
+  const ago = now.getTime() - new Date(b.closes_at).getTime();
+  return ago >= -86400_000 && ago <= GALA_DAYS * 86400_000;
+}

@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.10.0",
+    date: "2026-11-13",
+    title: "El bombo, la gala del MVP y los logros",
+    changes: [
+      "El bombo de la rifa: al pulsar «Sortear al azar» gira un bombo con las bolas, cae la bola y los números bailan hasta quedarse en el ganador. Con «Ver el bombo» se repite cuando quieras, por ejemplo para grabarlo y enseñarlo.",
+      "Gala del MVP: cuando se cierra la votación, la primera vez que entras sale un sobre dorado lacrado con el escudo que se abre y saca el cromo del ganador. Sale en Inicio o en la ficha del partido, y se puede repetir con «Ver la gala».",
+      "Clasificación viva: la primera vez que ves una jornada nueva, los equipos salen en el puesto que tenían y se recolocan solos, en verde los que suben y en rojo los que bajan. «Ver cómo se movió» lo repite.",
+      "Logros en la ficha de cada jugador: medallas de bronce, plata, oro y leyenda por partidos, goles, asistencias, MVP, porterías a cero, temporadas, dobletes y hat-tricks, capitán y temporada sin tarjetas. Debajo, los siguientes que tiene a tiro con lo que le falta.",
+      "Reacciones en La Voz del Rayo: al final de cada noticia puedes reaccionar con ⚡ 🔥 👏 😂 😮. Una por persona: tocar otra la cambia y tocar la misma la quita. Sin comentarios.",
+    ],
+  },
+  {
     version: "4.9.0",
     date: "2026-11-12",
     title: "La porra y el resumen de temporada",

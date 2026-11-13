@@ -15,6 +15,17 @@ export async function fetchRoster(supabase: DB, season: string): Promise<RosterE
   return sortRoster(data ?? []);
 }
 
+/** Un jugador en la plantilla de una temporada (para su cromo). */
+export async function fetchRosterEntry(supabase: DB, season: string, playerId: string): Promise<RosterEntry | null> {
+  const { data } = await supabase
+    .from("squad_members_full")
+    .select("*, player:players!inner(*)")
+    .eq("season", season)
+    .eq("player_id", playerId)
+    .maybeSingle<Membership & { player: Player }>();
+  return data ?? null;
+}
+
 /**
  * Fichajes por presentar: jugadores dados de alta después de `since` (a mano o desde la web de la liga)
  * que están en la plantilla de esta temporada. Como mucho del último mes.

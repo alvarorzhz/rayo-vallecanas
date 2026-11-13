@@ -4,6 +4,7 @@ import { CLUB_NAME, OUTCOME_LABEL, OUTCOME_TONE, type Rival } from "@/lib/matche
 import type { LeagueTable, StandingRow } from "@/lib/league-table";
 import { gapLabel, type MatchRanks, type Rank } from "@/lib/standings";
 import { Crest } from "./crest";
+import { LiveStandings } from "./live-standings";
 
 export type TableRival = Pick<Rival, "name" | "short_name" | "color" | "crest_url"> & { ext_id: string | null };
 
@@ -98,7 +99,7 @@ export function StandingsTable({ table, us, rivals }: Props) {
       )}
 
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-        <table className="w-full table-fixed text-sm">
+        <table id="tabla-liga" className="w-full table-fixed text-sm">
           <caption className="sr-only">Clasificación{table.round ? ` tras la ${table.round.toLowerCase()}` : ""}</caption>
           <thead>
             <tr className="bg-negro text-[11px] font-bold uppercase tracking-wider text-white">
@@ -119,7 +120,7 @@ export function StandingsTable({ table, us, rivals }: Props) {
             {table.rows.map((r, i) => {
               const mine = r.teamId === us;
               return (
-                <tr key={r.teamId} className={`anim-rise border-t border-black/5 ${mine ? "bg-rojo/10 font-bold" : i % 2 ? "bg-black/[0.015]" : ""}`} style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
+                <tr key={r.teamId} data-move={r.move} className={`anim-rise border-t border-black/5 ${mine ? "bg-rojo/10 font-bold" : i % 2 ? "bg-black/[0.015]" : ""}`} style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
                   <td className="relative py-2 pl-3">
                     {r.zone && <span aria-hidden className="absolute inset-y-1 left-0 w-1 rounded-r" style={{ background: r.zone.color }} title={r.zone.label} />}
                     <div className="flex flex-col items-start leading-none">
@@ -157,6 +158,7 @@ export function StandingsTable({ table, us, rivals }: Props) {
           <span key={x.label} className="inline-flex items-center gap-1.5"><span aria-hidden className="h-3 w-1.5 rounded" style={{ background: x.color }} /> {x.label}</span>
         ))}
         {table.rows.some((r) => r.penalty !== 0) && <span><b className="text-rojo">*</b> con puntos de sanción</span>}
+        {table.rows.some((r) => r.move !== 0) && <LiveStandings target="tabla-liga" round={`${table.competition ?? ""}|${table.round ?? ""}|${table.rows.map((r) => `${r.teamId}:${r.pos}`).join(",")}`} />}
         <span className="ml-auto">Datos de la web de la liga{table.round ? ` · tras la ${table.round.toLowerCase()}` : ""}</span>
       </div>
     </div>

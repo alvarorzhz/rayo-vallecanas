@@ -93,3 +93,17 @@ test("el enlace público sale del titular, sin tildes ni símbolos", () => {
   assert.ok(isNewsSlug(newsSlug("Nueva equipación para la temporada", "k9")));
   assert.equal(isNewsSlug("../admin"), false);
 });
+
+test("recuento de reacciones: cuántas, quién y la mía", async () => {
+  const { tallyReactions } = await import("../news.ts");
+  const t = tallyReactions([
+    { emoji: "⚡", user_id: "a", name: "Dani" },
+    { emoji: "⚡", user_id: "b", name: "Javi" },
+    { emoji: "😂", user_id: "me", name: "Yo" },
+    { emoji: "💩", user_id: "c" },
+  ], "me");
+  assert.equal(t.counts["⚡"], 2);
+  assert.deepEqual(t.names["⚡"], ["Dani", "Javi"]);
+  assert.equal(t.mine, "😂");
+  assert.equal(t.counts["🔥"], 0);
+});

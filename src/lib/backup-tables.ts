@@ -44,6 +44,7 @@ export const BACKUP_TABLES: [string, string][] = [
   ["poll_votes", "Votaciones · votos"],
   ["news_articles", "La Voz del Rayo · noticias"],
   ["news_interviews", "La Voz del Rayo · entrevistas"],
+  ["news_reactions", "La Voz del Rayo · reacciones"],
   ["push_log", "Avisos enviados"],
   ["audit_log", "Auditoría"],
   ["access_log", "Auditoría · accesos"],

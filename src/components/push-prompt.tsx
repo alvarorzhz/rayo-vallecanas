@@ -52,8 +52,8 @@ export function PushPrompt() {
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
     const check = () => {
-      // Espera a que se cierren las novedades, el tutorial y los fichajes para no amontonar ventanas
-      if (document.getElementById("whats-new-title") || document.getElementById("rv-tour") || document.getElementById("rv-fichaje")) {
+      // Espera a que se cierren las novedades, el tutorial, los fichajes, la gala del MVP y el bombo para no amontonar ventanas
+      if (document.getElementById("whats-new-title") || document.getElementById("rv-tour") || document.getElementById("rv-fichaje") || document.getElementById("rv-gala") || document.getElementById("rv-bombo")) {
         t = setTimeout(check, 1500);
         return;
       }

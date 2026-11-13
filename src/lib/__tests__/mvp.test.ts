@@ -34,3 +34,12 @@ test("clasificación y estado de la votación", () => {
   assert.equal(mvpStage(board({ tie_ids: ["a", "b"] })), "tie");
   assert.equal(mvpStage(board({})), "empty");
 });
+
+test("la gala del MVP sale sola solo con ganador y en los días siguientes al cierre", async () => {
+  const { galaFresh } = await import("../mvp.ts");
+  const b = { counted: true, winner_id: "a", closes_at: "2026-11-08T22:59:59Z" };
+  assert.equal(galaFresh(b, new Date("2026-11-09T10:00:00Z")), true);
+  assert.equal(galaFresh(b, new Date("2026-11-14T10:00:00Z")), false);
+  assert.equal(galaFresh({ ...b, winner_id: null }, new Date("2026-11-09T10:00:00Z")), false);
+  assert.equal(galaFresh({ ...b, counted: false }, new Date("2026-11-09T10:00:00Z")), false);
+});

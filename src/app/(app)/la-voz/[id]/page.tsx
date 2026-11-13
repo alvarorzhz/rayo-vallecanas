@@ -4,13 +4,14 @@ import type { Metadata } from "next";
 import { Pencil } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { NEWS_NAME } from "@/lib/news";
+import { NEWS_NAME, tallyReactions } from "@/lib/news";
+import { Reactions } from "@/components/news/reactions";
 import { fetchArticle, fetchMatchSheet, fetchPlayerFacts, fetchPublished } from "@/lib/news-queries";
 import { ArticleView } from "@/components/news/article-view";
 import { ForgetLocalDraft } from "@/components/news/editor";
 import { ShareButton } from "@/components/news/share-button";
 import { PublicPanel } from "@/components/news/public-panel";
-import { setNewsPublic } from "../actions";
+import { reactNews, setNewsPublic } from "../actions";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -26,11 +27,16 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
   if (!a) notFound();
   const canEdit = s.can("news", "update") || (s.can("news", "create") && a.created_by === s.user.id);
   const isSuper = s.profile.role === "superadmin";
-  const [sheet, facts, more] = await Promise.all([
+  const [sheet, facts, more, reacts] = await Promise.all([
     a.match_id && (a.kind === "cronica" || a.kind === "previa") ? fetchMatchSheet(supabase, a.match_id, { standings: a.kind === "previa" }) : Promise.resolve(null),
     a.kind === "entrevista" && a.player_id ? fetchPlayerFacts(supabase, a.player_id) : Promise.resolve(null),
     fetchPublished(supabase, { limit: 4 }),
+    a.status === "published"
+      ? supabase.from("news_reactions").select("emoji, user_id, profile:profiles(full_name)").eq("article_id", a.id)
+          .returns<{ emoji: string; user_id: string; profile: { full_name: string } | null }[]>().then((r) => r.data ?? [])
+      : Promise.resolve([]),
   ]);
+  const tally = tallyReactions(reacts.map((r) => ({ emoji: r.emoji, user_id: r.user_id, name: r.profile?.full_name?.split(" ")[0] ?? null })), s.user.id);
   const player = facts && { name: facts.name, number: facts.number, position: facts.position, apps: facts.stats.apps, goals: facts.stats.goals };
 
   return (
@@ -49,6 +55,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
             {canEdit && <Link href={`/la-voz/${a.id}/editar`} prefetch className="btn-ghost !px-3 !py-1.5 text-xs"><Pencil size={14} /> Editar</Link>}
           </>
         }
+        reactions={a.status === "published" ? <Reactions counts={tally.counts} names={tally.names} mine={tally.mine} action={reactNews.bind(null, a.id)} /> : undefined}
         share={a.status === "published" ? <ShareButton title={a.title} url={a.is_public && a.public_slug ? `/noticias/${a.public_slug}` : undefined} /> : undefined} />
       {/* Solo el superadministrador decide qué se lee fuera de la app */}
       {(isSuper || a.is_public) && a.status === "published" && (

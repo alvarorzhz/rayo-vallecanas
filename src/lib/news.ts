@@ -35,6 +35,26 @@ export type Article = {
 
 export const NEWS_NAME = "La Voz del Rayo";
 
+/** Reacciones de las noticias (las mismas que admite la base de datos). */
+export const REACTIONS = ["⚡", "🔥", "👏", "😂", "😮"] as const;
+export type Reaction = (typeof REACTIONS)[number];
+export const REACTION_LABEL: Record<Reaction, string> = { "⚡": "Rayo", "🔥": "Fuego", "👏": "Aplausos", "😂": "Risas", "😮": "Sorpresa" };
+
+/** Recuento de reacciones de una noticia: cuántas de cada, quién y la mía. */
+export function tallyReactions(rows: { emoji: string; user_id: string; name?: string | null }[], me: string) {
+  const counts = Object.fromEntries(REACTIONS.map((r) => [r, 0])) as Record<Reaction, number>;
+  const names = Object.fromEntries(REACTIONS.map((r) => [r, [] as string[]])) as Record<Reaction, string[]>;
+  let mine: Reaction | null = null;
+  for (const r of rows) {
+    if (!(REACTIONS as readonly string[]).includes(r.emoji)) continue;
+    const e = r.emoji as Reaction;
+    counts[e]++;
+    if (r.name) names[e].push(r.name);
+    if (r.user_id === me) mine = e;
+  }
+  return { counts, names, mine, total: REACTIONS.reduce((n, r) => n + counts[r], 0) };
+}
+
 export const KINDS: { key: NewsKind; label: string; plural: string; hint: string; needs: "match" | "player" | "sponsor" | null }[] = [
   { key: "cronica", label: "Crónica", plural: "Crónicas", hint: "Lo que pasó en el partido. La ficha técnica sale sola del acta.", needs: "match" },
   { key: "previa", label: "Previa", plural: "Previas", hint: "Cómo llegamos al próximo partido: rival, clasificación y convocatoria.", needs: "match" },

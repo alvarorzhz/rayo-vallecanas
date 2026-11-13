@@ -12,6 +12,7 @@ import { ImportCampaignButton } from "@/components/finance/client-forms";
 import { importCampaign } from "@/app/(app)/finanzas/actions";
 import { archiveCampaign, deleteCampaign, drawRaffle, setCampaignStatus, setRafflePublic, setWinningPrize } from "../actions";
 import { CopyButton } from "@/components/lottery/public-raffle";
+import { BomboReplay } from "@/components/lottery/bombo";
 import { publicRaffleUrl } from "@/lib/lottery/public";
 import type { Campaign, Summary } from "@/lib/types";
 
@@ -211,9 +212,13 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
                 ) : (
                   <p className="text-sm">Ese número no se vendió.</p>
                 )}
+                <div className="w-full sm:ml-auto sm:w-auto">
+                  <BomboReplay campaignId={id} number={c.winning_number} total={c.total_shares} campaign={c.name}
+                    buyer={winner?.sale_id ? winner.buyer_name ?? null : null} seller={winner?.sale_id ? winner.seller_name ?? null : null} />
+                </div>
               </div>
             ) : (
-              <RaffleDrawForm action={drawRaffle.bind(null, id)} total={c.total_shares} />
+              <RaffleDrawForm action={drawRaffle.bind(null, id)} total={c.total_shares} campaignId={id} />
             )
           ) : c.status === "drawn" ? (
             <p className="text-sm">
