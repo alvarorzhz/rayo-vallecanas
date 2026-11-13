@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -294,7 +294,7 @@ export async function saveLeague(_: LeagueState, f: FormData): Promise<LeagueSta
     if (error) throw error;
     const { error: e2 } = await supabase.from("league_competitions").upsert({ competition, name: row.competition_name, team: row.team, team_name: row.team_name });
     if (e2) throw e2;
-    revalidateTag("league-table");
+    updateTag("league-table");
     revalidatePath("/partidos", "layout");
     return { ok: change ? "Liga cambiada. Pulsa «Sincronizar con la liga» para traer sus partidos. Los de la liga anterior se quedan como están." : "Liga guardada. Ya puedes sincronizar." };
   } catch (e) {
@@ -325,7 +325,7 @@ export async function runLeagueSync(): Promise<LeagueState> {
   try {
     const { syncLeague } = await import("@/lib/league-sync");
     const r = await syncLeague({ notifyExcept: s.user.id });
-    revalidateTag("league-table");
+    updateTag("league-table");
     refresh();
     const bits = [
       r.matchesNew && `${r.matchesNew} ${r.matchesNew === 1 ? "partido nuevo" : "partidos nuevos"}`,
