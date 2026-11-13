@@ -21,7 +21,7 @@ const KIND_TAG: Record<NewsKind, string> = {
 };
 
 /** La noticia entera, igual dentro de la app que en su página pública. */
-export function ArticleView({ a, sheet, player, others, home, hrefOf, actions, share, notice, sheetLink = true }: {
+export function ArticleView({ a, sheet, player, others, home, hrefOf, actions, share, notice, reactions, sheetLink = true }: {
   a: ArticleCard;
   sheet: MatchSheet | null;
   player: PlayerLine | null;
@@ -32,6 +32,8 @@ export function ArticleView({ a, sheet, player, others, home, hrefOf, actions, s
   /** El botón de compartir para la franja del final. */
   share?: React.ReactNode;
   notice?: React.ReactNode;
+  /** Reacciones del equipo (solo dentro de la app). */
+  reactions?: React.ReactNode;
   sheetLink?: boolean;
 }) {
   const official = a.kind === "comunicado";
@@ -87,6 +89,8 @@ export function ArticleView({ a, sheet, player, others, home, hrefOf, actions, s
           </div>
           {sheet && <div className="mt-6 hidden lg:sticky lg:top-6 lg:block lg:self-start"><MatchSheetBox sheet={sheet} link={sheetLink} /></div>}
         </div>
+
+        {reactions}
 
         {share && (
           <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-sm bg-negro px-4 py-3 text-white">

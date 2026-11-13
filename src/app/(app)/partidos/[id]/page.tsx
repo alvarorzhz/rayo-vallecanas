@@ -5,6 +5,8 @@ import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fetchCallups, fetchMatch, fetchMyPlayerId, fetchReport, fetchReportPool } from "@/lib/match-queries";
 import { fetchMvpBoard } from "@/lib/mvp-server";
+import { galaFresh } from "@/lib/mvp";
+import { fetchRosterEntry } from "@/lib/squad-queries";
 import {
   COMPETITION_LABEL, MATCH_STATUS_LABEL, hhmm, longDay, mapsLink, matchShareText, record, todayMadrid,
   type MatchRow,
@@ -62,6 +64,11 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
     ? await fetchReportPool(supabase, m.season, mvp.candidates)
     : report?.pool ?? [];
   const h2hRec = record(h2h);
+  // Gala del MVP: el cromo del ganador
+  const galaEntry = mvp?.winner_id ? await fetchRosterEntry(supabase, m.season, mvp.winner_id) : null;
+  const gala = galaEntry && mvp
+    ? { entry: galaEntry, me: s.user.id, rival: `${m.is_home ? "vs" : "en"} ${m.rival.name}`, auto: galaFresh(mvp) }
+    : null;
 
   const canEdit = s.can("matches", "update");
   const link = mapsLink(m);
@@ -91,7 +98,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
 
           {ranks && <RankDuel ranks={ranks} rival={m.rival} href={`/partidos?ver=clasificacion`} />}
 
-          {m.status === "played" && <MvpSection m={m} board={mvp} pool={mvpPool} canEdit={canEdit} />}
+          {m.status === "played" && <MvpSection m={m} board={mvp} pool={mvpPool} canEdit={canEdit} gala={gala} />}
 
           {report && <ReportSection m={m} report={report} canEdit={canEdit} hideMvp={!!mvp} />}
 

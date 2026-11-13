@@ -227,7 +227,7 @@ export function EasterEggs() {
     } catch {}
     let t: ReturnType<typeof setTimeout>;
     const go = () => {
-      if (tourOpen() || document.getElementById("whats-new-title") || document.getElementById("rv-fichaje")) t = setTimeout(go, 1000);
+      if (tourOpen() || document.getElementById("whats-new-title") || document.getElementById("rv-fichaje") || document.getElementById("rv-gala")) t = setTimeout(go, 1000);
       else setGreet(true);
     };
     t = setTimeout(go, 900);

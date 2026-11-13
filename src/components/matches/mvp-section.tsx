@@ -1,5 +1,6 @@
 import { Clock, Lock, Star, Users } from "lucide-react";
 import { Jersey } from "@/components/squad/jersey";
+import { MvpGala } from "@/components/matches/mvp-gala";
 import { MvpChoices, OpenMvpButton, type MvpChoice } from "@/components/matches/mvp-forms";
 import { openMvp, pickMvp, voteMvp } from "@/app/(app)/partidos/mvp-actions";
 import { lineOf, shirtName } from "@/lib/squad";
@@ -8,9 +9,12 @@ import { timeLeft } from "@/lib/polls";
 import { fecha } from "@/lib/format";
 import type { MatchRow } from "@/lib/matches";
 import type { ReportPlayer } from "@/lib/reports";
+import type { RosterEntry } from "@/lib/squad";
+
+export type GalaInfo = { entry: RosterEntry; me: string; rival: string; auto: boolean };
 
 /** El ganador, en grande. */
-function Winner({ p, votes, picked }: { p: ReportPlayer; votes: number; picked: boolean }) {
+function Winner({ p, votes, picked, gala, matchId }: { p: ReportPlayer; votes: number; picked: boolean; gala?: GalaInfo | null; matchId: string }) {
   return (
     <div className="franja relative flex items-center gap-3 overflow-hidden rounded-2xl bg-negro p-3 text-white">
       <span className="relative"><Jersey number={p.number} goalkeeper={lineOf(p.position) === "GK"} size={48} /></span>
@@ -19,6 +23,7 @@ function Winner({ p, votes, picked }: { p: ReportPlayer; votes: number; picked: 
         <p className="sport truncate text-2xl font-black leading-tight">{shirtName(p.player)}</p>
         <p className="text-xs text-white/75">{picked ? "Lo eligió un gestor tras el empate" : `Elegido por el equipo con ${votesLabel(votes)}`}</p>
       </div>
+      {gala && <span className="relative ml-auto"><MvpGala matchId={matchId} {...gala} votes={votes} picked={picked} dark /></span>}
     </div>
   );
 }
@@ -27,7 +32,7 @@ function Winner({ p, votes, picked }: { p: ReportPlayer; votes: number; picked: 
  * Votación del MVP en la página del partido. Abierta: en negro, para votar.
  * Cerrada: el ganador y el recuento (sin decir quién votó a quién).
  */
-export function MvpSection({ m, board, pool, canEdit }: { m: MatchRow; board: MvpBoard | null; pool: ReportPlayer[]; canEdit: boolean }) {
+export function MvpSection({ m, board, pool, canEdit, gala = null }: { m: MatchRow; board: MvpBoard | null; pool: ReportPlayer[]; canEdit: boolean; gala?: GalaInfo | null }) {
   if (m.status !== "played") return null;
   const by = new Map(pool.map((p) => [p.player_id, p]));
 
@@ -89,7 +94,7 @@ export function MvpSection({ m, board, pool, canEdit }: { m: MatchRow; board: Mv
         <span className="text-xs font-bold uppercase tracking-wider text-negro/60">Votación cerrada</span>
       </div>
 
-      {winner && <Winner p={winner} votes={board.tally?.[winner.player_id] ?? 0} picked={board.picked} />}
+      {winner && <Winner p={winner} votes={board.tally?.[winner.player_id] ?? 0} picked={board.picked} gala={gala} matchId={m.id} />}
       {stage === "tie" && <p className="rounded-xl bg-dorado/15 p-3 text-sm font-semibold">Empate a votos y a goles. {canEdit ? "Elige tú al MVP entre los empatados:" : "Lo decide un gestor."}</p>}
       {stage === "empty" && <p className="rounded-xl bg-gris p-3 text-sm">Nadie votó. {canEdit ? "Puedes elegir tú al MVP:" : ""}</p>}
       {(stage === "tie" || stage === "empty") && canEdit && <MvpChoices choices={toPick} mine={null} action={pickMvp.bind(null, m.id)} mode="pick" />}

@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import type { ActionState } from "@/app/(app)/loteria/actions";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
+import { bomboFlag } from "@/components/lottery/bombo";
 
 type A = (s: ActionState, f: FormData) => Promise<ActionState>;
 
@@ -42,7 +43,7 @@ export function BookletForm({ action, sellers }: { action: A; sellers: { id: str
   );
 }
 
-export function RaffleDrawForm({ action, total }: { action: A; total: number }) {
+export function RaffleDrawForm({ action, total, campaignId }: { action: A; total: number; campaignId: string }) {
   const [state, formAction] = useActionState(action, undefined);
   return (
     <form action={formAction} className="space-y-3">
@@ -54,7 +55,8 @@ export function RaffleDrawForm({ action, total }: { action: A; total: number }) 
         <SubmitButton className="btn-dark" name="mode" value="manual" pendingText="Registrando…">Registrar número</SubmitButton>
         <span className="pb-2 text-sm text-negro/65">o</span>
         <SubmitButton className="btn-primary" name="mode" value="random" pendingText="Sorteando…"
-          formNoValidate onClick={(e) => { if (!confirm("¿Sortear ahora al azar entre los números vendidos? No se puede repetir.")) e.preventDefault(); }}>
+          formNoValidate onClick={(e) => { if (!confirm("¿Sortear ahora al azar entre los números vendidos? No se puede repetir.")) e.preventDefault();
+            else try { sessionStorage.setItem(bomboFlag(campaignId), "1"); } catch {} }}>
           Sortear al azar
         </SubmitButton>
       </div>

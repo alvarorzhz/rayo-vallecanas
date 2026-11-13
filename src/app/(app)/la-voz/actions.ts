@@ -9,6 +9,7 @@ import { buildPrompt, buildQuestionsPrompt, interviewNotes, interviewToBody, kin
 import { fetchInterview, fetchInterviewById, fetchMatchSheet, fetchPlayerFacts, sponsorCards } from "@/lib/news-queries";
 import { askGemini } from "@/lib/gemini";
 import { shirtName } from "@/lib/squad";
+import { REACTIONS, type Reaction } from "@/lib/news";
 
 export type NewsState = { error?: string; ok?: string } | undefined;
 
@@ -262,4 +263,22 @@ export async function setNewsPublic(id: string, on: boolean): Promise<NewsState 
   refresh(id);
   revalidatePath("/noticias", "layout");
   return { ok: on ? "Hecha pública. Ya puedes compartir el enlace." : "Ya no es pública: el enlace deja de funcionar.", slug };
+}
+
+/** Reaccionar a una noticia: la misma reacción la quita, otra la cambia. */
+export async function reactNews(id: string, emoji: string): Promise<NewsState> {
+  try {
+    if (!REACTIONS.includes(emoji as Reaction)) throw new Error("Reacción no válida");
+    const s = await getSession();
+    const supabase = await createClient();
+    const { data: mine } = await supabase.from("news_reactions").select("emoji").eq("article_id", id).eq("user_id", s.user.id).maybeSingle();
+    const { error } = mine?.emoji === emoji
+      ? await supabase.from("news_reactions").delete().eq("article_id", id).eq("user_id", s.user.id)
+      : await supabase.from("news_reactions").upsert({ article_id: id, user_id: s.user.id, emoji }, { onConflict: "article_id,user_id" });
+    if (error) throw new Error(error.message);
+    revalidatePath(`/la-voz/${id}`);
+    return { ok: "1" };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se ha podido guardar" };
+  }
 }

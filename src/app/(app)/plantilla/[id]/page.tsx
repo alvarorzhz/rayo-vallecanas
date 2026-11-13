@@ -25,6 +25,8 @@ import { FeeBar } from "@/components/squad/fee-bar";
 import { FeeOverrideForm, FeePaymentForm } from "@/components/squad/fee-forms";
 import { CountUp } from "@/components/squad/count-up";
 import { SigningReplay } from "@/components/squad/signing-reveal";
+import { Achievements } from "@/components/squad/achievements";
+import { achievements } from "@/lib/achievements";
 import { createAccess, deletePlayer, deletePlayerDoc, linkUser, rejoinPlayer, removePlayerPhoto, retirePlayer, savePlayerDoc, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
 import { registerFeePayment, saveFeeOverride } from "../cuotas/actions";
 
@@ -82,6 +84,11 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
   const callupLog = (callupData ?? []).sort((a, b) => b.match.match_date.localeCompare(a.match.match_date))
     .map((c) => ({ ...c, played: c.match.status === "played" && c.match.report_saved_at ? playedIds.has(c.match_id) : null }));
   const cRec = callupRecord(callupLog.filter((c) => c.match.status === "played"));
+  // Logros: goles por partido en toda su trayectoria (para el doblete y el hat-trick)
+  const { data: careerGoals } = await supabase.from("match_goals").select("match_id").eq("scorer_id", id).limit(2000);
+  const perMatch = new Map<string, number>();
+  for (const g of careerGoals ?? []) perMatch.set(g.match_id, (perMatch.get(g.match_id) ?? 0) + 1);
+  const ach = achievements({ seasons, goalsPerMatch: [...perMatch.values()], line });
   const feeDue = fees ? feeOf(fees.plan, fees.overrides.get(id)) : null;
   const feePaid = fees?.paid.get(id) ?? 0;
 
@@ -195,6 +202,8 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
           </div>
         </section>
       )}
+
+      <Achievements badges={ach.badges} next={ach.next} isMe={isMe} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">

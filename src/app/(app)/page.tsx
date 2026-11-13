@@ -11,7 +11,7 @@ import { euros, fecha } from "@/lib/format";
 import { Progress } from "@/components/ui";
 import type { Campaign, Summary } from "@/lib/types";
 import { seasonOf, seasonRange, type FinanceSummary } from "@/lib/finance";
-import { fetchRoster } from "@/lib/squad-queries";
+import { fetchRoster, fetchRosterEntry } from "@/lib/squad-queries";
 import { form, record } from "@/lib/matches";
 import { MySeason } from "@/components/squad/my-season";
 import { SponsorStrip } from "@/components/sponsors/showcase";
@@ -19,6 +19,7 @@ import { fetchDisplay, type Showcase } from "@/lib/sponsors";
 import { PollCard } from "@/components/polls/poll-card";
 import type { Poll } from "@/lib/polls";
 import { fetchMvpBoard } from "@/lib/mvp-server";
+import { galaFresh } from "@/lib/mvp";
 import { countPublished, fetchMyPendingInterviews, fetchPendingChronicle, fetchPublished } from "@/lib/news-queries";
 import { isFeaturedNow } from "@/lib/news";
 import { HomeFront, HomeLatest } from "@/components/news/home";
@@ -98,7 +99,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           // El tiempo en Salamanca a la hora del partido: la víspera y el mismo día
           focus.phase === "eve" || focus.phase === "day" ? fetchMatchWeather(focus.m.match_date, focus.m.kickoff) : Promise.resolve(null),
         ]);
-        return { ...focus, callups, myPlayerId, ...preview, report, weather, mvp };
+        // Gala del MVP: sale sola en Inicio la primera vez tras el recuento
+        const galaEntry = mvp?.winner_id && galaFresh(mvp) ? await fetchRosterEntry(supabase, focus.m.season, mvp.winner_id) : null;
+        const gala = galaEntry && mvp?.winner_id
+          ? { entry: galaEntry, me: s.user.id, rival: `${focus.m.is_home ? "vs" : "en"} ${focus.m.rival.name}`, auto: true, votes: mvp.tally?.[mvp.winner_id] ?? 0, picked: mvp.picked }
+          : null;
+        return { ...focus, callups, myPlayerId, ...preview, report, weather, mvp, gala };
       })()
     : null;
 
@@ -164,7 +170,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           {afterMatch && !myCallup && matchday?.next && <PorraCard m={matchday.next} withMatch />}
           {!afterMatch && (md.phase === "eve" || md.phase === "day") && !(md.myPlayerId && md.callups.some((c) => c.player_id === md.myPlayerId) && callupOpen(md.m)) && <PorraCard m={md.m} />}
           <MatchdayDetails m={md.m} phase={md.phase} callups={md.callups} myPlayerId={md.myPlayerId} canEdit={s.can("matches", "update")}
-            recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} mvp={md.mvp}
+            recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} mvp={md.mvp} gala={md.gala}
             hot={md.hot} ranks={md.ranks} stake={md.stake} />
         </>
       ) : matchday?.next ? (

@@ -9,6 +9,8 @@ import { tally, type CallupRow } from "@/lib/callups";
 import { lineOf, shirtName, type Player } from "@/lib/squad";
 import type { ReportView } from "@/lib/reports";
 import type { MvpBoard } from "@/lib/mvp";
+import { MvpGala } from "@/components/matches/mvp-gala";
+import type { GalaInfo } from "@/components/matches/mvp-section";
 import { timeLeft } from "@/lib/polls";
 import { skyOf, weatherTip, type MatchWeather } from "@/lib/weather";
 import { Crest } from "@/components/matches/crest";
@@ -205,9 +207,10 @@ function WeatherChip({ w, time }: { w: MatchWeather; time: string | null }) {
 type Scorer = { goals: number; number: number | null; position: string; player: Player };
 
 /** Debajo de la portada: tu convocatoria, los convocados y la previa (o el resumen si ya se jugó). */
-export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent, lastH2H, topScorer, report, mvp = null, hot = [], ranks = null, stake = null }: {
+export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent, lastH2H, topScorer, report, mvp = null, gala = null, hot = [], ranks = null, stake = null }: {
   m: MatchRow; phase: MatchdayPhase; callups: CallupRow[]; myPlayerId: string | null; canEdit: boolean;
   recent: MatchRow[]; lastH2H: MatchRow | null; topScorer: Scorer | null; report: ReportView | null; mvp?: MvpBoard | null;
+  gala?: (GalaInfo & { votes: number; picked: boolean }) | null;
   /** La previa: jugadores en forma, posición de los dos equipos y qué nos jugamos. */
   hot?: HotPlayer[]; ranks?: MatchRanks | null; stake?: string | null;
 }) {
@@ -241,6 +244,7 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
               <p className="sport flex items-center gap-1 text-xs font-black tracking-widest text-dorado"><Star size={13} className="fill-dorado" /> MVP del partido</p>
               <p className="sport truncate text-3xl font-black leading-tight">{shirtName(report.mvp.player)}</p>
             </div>
+            {gala && gala.entry.player_id === report.mvp.player_id && <span className="relative ml-auto"><MvpGala matchId={m.id} {...gala} dark /></span>}
           </div>
         ) : (
           <div className="card anim-rise flex items-center gap-3 text-sm text-negro/70">
