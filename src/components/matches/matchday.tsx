@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarPlus, ClipboardCheck, ClipboardList, Flame, MapPin, Megaphone, Shirt, Star, Swords, Trophy } from "lucide-react";
+import { ArrowRight, CalendarPlus, ClipboardCheck, ClipboardList, Flame, MapPin, Megaphone, Radio, Shirt, Star, Swords, Trophy } from "lucide-react";
 import {
   CLUB_SHORT, COMPETITION_LABEL, hhmm, kickoffDate, longDay, mapsLink, matchShareText, outcomeOf, relativeDay, rivalShort, shortDay, sides, streak,
   type MatchRow,
@@ -25,6 +25,8 @@ import { InForm, PreviaTable, Stake } from "@/components/matches/previa";
 import type { HotPlayer } from "@/lib/match-queries";
 import type { MatchRanks } from "@/lib/standings";
 import { Ball } from "@/components/squad/ball";
+import { LiveFeed, LiveScoreBox } from "@/components/matches/live-score";
+import type { LiveView } from "@/lib/live-queries";
 
 const darkBtn = "btn bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20";
 
@@ -32,8 +34,12 @@ const darkBtn = "btn bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/
  * Portada de Inicio, siempre dedicada al partido: el próximo en una semana normal (week),
  * la víspera, el día de partido, en juego, el final y el post partido (hasta 24 horas después de acabar).
  */
-export function MatchdayHero({ m, phase, greeting, form = [], next = null, weather = null }: {
+export function MatchdayHero({ m, phase, greeting, form = [], next = null, weather = null, live = null, canLive = false }: {
   m: MatchRow; phase: MatchdayPhase; greeting: string;
+  /** En juego: lo apuntado en el acta en vivo (el marcador se va poniendo al día solo). */
+  live?: LiveView | null;
+  /** Puede llevar el acta en vivo (el día del partido). */
+  canLive?: boolean;
   /** La víspera y el día del partido: el tiempo en Salamanca a la hora del partido. */
   weather?: MatchWeather | null;
   /** Últimos resultados (el más reciente al final), para la racha de la portada en semana normal. */
@@ -110,10 +116,12 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null, weath
                 <span className="sport text-3xl font-black text-white/40 sm:text-5xl">-</span>
                 <span className={`sport text-5xl font-black tabular-nums leading-none sm:text-7xl ${b.us && o === "W" ? "text-dorado" : ""}`}>{b.goals}</span>
               </div>
+            ) : phase === "live" && live ? (
+              <LiveScoreBox matchId={m.id} initial={live} home={m.is_home} />
             ) : (
               <span className="md-vs sport text-4xl font-black italic text-white sm:text-6xl">VS</span>
             )}
-            {!done && time && <span className="sport md-vs mt-1 rounded-md bg-rojo px-2 py-0.5 text-xl font-black leading-none shadow-lg">{time}</span>}
+            {!done && time && phase !== "live" && <span className="sport md-vs mt-1 rounded-md bg-rojo px-2 py-0.5 text-xl font-black leading-none shadow-lg">{time}</span>}
           </div>
           {team(b, "right")}
         </div>
@@ -121,9 +129,9 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null, weath
         <div className="mt-5 flex flex-col items-center gap-3">
           {ahead && m.kickoff && <MatchdayCountdown to={kickoffDate(m).toISOString()} />}
           {ahead && !m.kickoff && <p className="text-sm text-white/70">{phase === "week" && when ? `${when} · ` : ""}Hora por confirmar</p>}
-          {phase === "live" && (
+          {phase === "live" && (live ? <LiveFeed matchId={m.id} initial={live} /> : (
             <p className="sport flex items-center gap-2 text-2xl font-black text-white"><span className="md-live-dot" aria-hidden /> Partido en juego · ¡vamos Rayo!</p>
-          )}
+          ))}
           {done && o && (
             <p className={`sport text-2xl font-black sm:text-3xl ${o === "W" ? "text-dorado" : "text-white/90"}`}>
               {o === "W" ? <><Trophy size={26} className="anim-trophy mr-1 inline" /> ¡Victoria del Rayo!</> : o === "D" ? "Empate. ¡A por la próxima!" : "Derrota. ¡Levantaremos la cabeza!"}
@@ -138,7 +146,10 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null, weath
           {!run && phase === "week" && form.length > 0 && <FormStrip rows={form} />}
           {!done && <MeetLine m={m} className="text-white/90" />}
           <div className="flex flex-wrap justify-center gap-2 pt-1">
-            {!done && link && <a href={link} target="_blank" rel="noopener" className="btn-primary"><MapPin size={17} /> Cómo llegar</a>}
+            {canLive && (phase === "day" || phase === "live") && (
+              <Link href={`/partidos/${m.id}/directo`} prefetch className="btn-primary"><Radio size={17} /> {live?.started ? "Seguir el acta en vivo" : "Llevar el acta en vivo"}</Link>
+            )}
+            {!done && link && phase !== "live" && <a href={link} target="_blank" rel="noopener" className={canLive && phase === "day" ? darkBtn : "btn-primary"}><MapPin size={17} /> Cómo llegar</a>}
             {done && m.report_saved_at && <ShareImageButton url={`/api/partidos/${m.id}/imagen`} name={`resultado-${m.match_date}.png`} />}
             <Link href={`/partidos/${m.id}`} prefetch className={darkBtn}>{done ? <><ClipboardCheck size={17} /> Ver acta</> : <>Ver partido</>}</Link>
             {(phase === "eve" || phase === "week") && <a href={`/api/partidos/${m.id}/calendario`} className={darkBtn}><CalendarPlus size={17} /> Calendario</a>}

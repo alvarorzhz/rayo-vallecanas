@@ -411,6 +411,25 @@ input[type="file"] { overflow: hidden; text-overflow: ellipsis; white-space: now
 .md-live-dot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: #fff; animation: md-ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite; }
 @keyframes md-ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }
 
+/* ¡GOOOL! en el marcador en directo (v4.12.0) */
+.live-goal { animation: live-goal 3.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes live-goal {
+  0% { opacity: 0; transform: scale(0.3) rotate(-8deg); }
+  12% { opacity: 1; transform: scale(1.25) rotate(-4deg); }
+  22% { transform: scale(1) rotate(-4deg); }
+  80% { opacity: 1; transform: scale(1.04) rotate(-4deg); }
+  100% { opacity: 0; transform: scale(1.1) translateY(-14px) rotate(-4deg); }
+}
+
+/* Cumpleaños (v4.12.0): globos que suben */
+.bday-balloon { position: absolute; bottom: -40px; animation: bday-up 7s ease-in infinite; }
+@keyframes bday-up {
+  0% { transform: translateY(0) rotate(-6deg); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translateY(-110px) rotate(6deg); }
+  100% { transform: translateY(-230px) rotate(-4deg); opacity: 0; }
+}
+
 /* Confeti de victoria */
 .md-confetti span { position: absolute; top: -24px; opacity: 0; animation-name: md-fall; animation-timing-function: cubic-bezier(0.25, 0.4, 0.6, 1); animation-iteration-count: 2; animation-fill-mode: both; }
 @keyframes md-fall {
@@ -424,7 +443,8 @@ input[type="file"] { overflow: hidden; text-overflow: ellipsis; white-space: now
 @keyframes md-strip { 0%, 70% { left: -40%; } 100% { left: 130%; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .md-title, .md-light, .md-ticker, .md-crest, .md-strip-shine, .md-live-dot::after { animation: none !important; }
+  .md-title, .md-light, .md-ticker, .md-crest, .md-strip-shine, .md-live-dot::after, .live-goal { animation: none !important; }
+  .bday-balloon { display: none; }
   .md-confetti, .md-impact { display: none; }
 }
 

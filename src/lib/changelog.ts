@@ -8,6 +8,18 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.12.0",
+    date: "2026-11-14",
+    title: "Acta en vivo, ciclo de amarillas y cumpleaños",
+    changes: [
+      "Acta en vivo desde la banda: el día del partido, un gestor pulsa «Llevar el acta en vivo» y apunta con botones grandes los goles (con su asistencia), los del rival y las tarjetas. Cada cosa queda con su minuto.",
+      "Marcador en directo en Inicio: en cuanto empieza el acta en vivo, la portada enseña el marcador, el minuto y las jugadas, y se pone al día sola. Cuando marca el Rayo sale un «¡GOOOL!».",
+      "Al pitido final, el resultado se guarda (con aviso al equipo si quieres) y el acta sale ya rellena con lo apuntado: solo queda revisar quién fue titular y guardarla.",
+      "Ciclo de amarillas: la ficha de cada jugador enseña cuántas lleva del ciclo de la liga (de 0 a 5). Al preparar la convocatoria sale un aviso con quién está a una amarilla de la sanción y quién podría tener que cumplirla.",
+      "Cumpleaños: ese día sale una tarjeta en Inicio para felicitarle con un toque, y el que cumple ve quién le ha felicitado. Por la mañana llega un aviso al equipo. Debajo, los cumpleaños de la semana. Solo se enseñan el día y el mes, nunca la edad.",
+    ],
+  },
+  {
     version: "4.11.0",
     date: "2026-11-13",
     title: "La app, al día por dentro",

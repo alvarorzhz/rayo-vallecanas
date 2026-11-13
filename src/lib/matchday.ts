@@ -30,7 +30,7 @@ export function addDays(date: string, n: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export function matchdayPhase(m: Pick<MatchRow, "match_date" | "kickoff" | "status">, now: Date = new Date()): MatchdayPhase | null {
+export function matchdayPhase(m: Pick<MatchRow, "match_date" | "kickoff" | "status" | "live_started_at">, now: Date = new Date()): MatchdayPhase | null {
   const today = todayMadrid(now);
   if (m.status === "played") {
     if (m.match_date === today) return "final";
@@ -39,6 +39,8 @@ export function matchdayPhase(m: Pick<MatchRow, "match_date" | "kickoff" | "stat
   if (m.status !== "scheduled") return null;
   if (m.match_date === addDays(today, 1)) return "eve";
   if (m.match_date !== today) return null;
+  // Si quien lleva el directo ya ha dado el pitido inicial, está en juego aunque no sea la hora
+  if (m.live_started_at) return "live";
   return m.kickoff && kickoffDate(m).getTime() <= now.getTime() ? "live" : "day";
 }
 

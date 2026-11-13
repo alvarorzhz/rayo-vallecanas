@@ -40,6 +40,8 @@ export const BACKUP_TABLES: [string, string][] = [
   ["sponsor_installments", "Patrocinadores · plazos"],
   ["sponsor_settings", "Patrocinadores · ajustes"],
   ["match_predictions", "Partidos · porra"],
+  ["match_live_events", "Partidos · directo"],
+  ["birthday_wishes", "Plantilla · felicitaciones"],
   ["polls", "Votaciones"],
   ["poll_votes", "Votaciones · votos"],
   ["news_articles", "La Voz del Rayo · noticias"],
