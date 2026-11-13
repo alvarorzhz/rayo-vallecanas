@@ -9,6 +9,7 @@ import { remindPending, replyCallup, setReplyFor } from "@/app/(app)/partidos/ca
 import { REPLY_LABEL, REPLY_TONE, callupShareText, tally, type CallupRow, type Reply } from "@/lib/callups";
 import { hhmm, shortDay, type MatchRow } from "@/lib/matches";
 import { lineOf, shirtName } from "@/lib/squad";
+import { PorraInline } from "@/components/matches/porra";
 
 const GROUPS: { key: Reply; title: string }[] = [
   { key: "yes", title: "Van" },
@@ -31,7 +32,7 @@ export function MeetLine({ m, className = "" }: { m: MatchRow; className?: strin
 }
 
 /**
- * Tarjeta negra «Estás convocado» con los botones de respuesta.
+ * Tarjeta negra «Estás convocado» con los botones de respuesta y, justo debajo, la porra del partido.
  * `withMatch`: dice para qué partido es (cuando la portada enseña otro, como en el post partido).
  */
 export function MyCallupCard({ m, mine, meet = true, withMatch = false }: { m: MatchRow; mine: CallupRow; meet?: boolean; withMatch?: boolean }) {
@@ -54,6 +55,7 @@ export function MyCallupCard({ m, mine, meet = true, withMatch = false }: { m: M
         </div>
         {meet && <MeetLine m={m} className="text-white/90" />}
         <ReplyBox dark action={replyCallup.bind(null, m.id)} reply={mine.reply} note={mine.reply_note} />
+        <PorraInline m={m} />
       </div>
     </div>
   );

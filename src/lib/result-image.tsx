@@ -227,7 +227,7 @@ export function Jersey({ goalkeeper, size }: { goalkeeper: boolean; size: number
 }
 
 /** Cromo dorado del MVP, con la silueta de los cromos de la plantilla. */
-function MvpCard({ mvp, crest, w }: { mvp: NonNullable<PosterData["mvp"]>; crest: Pic; w: number }) {
+export function MvpCard({ mvp, crest, w, label = "MVP DEL PARTIDO" }: { mvp: NonNullable<PosterData["mvp"]>; crest: Pic; w: number; label?: string }) {
   const h = Math.round(w * 1.39);
   const s = w / 340;                       // escala respecto al diseño base de 340 px
   const shape = `${w * 0.12},0 ${w * 0.88},0 ${w},${h * 0.07} ${w},${h * 0.89} ${w / 2},${h} 0,${h * 0.89} 0,${h * 0.07}`;
@@ -298,7 +298,7 @@ function MvpCard({ mvp, crest, w }: { mvp: NonNullable<PosterData["mvp"]>; crest
       <div style={{ display: "flex", position: "absolute", top: -22 * s, left: 0, width: w, justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "center", background: NEGRO, color: ORO, borderRadius: 999, padding: `${8 * s}px ${22 * s}px`, border: `${3 * s}px solid ${ORO}`, fontFamily: "Display", fontSize: 26 * s, letterSpacing: 3 * s }}>
           <svg width={22 * s} height={22 * s} viewBox="0 0 24 24" style={{ marginRight: 8 * s }}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill={ORO} /></svg>
-          MVP DEL PARTIDO
+          {label}
         </div>
       </div>
     </div>

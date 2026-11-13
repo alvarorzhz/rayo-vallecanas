@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Flame, Footprints, Hand, Shirt, Star } from "lucide-react";
+import { Award, Flame, Footprints, Hand, Shirt, Star, Target } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
@@ -62,7 +62,11 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader title="Estadísticas" subtitle={<>Temporada <b>{season}</b> · {played.length} {plural(played.length, "partido jugado", "partidos jugados")} · {withReport} con acta</>}
-        back={{ href: `/partidos?temporada=${ss}`, label: "Partidos" }} />
+        back={{ href: `/partidos?temporada=${ss}`, label: "Partidos" }}
+        actions={<>
+          <Link href={`/partidos/resumen?de=${ss}`} prefetch className="btn-ghost"><Award size={18} /> Resumen de temporada</Link>
+          <Link href={`/partidos/porra?temporada=${ss}`} prefetch className="btn-ghost"><Target size={18} /> Porra</Link>
+        </>} />
 
       {seasons.length > 1 && (
         <nav aria-label="Temporadas" className="mb-4 flex flex-wrap gap-2">

@@ -3,7 +3,7 @@
 App web instalable (PWA) para llevar todo el Rayo Vallecañas, equipo amateur de **fútbol 7**, en un único sitio: sorteos, dinero, plantilla, partidos, patrocinadores y avisos al móvil. Sustituye a los Excel y a los procesos a mano.
 
 - **Producción:** <https://rayo-vallecanas.vercel.app>
-- **Versión actual:** 4.8.0 (el historial completo está en la propia app, en *Novedades*, y en `src/lib/changelog.ts`).
+- **Versión actual:** 4.9.0 (el historial completo está en la propia app, en *Novedades*, y en `src/lib/changelog.ts`).
 - **Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS 4 · Supabase (Postgres, Auth, Storage, RLS) · Web Push · Vercel (región Frankfurt).
 
 ## Qué hace la app
@@ -20,6 +20,8 @@ La barra inferior del móvil tiene seis apartados: **Inicio · Partidos · Plant
 - **Sincronización con la liga** (futormes): importa calendario, resultados y **clasificación**. El día del partido la app mira sola la web y avisa «Ya están los datos del partido».
 - **Convocatorias**: lista, hora y lugar de quedada, notas; cada jugador responde Voy / No voy / Duda, también desde el propio aviso del móvil. Recordatorio automático e historial.
 - **Actas**: alineación, goles, asistencias, tarjetas, portero y goles encajados. Las estadísticas de la temporada se calculan solas.
+- **La porra**: cada uno pronostica el resultado (debajo de «Voy / No voy»), se cierra al pitido; 3 puntos por clavarlo y 1 por el signo, con clasificación de la temporada.
+- **Resumen de temporada** de cada jugador (por temporada o por liga), con imagen para compartir.
 - **MVP votado por el equipo**: al guardar el acta se abre la votación (voto secreto, hasta las 23:59), con desempate por goles o por un gestor.
 - **Imágenes para compartir** en WhatsApp o Instagram, reunidas en la ficha del partido: convocatoria, «Hoy jugamos» y resultado, en formato publicación o historia (con los patrocinadores si se quiere).
 

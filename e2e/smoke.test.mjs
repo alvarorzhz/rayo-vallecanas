@@ -112,7 +112,7 @@ describe("superadministrador", () => {
   });
 
   const SECTIONS = [
-    "/", "/partidos", "/partidos/estadisticas", "/partidos/liga", "/partidos/rivales", "/partidos/nuevo",
+    "/", "/partidos", "/partidos/estadisticas", "/partidos/porra", "/partidos/resumen", "/partidos/liga", "/partidos/rivales", "/partidos/nuevo",
     "/plantilla", "/plantilla?vista=campo", "/plantilla?vista=lista", "/plantilla/cuotas", "/plantilla/documentos", "/plantilla/historia", "/plantilla/nuevo",
     "/loteria", "/loteria/nueva", "/mis-ventas",
     "/finanzas", "/finanzas/movimientos", "/finanzas/informes", "/finanzas/ajustes", "/finanzas/nuevo?tipo=ingreso",
