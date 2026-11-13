@@ -8,6 +8,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.11.0",
+    date: "2026-11-13",
+    title: "La app, al día por dentro",
+    changes: [
+      "La app pasa a la última versión de Next.js (16) y de React. Por fuera todo sigue igual, pero arranca más fina.",
+      "Se acaba el parpadeo al abrir algunas pantallas: a veces la página se volvía a pintar entera nada más cargar y podía reaparecer la pantalla de carga.",
+    ],
+  },
+  {
     version: "4.10.0",
     date: "2026-11-13",
     title: "El bombo, la gala del MVP y los logros",
