@@ -8,6 +8,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.14.1",
+    date: "2026-11-14",
+    title: "Inicio, sin accesos repetidos",
+    changes: [
+      "Fuera de Inicio las tarjetas de Saldo, Plantilla y Estadísticas: ya están a un toque en la barra de abajo.",
+      "La tarjeta de la lotería o la rifa solo sale mientras la campaña está abierta, con el botón para registrar una venta.",
+    ],
+  },
+  {
     version: "4.14.0",
     date: "2026-11-14",
     title: "Inicio y Partidos, más despejados",
