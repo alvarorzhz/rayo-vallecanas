@@ -78,33 +78,34 @@ export function SendReceipt({
   const [waState, waAction] = useActionState(whatsappApi ?? (async () => undefined), undefined);
   const [manualError, setManualError] = useState("");
   return (
-    <div className="space-y-3">
-      <div className="grid gap-2 sm:grid-cols-2">
-        <form action={emailAction}>
-          <SubmitButton className="btn-ghost w-full" pendingText="Enviando…" disabled={!emailEnabled || !hasEmail}>
-            <Mail size={16} /> Enviar por email{!emailEnabled && <span className="ml-1 rounded bg-negro/10 px-1.5 py-0.5 text-[10px] uppercase">Pronto</span>}
+    <div className="space-y-2">
+      {whatsappApi ? (
+        <form action={waAction}>
+          <SubmitButton className="btn w-full bg-[#1fa855] py-3.5 text-base text-white shadow-md shadow-green-700/25 hover:bg-[#178a45]" pendingText="Enviando…" disabled={!hasPhone}>
+            <MessageCircle size={18} /> Enviar por WhatsApp
           </SubmitButton>
         </form>
-        {whatsappApi ? (
-          <form action={waAction}>
-            <SubmitButton className="btn-ghost w-full" pendingText="Enviando…" disabled={!hasPhone}>
-              <MessageCircle size={16} /> Enviar por WhatsApp
-            </SubmitButton>
-          </form>
-        ) : (
-          <form
-            action={async () => {
-              const r = await whatsappManual();
-              if (r.url) window.location.href = r.url;
-              else setManualError(r.error ?? "No se pudo abrir WhatsApp");
-            }}
-          >
-            <SubmitButton className="btn-ghost w-full" pendingText="Abriendo…" disabled={!hasPhone}>
-              <MessageCircle size={16} /> Abrir en WhatsApp
-            </SubmitButton>
-          </form>
-        )}
-      </div>
+      ) : (
+        <form
+          action={async () => {
+            const r = await whatsappManual();
+            if (r.url) window.location.href = r.url;
+            else setManualError(r.error ?? "No se pudo abrir WhatsApp");
+          }}
+        >
+          <SubmitButton className="btn w-full bg-[#1fa855] py-3.5 text-base text-white shadow-md shadow-green-700/25 hover:bg-[#178a45]" pendingText="Abriendo…" disabled={!hasPhone}>
+            <MessageCircle size={18} /> Abrir en WhatsApp
+          </SubmitButton>
+        </form>
+      )}
+      {!hasPhone && <p className="text-xs text-negro/60">No tiene teléfono apuntado: descarga el PDF y pásaselo como puedas.</p>}
+      {emailEnabled && (
+        <form action={emailAction}>
+          <SubmitButton className="btn-ghost w-full" pendingText="Enviando…" disabled={!hasEmail}>
+            <Mail size={16} /> Enviar por email
+          </SubmitButton>
+        </form>
+      )}
       <a href={pdfUrl} target="_blank" rel="noopener" className="btn-ghost w-full">
         <FileDown size={16} /> Descargar justificante (PDF)
       </a>

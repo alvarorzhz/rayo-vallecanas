@@ -5,7 +5,7 @@ import type { Session } from "@/lib/session";
  * Si se añade una sección nueva, añadir aquí su paso. Si cambia mucho el recorrido, subir TOUR_VERSION
  * para que todos lo vuelvan a ver.
  */
-export const TOUR_VERSION = 1;
+export const TOUR_VERSION = 2;
 
 export type TourStep = {
   key: string;
@@ -36,11 +36,11 @@ export function buildTour(s: Session): TourStep[] {
   });
 
   const home: string[] = [];
-  if (s.can("matches")) home.push("El próximo partido con su cuenta atrás y tu convocatoria para contestar.");
-  if (s.can("matches")) home.push("La víspera y el día del partido, Inicio se convierte en el Especial Matchday, y después el resultado se queda hasta un día en portada con el MVP y lo que hiciste tú.");
-  if (s.can("lottery_admin") || s.can("lottery_sell")) home.push("El sorteo que está abierto y cómo va la venta.");
-  if (s.can("finances")) home.push("El saldo del club de un vistazo.");
-  if (s.can("squad")) home.push("Tu temporada: tu cromo, tus goles, tus rachas y tus últimos partidos.");
+  if (s.can("matches")) home.push("El próximo partido con su cuenta atrás y tu convocatoria.");
+  if (s.can("matches")) home.push("El día del partido, el Especial Matchday con el marcador en directo; después, el resultado con el MVP y las notas.");
+  home.push(s.can("news") ? "Las noticias importantes de La Voz, las votaciones abiertas y los cumpleaños del día." : "Las votaciones abiertas y los cumpleaños del día.");
+  if (s.can("lottery_admin") || s.can("lottery_sell")) home.push("La lotería o la rifa a la venta, con su botón para vender.");
+  if (s.can("squad")) home.push("Tu temporada: tu cromo, tus goles y tus rachas.");
   steps.push({
     key: "inicio",
     href: "/",
@@ -53,34 +53,42 @@ export function buildTour(s: Session): TourStep[] {
 
   if (s.can("matches")) {
     const p = [
-      "El calendario de la temporada, los resultados y la racha del equipo.",
-      "Si te convocan, contesta «Voy», «Duda» o «No voy» desde el partido.",
-      "Actas, goleadores, la votación del MVP y la página de estadísticas con el pichichi y el zamora.",
+      "El calendario, los resultados y la clasificación de la liga.",
+      "Contesta a la convocatoria y juega la porra: adivina el resultado y suma puntos.",
+      "Después del partido, vota al MVP y ponles nota del 1 al 10 a los que jugaron.",
+      "Estadísticas y tu resumen de temporada para compartir.",
     ];
     if (s.can("matches", "update"))
-      p.push("Como gestor: añade partidos, sincroniza con la liga, prepara la convocatoria con la alineación y rellena el acta.");
+      p.push("Como gestor: añade partidos, prepara la convocatoria, lleva el acta en vivo desde la banda y saca las imágenes para compartir.");
     steps.push({ key: "partidos", href: "/partidos", target: "/partidos", icon: "CalendarDays", title: "Partidos", text: "Todo lo que pasa en el campo.", points: p });
   }
 
   if (s.can("news")) {
-    const p = ["Las crónicas de cada partido, las previas, las entrevistas y los comunicados oficiales del club.", "Cuando hay una noticia importante, Inicio se abre como la portada del periódico."];
-    if (s.can("news", "create")) p.push("Escribe piezas con fotos. Si quieres, la app te prepara las instrucciones para que una IA te redacte el borrador con los datos del partido.");
+    const p = [
+      "Crónicas, previas, entrevistas y comunicados del club. Reacciona a cada noticia con ⚡ 🔥 👏 😂 😮.",
+      "Si te hacen una entrevista, te llega un aviso y la contestas desde Inicio.",
+    ];
+    if (s.can("news", "create")) p.push("Escribe piezas con fotos. La IA te redacta el borrador con los datos del partido (solo con apodos).");
     steps.push({ key: "la-voz", href: "/la-voz", target: "/la-voz", icon: "Newspaper", title: "La Voz del Rayo", text: "El periódico del club. En el móvil, el icono del periódico de arriba.", points: p });
   }
 
   if (s.can("squad")) {
-    const p = ["Los cromos de cada jugador con su foto y sus estadísticas, el campo y la lista.", "Entra en tu ficha para subir tu foto y revisar tus datos.", "La historia del equipo temporada a temporada."];
+    const p = [
+      "Los cromos de cada jugador y el cromo «En forma» del MVP de la última jornada.",
+      "En cada ficha, sus estadísticas, sus logros y sus amarillas del ciclo.",
+      "La historia del equipo temporada a temporada.",
+    ];
     if (s.can("squad_private")) p.push("Las cuotas de cada jugador y sus documentos (DNI, ficha, reconocimiento médico).");
-    if (s.can("squad", "update")) p.push("Fichar jugadores, preparar la temporada nueva y exportar la plantilla a Excel.");
+    if (s.can("squad", "update")) p.push("Fichar jugadores, preparar la temporada nueva, recordar la cuota a quien debe y exportar a Excel.");
     steps.push({ key: "plantilla", href: "/plantilla", target: "/plantilla", icon: "Shirt", title: "Plantilla", text: "El equipo al completo.", points: p });
   }
 
   if (s.can("lottery_admin") || s.can("lottery_sell")) {
     const p: string[] = [];
     if (s.can("lottery_sell", "create"))
-      p.push("Registra cada venta desde el móvil: el número se asigna solo y le mandas el justificante al comprador por WhatsApp.", "En «Mis ventas» ves lo que has vendido y apuntas lo que te paguen más tarde.");
+      p.push("Registra cada venta desde el móvil y mándale el justificante al comprador por WhatsApp.", "En «Mis ventas» ves lo que has vendido y apuntas lo que te paguen más tarde.");
     if (s.can("lottery_admin")) p.push("Crea campañas de lotería o rifa, reparte vendedores y talonarios y sigue el ranking de ventas.");
-    if (s.can("lottery_admin", "update")) p.push("Cuando toque, haz el sorteo y apunta el número ganador.");
+    if (s.can("lottery_admin", "update")) p.push("Publica la rifa para que cualquiera compruebe su número, y sortéala con el bombo.");
     steps.push({ key: "sorteos", href: "/loteria", target: "/loteria", icon: "Ticket", title: "Sorteos", text: "La lotería y las rifas del club.", points: p });
   }
 
@@ -95,8 +103,8 @@ export function buildTour(s: Session): TourStep[] {
     const p: string[] = [];
     if (s.can("users")) p.push("Usuarios: da de alta a gente nueva y cambia su perfil.", "Perfiles: decide con casillas qué puede hacer cada perfil.");
     if (s.can("sponsors")) p.push("Patrocinadores: sus acuerdos, contratos y cobros.");
-    if (s.can("users", "update") || s.can("lottery_admin", "update")) p.push("Avisos: manda un aviso al móvil de todo el equipo.");
-    if (isSuper) p.push("Auditoría y copia de seguridad (solo superadministrador).");
+    if (s.can("users", "update") || s.can("lottery_admin", "update")) p.push("Avisos: manda un aviso al móvil del equipo o lanza una votación de sí o no.");
+    if (isSuper) p.push("Auditoría y copias de seguridad (una automática cada lunes), solo para el superadministrador.");
     steps.push({ key: "gestion", href: "/admin", target: "/admin", icon: "Settings", title: "Gestión", text: "El panel de control del club.", points: p });
   }
 
@@ -109,7 +117,8 @@ export function buildTour(s: Session): TourStep[] {
     text: "Pulsa tu foto para llegar aquí.",
     points: [
       "Sube tu foto: sale en el menú y en tu cromo.",
-      "Activa los avisos para enterarte de convocatorias, resultados y sorteos.",
+      "Activa los avisos: convocatorias, resultados, el MVP y las noticias.",
+      "Mi cuota (si juegas): lo que llevas pagado y lo que te falta. Y todas las votaciones.",
       "Desde aquí puedes repetir este tutorial cuando quieras.",
     ],
   });
