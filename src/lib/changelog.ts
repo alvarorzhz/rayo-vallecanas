@@ -8,6 +8,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.15.0",
+    date: "2026-11-14",
+    title: "Vender en Sorteos, con cara de boleto",
+    changes: [
+      "Nueva venta, rediseñada: arriba el boleto de la campaña con el precio y los números que quedan libres. Los pasos son más cortos y se marcan con un ✓ al rellenarlos.",
+      "En las rifas, los números libres salen como papeletas para tocar; en la lotería, un contador grande con − y +. El total se ve siempre en dorado.",
+      "Al registrar la venta, arriba del todo sale «¡Venta registrada!» con el botón verde de WhatsApp para mandar el justificante, y «Vender otra» y «Mis ventas» a mano. El justificante tiene ahora forma de boleto con su línea de corte.",
+      "Mis ventas: botones rojos para vender en cada campaña abierta, tu taquilla con lo vendido, lo cobrado y lo que te falta por cobrar, y cada venta como un boleto con el color de cómo va el pago.",
+      "El tutorial, al día: cuenta la porra, las notas, el acta en vivo, las votaciones, los cumpleaños, las reacciones de La Voz y Mi cuota. Como ha cambiado mucho, todos lo verán una vez más al entrar (se puede saltar).",
+      "La guía de perfiles explica también todo lo nuevo, y la página de Protección de datos cuenta qué se ve fuera de la app (rifa y noticias públicas), la IA de Google (solo con apodos), el registro de accesos y las copias de cada lunes.",
+    ],
+  },
+  {
     version: "4.14.1",
     date: "2026-11-14",
     title: "Inicio, sin accesos repetidos",

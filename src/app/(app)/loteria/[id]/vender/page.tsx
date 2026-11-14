@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { ranges } from "@/lib/format";
+import { euros, fecha, ranges } from "@/lib/format";
+import { TicketHead, TicketNumber, TICKET_CARD } from "@/components/lottery/ticket";
 import { Empty, PageHeader } from "@/components/ui";
 import { SaleForm } from "@/components/lottery/sale-form";
 import { emailConfigured, whatsappConfigured } from "@/lib/notify";
@@ -70,8 +71,29 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
 
   return (
     <>
-      <PageHeader title="Nueva venta" subtitle={c.kind === "raffle" ? `Rifa · ${c.name}` : `Número ${c.lottery_number} · ${c.name}`} back={back} />
+      <PageHeader title="Nueva venta" back={back} />
       <div className="mx-auto max-w-2xl">
+        <div className={`${TICKET_CARD} mb-5 animate-fade-up`}>
+          <TicketHead
+            eyebrow={<>{c.kind === "raffle" ? "Rifa" : "Lotería"}{c.draw_date ? ` · ${fecha(c.draw_date)}` : ""}</>}
+            title={c.name}
+            sub={c.draw_type}
+            aside={
+              <div className="text-right">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-dorado">{c.kind === "raffle" ? "Cada número" : "Cada una"}</div>
+                <div className="sport text-2xl leading-tight font-black">{euros(c.price_cents)}</div>
+              </div>
+            }
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              {c.kind !== "raffle" && <TicketNumber label="NÚMERO"><span className="tracking-[0.2em]">{c.lottery_number}</span></TicketNumber>}
+              <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">
+                {available} {c.kind === "raffle" ? (available === 1 ? "número libre" : "números libres") : (available === 1 ? "libre" : "libres")}
+                {c.numbering_mode === "booklet" ? " en tu talonario" : ""}
+              </span>
+            </div>
+          </TicketHead>
+        </div>
         <SaleForm
           action={registerSale.bind(null, id)}
           priceCents={c.price_cents}

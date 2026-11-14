@@ -48,23 +48,36 @@ export function SalesTable({ rows, showSeller = true, unit = "part." }: { rows: 
           </tbody>
         </table>
       </div>
-      <ul className="space-y-2 md:hidden">
-        {rows.map((r) => (
-          <li key={r.id}>
-            <Link href={`/loteria/venta/${r.id}`} className="flex items-center justify-between gap-3 rounded-xl bg-gris p-3 active:bg-black/5">
-              <div className="min-w-0">
-                <div className="truncate font-semibold">{r.buyer?.full_name}</div>
-                <div className="text-xs text-negro/60">
-                  <span className="font-mono">{r.reference}</span> · {r.quantity} {unit}{showSeller && r.seller_name ? ` · ${r.seller_name}` : ""}
+      <ul className="stagger space-y-2 md:hidden">
+        {rows.map((r) => {
+          const owed = r.total_cents - r.paid_cents;
+          const stub = r.payment_status === "paid" ? "bg-green-700" : r.payment_status === "cancelled" ? "bg-black/30" : r.payment_status === "partial" ? "bg-amber-500" : "bg-rojo";
+          return (
+            <li key={r.id}>
+              <Link href={`/loteria/venta/${r.id}`} className="flex items-stretch overflow-hidden rounded-xl bg-white ring-1 ring-black/[0.07] transition active:scale-[0.99] active:bg-gris">
+                {/* Matriz del boleto: cuántos números se lleva */}
+                <div className={`flex w-14 shrink-0 flex-col items-center justify-center border-r-2 border-dashed border-white/60 text-white ${stub}`}>
+                  <span className="sport text-2xl leading-none font-black">{r.quantity}</span>
+                  {unit && <span className="text-[9px] font-bold uppercase tracking-wider text-white/80">{unit}</span>}
                 </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <div className="font-bold tabular-nums">{euros(r.total_cents)}</div>
-                <PaymentBadge status={r.payment_status} />
-              </div>
-            </Link>
-          </li>
-        ))}
+                <div className="flex min-w-0 flex-1 items-center justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <div className={`truncate font-bold ${r.payment_status === "cancelled" ? "text-negro/45 line-through" : ""}`}>{r.buyer?.full_name}</div>
+                    <div className="truncate text-xs text-negro/55">
+                      <span className="font-mono">{r.reference}</span> · {fecha(r.created_at)}{showSeller && r.seller_name ? ` · ${r.seller_name}` : ""}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="sport text-lg leading-tight font-black tabular-nums">{euros(r.total_cents)}</div>
+                    {owed > 0 && r.payment_status !== "cancelled"
+                      ? <div className="text-[11px] font-bold text-rojo">Debe {euros(owed)}</div>
+                      : <PaymentBadge status={r.payment_status} />}
+                  </div>
+                </div>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </>
   );
