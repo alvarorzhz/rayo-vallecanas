@@ -5,6 +5,7 @@ import { sendPush } from "@/lib/push";
 import { replyButtons, usersOfPlayers } from "@/lib/callup-push";
 import { CLUB_NAME, hhmm, todayMadrid, type MatchRow } from "@/lib/matches";
 import { sponsorReminders } from "@/lib/sponsor-alerts";
+import { birthdayPushes } from "@/lib/birthday-push";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -14,7 +15,8 @@ export const maxDuration = 30;
  * · Víspera: a los convocados que no han contestado.
  * · Día del partido: a los que van o dudan, con la hora de quedada; a los que no han contestado, lo mismo preguntando si van.
  * Cada partido recibe como mucho un recordatorio al día, así que repetir la llamada no molesta a nadie.
- * De paso, avisa a los gestores de los plazos de patrocinio sin cobrar y de los acuerdos que vencen.
+ * De paso, avisa a los gestores de los plazos de patrocinio sin cobrar y de los acuerdos que vencen,
+ * y al equipo de los cumpleaños del día.
  */
 export async function GET(req: Request) {
   const denied = cronDenied(req);
@@ -50,5 +52,6 @@ export async function GET(req: Request) {
     }
   }
   const sponsors = await sponsorReminders(today);
-  return NextResponse.json({ ok: true, matches: matches?.length ?? 0, sent, sponsors });
+  const birthdays = await birthdayPushes(today);
+  return NextResponse.json({ ok: true, matches: matches?.length ?? 0, sent, sponsors, birthdays });
 }

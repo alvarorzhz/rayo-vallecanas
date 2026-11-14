@@ -13,6 +13,7 @@ import type { Campaign, Summary } from "@/lib/types";
 import { seasonOf, seasonRange, type FinanceSummary } from "@/lib/finance";
 import { fetchRoster, fetchRosterEntry } from "@/lib/squad-queries";
 import { form, record } from "@/lib/matches";
+import { lineOf, shirtName } from "@/lib/squad";
 import { MySeason } from "@/components/squad/my-season";
 import { SponsorStrip } from "@/components/sponsors/showcase";
 import { fetchDisplay, type Showcase } from "@/lib/sponsors";
@@ -24,6 +25,10 @@ import { countPublished, fetchMyPendingInterviews, fetchPendingChronicle, fetchP
 import { isFeaturedNow } from "@/lib/news";
 import { HomeFront, HomeLatest } from "@/components/news/home";
 import { competitionShort } from "@/lib/season-summary-queries";
+import { fetchLiveView } from "@/lib/live-queries";
+import { birthdays, whenLabel, type BirthdayRow } from "@/lib/birthdays";
+import { BirthdayCard, type BirthdayToday } from "@/components/squad/birthday-card";
+import { todayMadrid } from "@/lib/matches";
 
 const LG_COLS: Record<number, string> = { 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" };
 
@@ -74,6 +79,36 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const me = roster.find((r) => r.player.user_id === s.user.id) ?? null;
   const myLog = me && s.can("matches") ? await fetchPlayerLog(supabase, me.player_id, season) : [];
 
+  // Cumpleaños: hoy (con las felicitaciones) y los de la próxima semana
+  const today = todayMadrid();
+  const year = Number(today.slice(0, 4));
+  let bdayToday: BirthdayToday[] = [];
+  let bdaySoon: { name: string; when: string }[] = [];
+  if (squad.length) {
+    const { data: rows } = await supabase.rpc("squad_birthdays", { p_season: season });
+    const bd = birthdays((rows ?? []) as BirthdayRow[], today);
+    const byId = new Map(squad.map((r) => [r.player_id, r]));
+    bdaySoon = bd.upcoming.filter((r) => byId.has(r.player_id)).slice(0, 3).map((r) => ({ name: shirtName(byId.get(r.player_id)!.player), when: whenLabel(r.date, r.inDays) }));
+    const ids = bd.today.map((r) => r.player_id).filter((id) => byId.has(id));
+    if (ids.length) {
+      const { data: wishData } = await supabase.rpc("birthday_wishers", { p_players: ids, p_year: year });
+      const wishes = (wishData ?? []) as { player_id: string; user_id: string; first_name: string }[];
+      // El nombre de su ficha si es jugador (el apodo con el que le conoce el equipo); si no, el de pila
+      const nameOf = new Map<string, string>();
+      for (const r of roster) if (r.player.user_id) nameOf.set(r.player.user_id, shirtName(r.player));
+      bdayToday = ids.map((id) => {
+        const r = byId.get(id)!;
+        const mine = wishes.filter((w) => w.player_id === id);
+        return {
+          playerId: id, name: shirtName(r.player), number: r.number, photo: r.player.photo_url, gk: lineOf(r.position) === "GK",
+          isMe: r.player.user_id === s.user.id,
+          wishers: mine.map((w) => nameOf.get(w.user_id) ?? w.first_name),
+          wished: mine.some((w) => w.user_id === s.user.id),
+        };
+      });
+    }
+  }
+
   // Partidos: el próximo y los últimos resultados
   const [matchday, focus] = s.can("matches") ? await Promise.all([fetchMatchday(supabase, 40), fetchMatchdayFocus(supabase)]) : [null, null];
   // ¿Me han convocado para el próximo partido? También durante el final y el post partido del anterior:
@@ -104,7 +139,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         const gala = galaEntry && mvp?.winner_id
           ? { entry: galaEntry, me: s.user.id, rival: `${focus.m.is_home ? "vs" : "en"} ${focus.m.rival.name}`, auto: true, votes: mvp.tally?.[mvp.winner_id] ?? 0, picked: mvp.picked }
           : null;
-        return { ...focus, callups, myPlayerId, ...preview, report, weather, mvp, gala };
+        // Acta en vivo: el marcador sale en la portada en cuanto quien lo lleva da el pitido inicial
+        const lv = focus.phase === "live" || focus.phase === "day" ? await fetchLiveView(supabase, focus.m) : null;
+        const live = lv && (lv.started || lv.events.length) ? lv : null;
+        return { ...focus, callups, myPlayerId, ...preview, report, weather, mvp, gala, live };
       })()
     : null;
 
@@ -164,7 +202,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       {/* 1 · El partido: siempre en portada, según el momento */}
       {md ? (
         <>
-          <MatchdayHero m={md.m} phase={md.phase} greeting={greeting} form={recentForm} next={afterMatch ? matchday?.next ?? null : null} weather={md.weather} />
+          <MatchdayHero m={md.m} phase={md.phase} greeting={greeting} form={recentForm} next={afterMatch ? matchday?.next ?? null : null} weather={md.weather}
+            live={md.live} canLive={s.can("matches", "update")} />
           {myCallup && matchday?.next && <div className="mb-6"><MyCallupCard m={matchday.next} mine={myCallup} withMatch /></div>}
           {/* La porra para quien no la tiene ya en su tarjeta de convocado */}
           {afterMatch && !myCallup && matchday?.next && <PorraCard m={matchday.next} withMatch />}
@@ -210,6 +249,14 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <span className="shrink-0 text-sm font-bold text-rojo transition group-hover:translate-x-0.5">Contestar →</span>
         </Link>
       ))}
+
+      {/* Cumpleaños */}
+      {bdayToday.map((b) => <BirthdayCard key={b.playerId} b={b} year={year} />)}
+      {bdaySoon.length > 0 && (
+        <p className={`${bdayToday.length ? "-mt-3" : ""} mb-6 flex flex-wrap items-center gap-x-2 text-sm text-negro/70`}>
+          <span aria-hidden>🎈</span> <b className="text-negro">Próximos cumples:</b> {bdaySoon.map((x) => `${x.name} ${x.when}`).join(" · ")}
+        </p>
+      )}
 
       {/* Se acabó la liga: el resumen de cada uno */}
       {ended && (

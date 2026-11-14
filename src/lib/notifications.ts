@@ -3,12 +3,13 @@
  * Al añadir un aviso nuevo en el código (sendPush), añádelo aquí también.
  */
 
-export type NoticeArea = "manual" | "polls" | "matches" | "news" | "lottery" | "sponsors" | "league" | "fees" | "backup";
+export type NoticeArea = "manual" | "polls" | "matches" | "squad" | "news" | "lottery" | "sponsors" | "league" | "fees" | "backup";
 
 export const AREA_LABEL: Record<NoticeArea, string> = {
   manual: "Avisos y votaciones",
   polls: "Votaciones",
   matches: "Partidos y convocatorias",
+  squad: "Plantilla y cumpleaños",
   news: "La Voz del Rayo",
   lottery: "Sorteos",
   sponsors: "Patrocinadores",
@@ -36,7 +37,7 @@ export const NOTICE_CATALOG: NoticeKind[] = [
   { area: "matches", title: "📅 Nuevo partido en el calendario", when: "Al crear un partido a mano, si se deja marcado «Avisar».", who: "Todo el equipo (menos quien lo crea).", how: "opt" },
   { area: "matches", title: "🔁 Cambio en el partido", when: "Si cambia la fecha o la hora: desde la liga, siempre; a mano, si se deja marcado «Avisar».", who: "Todo el equipo.", how: "auto" },
   { area: "matches", title: "⏸️ Aplazado · ⛔ Suspendido · 📅 Nueva fecha", when: "Al cambiar el estado del partido, si se deja marcado «Avisar».", who: "Todo el equipo.", how: "opt" },
-  { area: "matches", title: "✅ ¡Victoria! · 🤝 Empate · ⚽ Final (con el marcador)", when: "En cuanto entra el resultado: «Ya están los datos del partido». El día del partido la app mira sola la web de la liga (14:00, 17:00, 20:00 y 22:30, y las 8:00 del día siguiente; una hora más tarde en verano), empezando hora y media después del pitido. También al sincronizar a mano o, si se deja marcado «Avisar», al ponerlo a mano. Nunca sale dos veces para el mismo partido.", who: "Todo el equipo.", how: "auto" },
+  { area: "matches", title: "✅ ¡Victoria! · 🤝 Empate · ⚽ Final (con el marcador)", when: "En cuanto entra el resultado: «Ya están los datos del partido». El día del partido la app mira sola la web de la liga (14:00, 17:00, 20:00 y 22:30, y las 8:00 del día siguiente; una hora más tarde en verano), empezando hora y media después del pitido. También al sincronizar a mano o, si se deja marcado «Avisar», al ponerlo a mano o al dar el pitido final en el acta en vivo. Nunca sale dos veces para el mismo partido.", who: "Todo el equipo.", how: "auto" },
   { area: "matches", title: "⭐ Vota al MVP del partido", when: "Al guardar el acta por primera vez (o al abrir la votación a mano). Si se deja marcado «Avisar», lleva también el resultado y los goleadores.", who: "Todo el equipo (menos quien la abre).", how: "auto" },
   { area: "matches", title: "⭐ MVP del partido", when: "Al cerrarse la votación (a las 23:59), con el ganador y sus votos.", who: "Todo el equipo.", how: "auto" },
   { area: "matches", title: "⭐ Empate en el MVP: decide tú", when: "Si la votación acaba empatada a votos y a goles.", who: "Quien puede editar Partidos.", how: "auto" },
@@ -46,6 +47,9 @@ export const NOTICE_CATALOG: NoticeKind[] = [
   { area: "matches", title: "⏰ Mañana hay partido: ¿vas?", when: "Cada mañana a las 9:00 (10:00 en verano), la víspera del partido.", who: "Los convocados que no han contestado.", how: "auto" },
   { area: "matches", title: "⚽ ¡Hoy jugamos!", when: "La mañana del partido, con la hora y el sitio de quedada.", who: "Los convocados que van o dudan.", how: "auto" },
   { area: "matches", title: "⚽ Hoy jugamos: ¿vas?", when: "La mañana del partido, con la hora y el sitio de quedada. Con botones «Voy» y «No voy».", who: "Los convocados que aún no han contestado.", how: "auto" },
+
+  { area: "squad", title: "🎂 Hoy cumple…", when: "La mañana del cumpleaños de un jugador de la plantilla (con su fecha de nacimiento en la ficha), a las 9:00 (10:00 en verano). Una vez al año.", who: "Todo el equipo menos el que cumple.", how: "auto" },
+  { area: "squad", title: "🎂 ¡Feliz cumpleaños!", when: "La misma mañana de su cumpleaños.", who: "El jugador que cumple años.", how: "auto" },
 
   { area: "news", title: "🗞️ La Voz del Rayo", when: "Al publicar una pieza por primera vez, si se deja marcado «Avisar al equipo». Lleva el titular y el principio del texto.", who: "Todo el que puede leer La Voz del Rayo (menos quien publica).", how: "opt" },
   { area: "news", title: "🎙️ La Voz del Rayo quiere entrevistarte", when: "Al mandarle las preguntas de una entrevista (o al volver a mandárselas).", who: "El jugador entrevistado.", how: "manual" },
@@ -72,6 +76,7 @@ export function areaOf(url: string | null, tag: string | null): NoticeArea {
   const u = url ?? "/";
   if (u.startsWith("/votaciones")) return "polls";
   if (tag?.startsWith("cuota-")) return "fees";
+  if (tag?.startsWith("cumple-")) return "squad";
   if (u.startsWith("/admin/copia")) return "backup";
   if (tag === "liga-sincronizacion" || u.startsWith("/partidos/liga")) return "league";
   if (u.startsWith("/partidos")) return "matches";

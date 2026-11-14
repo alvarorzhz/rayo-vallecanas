@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarPlus, MapPin, Pencil, StickyNote, Swords } from "lucide-react";
+import { CalendarPlus, MapPin, Pencil, Radio, StickyNote, Swords } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fetchCallups, fetchMatch, fetchMyPlayerId, fetchReport, fetchReportPool } from "@/lib/match-queries";
@@ -145,6 +145,15 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
         </div>
 
         <aside className="space-y-4">
+          {canEdit && m.status === "scheduled" && m.match_date === today && (
+            <Link href={`/partidos/${m.id}/directo`} prefetch className="franja relative flex items-center gap-3 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:shadow-xl">
+              <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-rojo"><Radio size={22} /></span>
+              <span className="relative min-w-0 flex-1">
+                <span className="sport block text-xl font-black leading-tight">{m.live_started_at ? "Seguir el acta en vivo" : "Llevar el acta en vivo"}</span>
+                <span className="block text-xs text-white/75">Goles y tarjetas desde la banda. El equipo ve el marcador en Inicio y el acta sale hecha.</span>
+              </span>
+            </Link>
+          )}
           {canScore && (
             <section className="card">
               <h2 className="mb-3">{m.status === "played" ? "Resultado" : "Resultado final"}</h2>

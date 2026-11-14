@@ -27,6 +27,8 @@ import { CountUp } from "@/components/squad/count-up";
 import { SigningReplay } from "@/components/squad/signing-reveal";
 import { Achievements } from "@/components/squad/achievements";
 import { achievements } from "@/lib/achievements";
+import { fetchDiscipline } from "@/lib/discipline-queries";
+import { CardCycle } from "@/components/squad/card-cycle";
 import { createAccess, deletePlayer, deletePlayerDoc, linkUser, rejoinPlayer, removePlayerPhoto, retirePlayer, savePlayerDoc, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
 import { registerFeePayment, saveFeeOverride } from "../cuotas/actions";
 
@@ -89,6 +91,9 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
   const perMatch = new Map<string, number>();
   for (const g of careerGoals ?? []) perMatch.set(g.match_id, (perMatch.get(g.match_id) ?? 0) + 1);
   const ach = achievements({ seasons, goalsPerMatch: [...perMatch.values()], line });
+  // Ciclo de amarillas de la liga actual (solo en la temporada en curso)
+  const disc = member && season === seasonOf() && s.can("matches") ? await fetchDiscipline(supabase, [id]) : null;
+  const cycle = disc?.byPlayer.get(id) ?? null;
   const feeDue = fees ? feeOf(fees.plan, fees.overrides.get(id)) : null;
   const feePaid = fees?.paid.get(id) ?? 0;
 
@@ -200,6 +205,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
             <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5"><span className="anim-card-show inline-block h-3.5 w-2.5 rounded-sm bg-rojo" style={{ animationDelay: "150ms" }} /> {member.reds} {member.reds === 1 ? "roja" : "rojas"}</span>
             {line !== "GK" && member.apps > 0 && <span className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/5">{member.goals + member.assists} goles + asistencias</span>}
           </div>
+          {cycle && <CardCycle d={cycle} isMe={isMe} />}
         </section>
       )}
 

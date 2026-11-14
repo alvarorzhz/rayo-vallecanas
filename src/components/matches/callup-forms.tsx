@@ -8,8 +8,34 @@ import { LINES, STATUS_LABEL, lineOf, shirtName, type RosterEntry } from "@/lib/
 import { FORMATIONS, DEFAULT_FORMATION, REPLIES, REPLY_LABEL, slotsOf, type Reply } from "@/lib/callups";
 import { hhmm, type MatchRow } from "@/lib/matches";
 import type { CallupState } from "@/app/(app)/partidos/callup-actions";
+import { CYCLE, type Discipline } from "@/lib/discipline";
 
 type A = (s: CallupState, f: FormData) => Promise<CallupState>;
+
+/** Etiqueta del ciclo de amarillas junto al jugador: solo si está a una o le toca sanción. */
+function CardChip({ d }: { d?: Discipline }) {
+  if (!d || d.status === "ok") return null;
+  return d.status === "banned"
+    ? <span title={d.reason ?? ""} className="badge shrink-0 bg-rojo text-white">⛔ Sanción</span>
+    : <span title={d.reason ?? ""} className="badge shrink-0 bg-amber-100 text-amber-900"><span aria-hidden className="mr-1 inline-block h-3 w-2 rounded-[2px] bg-amber-400 align-[-1px]" />{d.inCycle}/{CYCLE}</span>;
+}
+
+/** Aviso arriba de la convocatoria: quién podría estar sancionado y quién está a una amarilla. */
+function CardsAlert({ roster, cards }: { roster: RosterEntry[]; cards: Record<string, Discipline> }) {
+  const banned = roster.filter((r) => cards[r.player_id]?.status === "banned");
+  const warn = roster.filter((r) => cards[r.player_id]?.status === "warn");
+  if (!banned.length && !warn.length) return null;
+  return (
+    <div role="note" className="space-y-1.5 rounded-xl bg-amber-50 p-3 text-sm ring-1 ring-amber-200">
+      {banned.map((r) => (
+        <p key={r.player_id}><b>⛔ {shirtName(r.player)}</b>: {cards[r.player_id].reason?.toLowerCase()}. Podría tener que cumplir sanción este partido: compruébalo en la federación.</p>
+      ))}
+      {warn.length > 0 && (
+        <p><b>🟨 A una amarilla de la sanción:</b> {warn.map((r) => shirtName(r.player)).join(", ")}. Si ven otra, se pierden el partido siguiente.</p>
+      )}
+    </div>
+  );
+}
 
 /** Hora de quedada propuesta: 45 minutos antes del partido. */
 function meetDefault(kickoff: string | null) {
@@ -21,11 +47,13 @@ function meetDefault(kickoff: string | null) {
 }
 
 /** Preparar la convocatoria: convocados, quedada, sistema y alineación. */
-export function CallupEditor({ action, match, roster, initial }: {
+export function CallupEditor({ action, match, roster, initial, cards = {} }: {
   action: A;
   match: MatchRow;
   roster: RosterEntry[];
   initial: { player_id: string; slot: number | null }[];
+  /** Ciclo de amarillas de la liga (solo en partidos de liga). */
+  cards?: Record<string, Discipline>;
 }) {
   const [state, formAction] = useActionState(action, undefined);
   const [pending, start] = useTransition();
@@ -67,6 +95,7 @@ export function CallupEditor({ action, match, roster, initial }: {
             </div>
           </div>
           {roster.length === 0 && <p className="text-sm text-negro/65">No hay jugadores en la plantilla de esta temporada.</p>}
+          <CardsAlert roster={roster} cards={cards} />
           {LINES.map((l) => {
             const rows = roster.filter((r) => lineOf(r.position) === l.key);
             if (!rows.length) return null;
@@ -85,6 +114,7 @@ export function CallupEditor({ action, match, roster, initial }: {
                             <span className="block truncate font-bold">{shirtName(r.player)}</span>
                             <span className="block text-xs text-negro/65">{r.position}{r.status !== "active" ? ` · ${STATUS_LABEL[r.status]}` : ""}</span>
                           </span>
+                          <CardChip d={cards[r.player_id]} />
                         </label>
                       </li>
                     );

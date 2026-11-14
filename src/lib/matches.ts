@@ -44,6 +44,9 @@ export type Match = {
   mvp_player_id: string | null;
   report_saved_at: string | null;
   report_by: string | null;
+  // Acta en vivo (v4.12.0)
+  live_started_at?: string | null;
+  live_second_at?: string | null;
   created_at: string;
   updated_at: string;
 };
