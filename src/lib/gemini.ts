@@ -12,17 +12,32 @@ import "server-only";
 export const cleanKey = (raw: string | undefined) => (raw ?? "").replace(/[^\x21-\x7e]/g, "").replace(/^["'`]+|["'`]+$/g, "");
 export const geminiConfigured = () => cleanKey(process.env.GEMINI_API_KEY).length > 0;
 
-// Si Google retira un modelo, se prueba el siguiente. GEMINI_MODEL permite fijar otro desde Vercel sin tocar el código.
-// En noviembre de 2026 Google ya no deja usar los 2.5 a claves nuevas: los actuales son 3.8 Flash y 3.5 Flash Lite.
-// Probado con una clave gratis real (11-11-2026): 3.5 Flash Lite contesta en ~2 s siempre; 3.8 Flash suele estar
-// saturado (503) o tarda más de un minuto, así que va de reserva.
-const MODELS = () => [process.env.GEMINI_MODEL?.trim(), "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-flash-lite-latest", "gemini-flash-latest"].filter((m): m is string => !!m);
-/** Que razone poco: es lo que más tarda y para una crónica no hace falta. Si un modelo no lo admite, se repite sin ello. */
-const thinkingLow = (model: string) => (/^gemini-[3-9]/.test(model) ? { thinkingConfig: { thinkingLevel: /lite/.test(model) ? "minimal" : "low" } } : {});
-/** Tiempo total para todos los intentos: la función de Vercel no debe morir antes de contestar. */
-const BUDGET_MS = 100_000;
-/** Lo que se espera a cada modelo: si uno va lento, se pasa al siguiente en vez de gastar todo el tiempo en él. */
-const PER_TRY_MS = 30_000;
+// Si Google retira un modelo, se prueba el siguiente. GEMINI_MODEL permite añadir otro desde Vercel sin tocar el código.
+// Revisado el 14-11-2026 con una clave gratis real y la lista de Google (aistudio.google.com/docs/models):
+//  · 3.5 Flash Lite, 3.1 Flash Lite y flash-lite-latest contestan una crónica en 2-3 s.
+//  · Gemini 4 Hydrogen (salió el 12-11-2026) escribe bien pero tarda ~18 s razonando: reserva.
+//  · 3.8 Flash y flash-latest, en el plan gratis, dan «high demand» (503) o no contestan en 90 s: última reserva.
+// Por eso el primero es siempre un «lite», aunque GEMINI_MODEL apunte a uno de los lentos.
+export const MODELS = () => [
+  "gemini-3.5-flash-lite",
+  process.env.GEMINI_MODEL?.trim(),
+  "gemini-3.1-flash-lite",
+  "gemini-flash-lite-latest",
+  "gemini-4-hydrogen",
+  "gemini-3.8-flash",
+].filter((m): m is string => !!m);
+/**
+ * Que razone poco: es lo que más tarda y para una crónica no hace falta. Los «lite» admiten «minimal»; el resto
+ * (Gemini 4 y 3.8 Flash) no, así que «low». Si un modelo no admite el ajuste, se repite sin él.
+ */
+export const thinkingLow = (model: string) => (/^gemini-([3-9]|flash)/.test(model) ? { thinkingConfig: { thinkingLevel: /lite/.test(model) ? "minimal" : "low" } } : {});
+/**
+ * Tiempo total para todos los intentos. Antes eran 100 s y la función de Vercel podía morir antes de contestar (el móvil
+ * solo veía «no ha contestado a tiempo»). Con 50 s cabe incluso en el límite de 60 s y siempre llega el motivo real.
+ */
+const BUDGET_MS = 50_000;
+/** Lo que se espera a cada modelo: un borrador tarda segundos; si uno va lento, se pasa al siguiente. */
+const PER_TRY_MS = 20_000;
 
 export type GeminiResult = { text: string; error?: undefined } | { text?: undefined; error: string };
 
@@ -45,7 +60,7 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
   const start = Date.now();
   // Lo que ha contestado cada modelo, para el aviso y para los logs de Vercel
   const trail: string[] = [];
-  let kind: "key" | "busy" | "slow" | "net" | "other" = "other";
+  let kind: "key" | "quota" | "busy" | "slow" | "net" | "other" = "other";
   const attempts = [...new Set(MODELS())].flatMap((m) => [m, m]); // cada modelo, hasta dos veces si Google está saturado
   const plain = new Set<string>(); // modelos que no admiten thinkingLevel
   for (let i = 0; i < attempts.length; i++) {
@@ -108,12 +123,21 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
       continue;
     }
     if (!retry) i++; // cualquier otro error no se arregla repitiendo
-    if (res.status === 429) return { error: `Se ha llegado al límite gratis de la IA por ahora. Espera un minuto y vuelve a probar. (Detalle: ${detail})` };
+    // El límite gratis va por modelo: si uno lo ha gastado, el siguiente puede tener hueco
+    if (res.status === 429) {
+      if (kind !== "key") kind = "quota";
+      continue;
+    }
     if (/location|region|country/i.test(detail) && !/API key/i.test(detail)) return { error: `Google no permite usar Gemini gratis desde aquí. (Detalle: ${detail})` };
+    if (res.status === 401 || /API key (not valid|expired)|API_KEY_INVALID/i.test(detail)) {
+      kind = "key";
+      break; // la clave es la misma para todos los modelos: no merece la pena seguir probando
+    }
     if (/API key|API_KEY/i.test(detail)) kind = "key";
     else if (res.status >= 500) kind = kind === "key" ? kind : "busy";
   }
   const head = kind === "key" ? "Google no acepta la clave de Gemini. Revisa GEMINI_API_KEY en Vercel y haz Redeploy."
+    : kind === "quota" ? "Se ha llegado al límite gratis de la IA por ahora. Espera un minuto y vuelve a probar."
     : kind === "busy" ? "La IA de Google está saturada ahora mismo. Prueba en un rato."
     : kind === "slow" ? "La IA ha tardado demasiado en contestar. Prueba otra vez en un minuto."
     : kind === "net" ? "No se ha podido conectar con la IA de Google. Prueba otra vez en un momento."
