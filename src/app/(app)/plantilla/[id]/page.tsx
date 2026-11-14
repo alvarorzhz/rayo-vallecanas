@@ -4,7 +4,7 @@ import { Camera, ClipboardList, Cross, FolderLock, Mail, Pencil, Phone, Plane, S
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
-import { euros, fecha, phoneE164, PAYMENT_METHOD_LABEL } from "@/lib/format";
+import { euros, fecha, PAYMENT_METHOD_LABEL } from "@/lib/format";
 import { fetchFees } from "@/lib/squad-queries";
 import {
   ARMBAND_LABEL, FEE_STATUS_LABEL, FEE_STATUS_TONE, FOOT_LABEL, LINE_LABEL, STATUS_LABEL, STATUS_TONE,
@@ -481,11 +481,5 @@ function Field({ label, value, icon, actions }: { label: string; value: string |
 }
 
 function PhoneLinks({ phone }: { phone: string }) {
-  const wa = phoneE164(phone);
-  return (
-    <>
-      <a href={`tel:${phone}`} className="btn-ghost px-2.5 py-1.5" aria-label="Llamar"><Phone size={15} /></a>
-      {wa && <a href={`https://api.whatsapp.com/send?phone=${wa}`} target="_blank" rel="noopener" className="btn-ghost px-2.5 py-1.5 text-green-700" aria-label="WhatsApp">WA</a>}
-    </>
-  );
+  return <a href={`tel:${phone}`} className="btn-ghost px-2.5 py-1.5" aria-label="Llamar"><Phone size={15} /></a>;
 }

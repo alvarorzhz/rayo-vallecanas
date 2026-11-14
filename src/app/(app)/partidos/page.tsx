@@ -4,21 +4,17 @@ import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
 import { fetchMatchSeasons, fetchMatches } from "@/lib/match-queries";
-import { form, matchShareText, monthLabel, record, streak, todayMadrid, type MatchRow } from "@/lib/matches";
+import { monthLabel, todayMadrid, type MatchRow } from "@/lib/matches";
 import { seasonFromSlug, seasonSlug } from "@/lib/squad";
 import { Empty, PageHeader } from "@/components/ui";
-import { FormStrip, MatchLine, Scoreboard } from "@/components/matches/match-bits";
+import { MatchLine, Scoreboard } from "@/components/matches/match-bits";
 import { Ball } from "@/components/squad/ball";
-import { CountUp } from "@/components/squad/count-up";
-import { ShareButton } from "@/components/matches/share-button";
-import { SyncButton } from "@/components/matches/league-forms";
-import { runLeagueSync } from "./actions";
 import { LeagueProblem } from "@/components/matches/league-problem";
 import type { StoredSummary } from "@/lib/league-status";
 import { Suspense } from "react";
 import { getLeagueTable, getLeagueTableQuick } from "@/lib/league-table";
 import { matchRanks, type MatchRanks } from "@/lib/standings";
-import { StandingsMini, StandingsTable, type TableRival } from "@/components/matches/league-table";
+import { StandingsTable, type TableRival } from "@/components/matches/league-table";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const maxDuration = 60;
@@ -48,9 +44,6 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const upcoming = matches.filter((m) => (m.status === "scheduled" && m.match_date >= today) || m.status === "postponed");
   const next = matches.find((m) => m.status === "scheduled" && m.match_date >= today) ?? null;
   const last = [...matches].reverse().find((m) => m.status === "played") ?? null;
-  const rec = record(matches);
-  const recent = form(matches);
-  const run = streak(matches);
 
   const shown =
     view === "resultados" ? [...matches].filter((m) => m.status === "played").reverse()
@@ -80,18 +73,9 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="Partidos"
         subtitle={<>Temporada <b>{season}</b>{current ? " · actual" : ""}</>}
-        actions={<>
-          <Link href={`/partidos/estadisticas?temporada=${seasonSlug(season)}`} prefetch className="btn-ghost"><BarChart3 size={18} /> Estadísticas</Link>
-          <Link href={`/partidos/porra?temporada=${seasonSlug(season)}`} prefetch className="btn-ghost"><Target size={18} /> Porra</Link>
-          {s.can("matches", "update") && <Link href="/partidos/rivales" prefetch className="btn-ghost"><Shield size={18} /> Rivales</Link>}
-          {s.can("matches", "update") && <Link href="/partidos/liga" prefetch className="btn-ghost"><Trophy size={18} /> Liga</Link>}
-          {canCreate && <Link href="/partidos/nuevo" prefetch className="btn-primary"><Plus size={18} /> Nuevo partido</Link>}
-        </>}
+        actions={canCreate ? <Link href="/partidos/nuevo" prefetch className="btn-primary"><Plus size={18} /> Nuevo partido</Link> : undefined}
       />
       {s.can("matches", "update") && league?.last_summary && <LeagueProblem summary={league.last_summary} compact />}
-      {s.can("matches", "update") && league && current && (
-        <div className="mb-4"><SyncButton action={runLeagueSync} className="btn-ghost text-sm" /></div>
-      )}
       {s.can("matches", "update") && !league && current && (
         <Link href="/partidos/liga" className="mb-4 flex items-center gap-2 rounded-xl bg-dorado/15 px-3 py-2 text-sm font-semibold ring-1 ring-dorado/40 hover:ring-dorado">
           <Trophy size={16} className="text-dorado" /> Conecta la web de la liga para traer el calendario y los resultados solos →
@@ -99,48 +83,26 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       )}
       {sp.eliminado && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Partido eliminado del calendario.</p>}
 
+      {/* Lo demás de Partidos, en una sola línea discreta (el balance está en Estadísticas y la tabla en Clasificación) */}
+      <nav aria-label="Más de Partidos" className="-mx-4 -mt-2 mb-5 flex gap-1.5 [scrollbar-width:none] overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        {([
+          [`/partidos/estadisticas?temporada=${seasonSlug(season)}`, <BarChart3 key="i" size={15} />, "Estadísticas", true],
+          [`/partidos/porra?temporada=${seasonSlug(season)}`, <Target key="i" size={15} />, "Porra", true],
+          ["/partidos/rivales", <Shield key="i" size={15} />, "Rivales", s.can("matches", "update")],
+          ["/partidos/liga", <Trophy key="i" size={15} />, "Liga", s.can("matches", "update")],
+        ] as const).filter((x) => x[3]).map(([href, icon, label]) => (
+          <Link key={label} href={href} prefetch
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-[13px] font-bold text-negro/75 ring-1 ring-black/10 transition hover:text-rojo hover:ring-rojo/40">
+            <span className="text-rojo">{icon}</span> {label}
+          </Link>
+        ))}
+      </nav>
+
       {!tableView && hero && (
         <section className="mb-6">
-          <div className="mb-2 flex items-end justify-between gap-3">
-            <h2 className="sport text-xl font-black">{hero === next ? "Próximo partido" : "Último resultado"}</h2>
-            <ShareButton text={matchShareText(hero)} />
-          </div>
+          <h2 className="sport mb-2 text-xl font-black">{hero === next ? "Próximo partido" : "Último resultado"}</h2>
           <Link href={`/partidos/${hero.id}`} prefetch className="block transition hover:-translate-y-0.5"><Scoreboard m={hero} ranks={ranks.get(hero.id)} /></Link>
         </section>
-      )}
-
-      {/* Balance de la temporada */}
-      {!tableView && rec.played > 0 && (
-        <section className="relative mb-6 overflow-hidden rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-          <span aria-hidden className="absolute -right-4 top-0 h-full w-10 -skew-x-[20deg] bg-dorado/80" />
-          <div className="relative grid grid-cols-3 gap-4 sm:grid-cols-6">
-            {([
-              ["Jugados", rec.played, "text-negro"],
-              ["Victorias", rec.W, "text-green-700"],
-              ["Empates", rec.D, "text-negro/60"],
-              ["Derrotas", rec.L, "text-rojo"],
-              ["A favor", rec.gf, "text-negro"],
-              ["En contra", rec.ga, "text-negro"],
-            ] as const).map(([k, v, tone], i) => (
-              <div key={k} className="anim-score" style={{ animationDelay: `${i * 70}ms` }}>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-negro/65">{k}</div>
-                <div className={`sport text-4xl font-black leading-none ${tone}`}><CountUp value={v} /></div>
-              </div>
-            ))}
-          </div>
-          <div className="relative mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-            <FormStrip rows={recent} />
-            {run && <span className="inline-flex items-center gap-1.5 font-bold"><Trophy size={15} className="text-dorado" /> {run}</span>}
-            <span className="text-negro/65">Diferencia de goles <b className="text-negro">{rec.gf - rec.ga > 0 ? "+" : ""}{rec.gf - rec.ga}</b></span>
-          </div>
-        </section>
-      )}
-
-      {/* Mini clasificación */}
-      {withTable && view === "todos" && (
-        <Suspense fallback={null}>
-          <MiniTable supabase={supabase} competition={league!.competition} team={league!.team} href={link({ ver: "clasificacion" })} />
-        </Suspense>
       )}
 
       {/* Vista y temporada */}
@@ -203,12 +165,6 @@ async function tableData({ supabase, competition }: TableProps) {
     supabase.from("rivals").select("name, short_name, color, crest_url, ext_id").not("ext_id", "is", null).returns<TableRival[]>().then((r) => r.data ?? []),
   ]);
   return { table, rivals };
-}
-
-async function MiniTable(p: TableProps & { href: string }) {
-  const { table, rivals } = await tableData(p);
-  if (!table) return null;
-  return <StandingsMini table={table} us={p.team} rivals={rivals} href={p.href} />;
 }
 
 async function FullTable(p: TableProps) {

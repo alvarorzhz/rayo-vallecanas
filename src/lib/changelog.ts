@@ -8,6 +8,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.14.0",
+    date: "2026-11-14",
+    title: "Inicio y Partidos, más despejados",
+    changes: [
+      "Fuera los botones de WhatsApp para compartir: ya no salen en la portada del partido, en la ficha del partido, en la convocatoria, en las votaciones, en las noticias públicas ni en las fichas de jugadores y patrocinadores. Para compartir quedan las imágenes (resultado, convocatoria, «Hoy jugamos»).",
+      "Siguen solo los WhatsApp que hacen falta para trabajar: el justificante con los números al comprador de la rifa, los datos de acceso de un usuario nuevo y el recordatorio de la cuota.",
+      "Tras el partido, mientras el resultado manda en Inicio (unas 24 horas), desaparece «Tu temporada» para que se vea bien lo del partido. Luego vuelve sola.",
+      "Partidos, más limpio arriba: solo «Nuevo partido» en la cabecera, el próximo partido o el último resultado, y una línea con Estadísticas, Porra, Rivales y Liga. El balance de la temporada sigue en Estadísticas y la tabla en la pestaña Clasificación; el botón de sincronizar la liga está dentro de Liga.",
+    ],
+  },
+  {
     version: "4.13.2",
     date: "2026-11-14",
     title: "La Voz entra girando sin encoger la pantalla",

@@ -2,11 +2,10 @@ import Link from "next/link";
 import { Clock, ClipboardList, Pencil, StickyNote } from "lucide-react";
 import { Jersey } from "@/components/squad/jersey";
 import { LineupPitch } from "@/components/matches/lineup-pitch";
-import { ShareButton } from "@/components/matches/share-button";
 import { ShareImageButton } from "@/components/matches/share-image";
 import { RemindButton, ReplyBox, ReplyForSelect } from "@/components/matches/callup-forms";
 import { remindPending, replyCallup, setReplyFor } from "@/app/(app)/partidos/callup-actions";
-import { REPLY_LABEL, REPLY_TONE, callupShareText, tally, type CallupRow, type Reply } from "@/lib/callups";
+import { REPLY_LABEL, REPLY_TONE, tally, type CallupRow, type Reply } from "@/lib/callups";
 import { hhmm, shortDay, type MatchRow } from "@/lib/matches";
 import { lineOf, shirtName } from "@/lib/squad";
 import { PorraInline } from "@/components/matches/porra";
@@ -61,7 +60,7 @@ export function MyCallupCard({ m, mine, meet = true, withMatch = false }: { m: M
   );
 }
 
-export function CallupSection({ m, rows, myPlayerId, canEdit, url }: { m: MatchRow; rows: CallupRow[]; myPlayerId: string | null; canEdit: boolean; url: string }) {
+export function CallupSection({ m, rows, myPlayerId, canEdit }: { m: MatchRow; rows: CallupRow[]; myPlayerId: string | null; canEdit: boolean }) {
   const published = !!m.callup_published_at;
   if (!published && !canEdit) return null;
   const closed = m.status === "played" || m.status === "cancelled";
@@ -79,7 +78,6 @@ export function CallupSection({ m, rows, myPlayerId, canEdit, url }: { m: MatchR
           {!published && rows.length > 0 && <span className="badge bg-amber-100 text-amber-800">Borrador</span>}
         </h2>
         <div className="flex flex-wrap gap-2">
-          {published && <ShareButton text={callupShareText(m, rows, url)} label="WhatsApp" />}
           {published && t.yes > 0 && <ShareImageButton url={`/api/partidos/${m.id}/imagen/convocatoria`} name={`convocatoria-${m.match_date}.jpg`} title="Imagen de la convocatoria" />}
           {canEdit && !closed && (
             <Link href={`/partidos/${m.id}/convocatoria`} prefetch className={rows.length ? "btn-ghost px-3 py-1.5 text-sm" : "btn-primary"}>

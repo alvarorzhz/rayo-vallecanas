@@ -283,8 +283,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </section>
       )}
 
-      {/* 2 · Tu ficha: cromo y temporada */}
-      {me && <MySeason entry={me} squad={squad} log={myLog} season={season} />}
+      {/* 2 · Tu ficha: cromo y temporada (fuera tras el partido, mientras el resultado manda en la portada: unas 24 h) */}
+      {me && !(md && (md.phase === "final" || md.phase === "post")) && <MySeason entry={me} squad={squad} log={myLog} season={season} />}
 
       {/* 3 · Accesos rápidos */}
       {(campaign && summary) || tiles.length ? (

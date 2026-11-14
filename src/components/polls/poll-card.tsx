@@ -1,9 +1,8 @@
 import { Clock, Lock, Users, Vote } from "lucide-react";
 import { Avatar } from "@/components/avatar";
-import { ShareButton } from "@/components/matches/share-button";
 import { PollAdminActions, VoteButtons } from "@/components/polls/poll-forms";
 import { closePoll, deletePoll, remindPoll, votePoll } from "@/app/(app)/votaciones/actions";
-import { AUDIENCE_LABEL, OUTCOME_LABEL, results, shareText, timeLeft, type Poll } from "@/lib/polls";
+import { AUDIENCE_LABEL, OUTCOME_LABEL, results, timeLeft, type Poll } from "@/lib/polls";
 import { fecha } from "@/lib/format";
 
 /** Barra de resultados: verde el sí, rojo el no. */
@@ -106,7 +105,6 @@ export function PollCard({ p, canManage, compact = false }: { p: Poll; canManage
       {!compact && <Voters p={p} />}
       {!compact && (
         <div className="flex flex-wrap items-start gap-2">
-          <ShareButton text={shareText(p)} label="Compartir resultado" />
           {canManage && <PollAdminActions open={false} remind={remindPoll.bind(null, p.id)} close={closePoll.bind(null, p.id)} remove={deletePoll.bind(null, p.id)} missing={0} />}
         </div>
       )}

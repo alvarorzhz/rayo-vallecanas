@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CalendarPlus, ClipboardCheck, ClipboardList, Flame, MapPin, Megaphone, Radio, Shirt, Star, Swords, Trophy } from "lucide-react";
 import {
-  CLUB_SHORT, COMPETITION_LABEL, hhmm, kickoffDate, longDay, mapsLink, matchShareText, outcomeOf, relativeDay, rivalShort, shortDay, sides, streak,
+  CLUB_SHORT, COMPETITION_LABEL, hhmm, kickoffDate, longDay, mapsLink, outcomeOf, relativeDay, rivalShort, shortDay, sides, streak,
   type MatchRow,
 } from "@/lib/matches";
 import { PHASE_TITLE, type MatchdayPhase } from "@/lib/matchday";
@@ -17,7 +17,6 @@ import { Crest } from "@/components/matches/crest";
 import { FormStrip, MatchLine } from "@/components/matches/match-bits";
 import { MeetLine, MyCallupCard, callupOpen } from "@/components/matches/callup-section";
 import { LineupPitch } from "@/components/matches/lineup-pitch";
-import { ShareButton } from "@/components/matches/share-button";
 import { ShareImageButton } from "@/components/matches/share-image";
 import { Confetti, MatchdayCountdown } from "@/components/matches/matchday-fx";
 import { Jersey } from "@/components/squad/jersey";
@@ -153,7 +152,6 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null, weath
             {done && m.report_saved_at && <ShareImageButton url={`/api/partidos/${m.id}/imagen`} name={`resultado-${m.match_date}.png`} />}
             <Link href={`/partidos/${m.id}`} prefetch className={darkBtn}>{done ? <><ClipboardCheck size={17} /> Ver acta</> : <>Ver partido</>}</Link>
             {(phase === "eve" || phase === "week") && <a href={`/api/partidos/${m.id}/calendario`} className={darkBtn}><CalendarPlus size={17} /> Calendario</a>}
-            <ShareButton text={matchShareText(m)} label="WhatsApp" className={darkBtn} />
           </div>
           {done && next && next.id !== m.id && (
             <Link href={`/partidos/${next.id}`} prefetch={false}

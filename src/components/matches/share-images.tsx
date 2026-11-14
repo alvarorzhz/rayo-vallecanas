@@ -20,7 +20,7 @@ export function ShareImages({ m, hasCallup }: { m: MatchRow; hasCallup: boolean 
     <section id="imagenes" className="card scroll-mt-24 space-y-3">
       <div>
         <h2 className="flex items-center gap-2"><Images size={18} className="text-rojo" /> Imágenes para compartir</h2>
-        <p className="text-sm text-negro/65">Para el grupo, los estados de WhatsApp o Instagram.</p>
+        <p className="text-sm text-negro/65">Para el grupo o las redes.</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {tiles.map(({ key, ...t }) => <ShareImageTile key={key} {...t} />)}
