@@ -12,19 +12,21 @@ import type { Interview, MatchOption, PlayerOption, SponsorCard } from "@/lib/ne
 import type { AiDraft, NewsState } from "@/app/(app)/la-voz/actions";
 
 /**
- * Lo más que se espera a la IA desde el móvil. El servidor corta a los 120 s; si el móvil se duerme o pierde
- * la conexión, la respuesta puede no llegar nunca y los botones de publicar se quedaban apagados para siempre.
+ * Lo más que se espera a la IA desde el móvil. El servidor se rinde a los 50 s y contesta con el motivo; esto es solo
+ * por si el móvil se duerme o pierde la conexión y la respuesta no llega nunca (los botones se quedaban apagados).
  */
-const AI_WAIT_MS = 125_000;
+const AI_WAIT_MS = 70_000;
 const AI_LOST = "La IA no ha contestado a tiempo (o el móvil ha perdido la conexión). Vuelve a probar o escribe tú el texto.";
+const AI_BROKEN = "No se ha podido hablar con la app: puede que se haya cortado la conexión o que haya una versión nueva. Recarga la página y vuelve a probar (lo escrito no se pierde).";
 /** Espera a la IA con tope de tiempo y sin reventar la página si se cae la conexión. */
 async function waitAi<T extends { error?: string }>(call: () => Promise<T>): Promise<T> {
-  const lost = { error: AI_LOST } as T;
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await Promise.race([call(), new Promise<T>((ok) => { timer = setTimeout(() => ok(lost), AI_WAIT_MS); })]);
-  } catch {
-    return lost;
+    return await Promise.race([call(), new Promise<T>((ok) => { timer = setTimeout(() => ok({ error: AI_LOST } as T), AI_WAIT_MS); })]);
+  } catch (e) {
+    // Antes salía «no ha contestado a tiempo» también aquí, al instante, y despistaba: no era culpa de la IA
+    console.error("[la-voz] IA", e);
+    return { error: AI_BROKEN } as T;
   } finally {
     clearTimeout(timer);
   }

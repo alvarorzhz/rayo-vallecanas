@@ -8,6 +8,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.13.1",
+    date: "2026-11-14",
+    title: "La IA de La Voz, otra vez a la primera",
+    changes: [
+      "«Redactar borrador» vuelve a funcionar y tarda unos segundos. Ahora la app empieza siempre por los modelos rápidos de Google y deja los lentos (y el nuevo Gemini 4 Hydrogen) de reserva.",
+      "Si la IA de Google está saturada o va lenta, la app lo dice en menos de un minuto y explica el motivo, en vez de dejarte esperando dos minutos.",
+      "Cuando el fallo no es de la IA (se ha cortado la conexión o hay una versión nueva de la app), ahora sale un aviso que lo dice claro y pide recargar. Lo que hayas escrito no se pierde.",
+      "Si se gasta el cupo gratis de un modelo, se prueba con otro antes de rendirse.",
+    ],
+  },
+  {
     version: "4.13.0",
     date: "2026-11-14",
     title: "Notas de los jugadores en cada partido",
