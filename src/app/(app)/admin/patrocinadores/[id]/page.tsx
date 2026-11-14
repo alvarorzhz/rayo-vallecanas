@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, AtSign, CalendarRange, Check, Globe, Gift, Mail, MessageCircle, Phone, Plus, Sparkles } from "lucide-react";
+import { AlertTriangle, AtSign, CalendarRange, Check, Globe, Gift, Mail, Phone, Plus, Sparkles } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf, today as todayMadrid } from "@/lib/finance";
-import { PAYMENT_METHOD_LABEL, euros, fecha, phoneE164 } from "@/lib/format";
+import { PAYMENT_METHOD_LABEL, euros, fecha } from "@/lib/format";
 import {
   KIND_LABEL, SHOWN_LABEL, SHOWN_TONE, TIER_LABEL, fetchAgreements, hasInKind, hasMoney, instagramUrl, money, seasonChoices, shownStatus,
   type Agreement, type Sponsor,
@@ -37,7 +37,6 @@ export default async function SponsorPage({ params }: { params: Promise<{ id: st
   const canDelete = s.can("sponsors", "delete");
   const canPay = canEdit && s.can("finances", "create");
   const seeFinances = s.can("finances");
-  const wa = phoneE164(sponsor.contact_phone);
   const ig = instagramUrl(sponsor.instagram);
   const nextSeason = seasons.find((x) => x > current && !agreements.some((a) => a.season === x)) ?? current;
   const defaultSeason = agreements.some((a) => a.season === current) ? nextSeason : current;
@@ -193,7 +192,6 @@ export default async function SponsorPage({ params }: { params: Promise<{ id: st
           {sponsor.contact_name && <p className="font-bold">{sponsor.contact_name}</p>}
           <div className="flex flex-wrap gap-2">
             {sponsor.contact_phone && <a href={`tel:${sponsor.contact_phone.replace(/\s/g, "")}`} className="btn-ghost text-sm"><Phone size={15} /> {sponsor.contact_phone}</a>}
-            {wa && <a href={`https://api.whatsapp.com/send?phone=${wa.replace("+", "")}`} target="_blank" rel="noopener" className="btn-ghost text-sm"><MessageCircle size={15} /> WhatsApp</a>}
             {sponsor.contact_email && <a href={`mailto:${sponsor.contact_email}`} className="btn-ghost text-sm"><Mail size={15} /> Email</a>}
             {sponsor.website && <a href={sponsor.website} target="_blank" rel="noopener" className="btn-ghost text-sm"><Globe size={15} /> Web</a>}
             {ig && <a href={ig} target="_blank" rel="noopener" className="btn-ghost text-sm"><AtSign size={15} /> Instagram</a>}

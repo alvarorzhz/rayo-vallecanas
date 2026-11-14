@@ -8,14 +8,13 @@ import { fetchMvpBoard, fetchRatingBoard } from "@/lib/mvp-server";
 import { galaFresh } from "@/lib/mvp";
 import { fetchRosterEntry } from "@/lib/squad-queries";
 import {
-  COMPETITION_LABEL, MATCH_STATUS_LABEL, hhmm, longDay, mapsLink, matchShareText, record, todayMadrid,
+  COMPETITION_LABEL, MATCH_STATUS_LABEL, hhmm, longDay, mapsLink, record, todayMadrid,
   type MatchRow,
 } from "@/lib/matches";
 import { seasonSlug } from "@/lib/squad";
 import { PageHeader } from "@/components/ui";
 import { MatchLine, Scoreboard } from "@/components/matches/match-bits";
 import { DeleteButton, ResultForm, StatusForm } from "@/components/matches/match-forms";
-import { ShareButton } from "@/components/matches/share-button";
 import { Crest } from "@/components/matches/crest";
 import { CallupSection, callupOpen } from "@/components/matches/callup-section";
 import { ReportSection } from "@/components/matches/report-section";
@@ -84,7 +83,6 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
         subtitle={<><span className="inline-block first-letter:uppercase">{longDay(m.match_date)}</span>{m.kickoff ? ` · ${hhmm(m.kickoff)}` : ""} · {COMPETITION_LABEL[m.competition]}{m.round ? ` · ${m.round}` : ""} · {MATCH_STATUS_LABEL[m.status]}</>}
         back={{ href: `/partidos?temporada=${seasonSlug(m.season)}`, label: "Partidos" }}
         actions={<>
-          <ShareButton text={matchShareText(m)} label="WhatsApp" className="btn-ghost" />
           {m.status === "scheduled" && <a href={`/api/partidos/${m.id}/calendario`} className="btn-ghost"><CalendarPlus size={18} /> A mi calendario</a>}
           {canEdit && <Link href={`/partidos/${m.id}/editar`} prefetch className="btn-dark"><Pencil size={18} /> Editar</Link>}
         </>}
@@ -108,7 +106,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
 
           {callupClosed(m)
             ? <CallupHistory m={m} rows={callups} report={report} myPlayerId={myPlayerId} />
-            : <CallupSection m={m} rows={callups} myPlayerId={myPlayerId} canEdit={canEdit} url={`https://rayo-vallecanas.vercel.app/partidos/${m.id}`} />}
+            : <CallupSection m={m} rows={callups} myPlayerId={myPlayerId} canEdit={canEdit} />}
 
           <PorraSection m={m} inlineShown={!callupClosed(m) && callupOpen(m) && callups.some((c) => c.player_id === myPlayerId)} />
 

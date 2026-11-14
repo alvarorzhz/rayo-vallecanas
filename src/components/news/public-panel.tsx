@@ -1,14 +1,13 @@
 "use client";
 import { useState, useSyncExternalStore, useTransition } from "react";
-import { Copy, Globe, Lock, MessageCircle } from "lucide-react";
+import { Copy, Globe, Lock } from "lucide-react";
 import { FormMessage } from "@/components/form-message";
 import type { NewsState } from "@/app/(app)/la-voz/actions";
 
 const noop = () => () => {};
 
 /** Página pública de la noticia: el superadministrador la enciende o la apaga; todos ven el enlace si está encendida. */
-export function PublicPanel({ title, slug, canToggle, toggle }: {
-  title: string;
+export function PublicPanel({ slug, canToggle, toggle }: {
   slug: string | null;
   canToggle: boolean;
   toggle?: (on: boolean) => Promise<NewsState & { slug?: string | null }>;
@@ -61,9 +60,6 @@ export function PublicPanel({ title, slug, canToggle, toggle }: {
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <code className="min-w-0 basis-full truncate rounded-lg bg-white/10 px-3 py-2 text-xs sm:basis-0 sm:flex-1">{link}</code>
           <button type="button" onClick={copy} className="btn !bg-white !py-2 text-sm text-negro"><Copy size={15} /> {copied ? "Copiado" : "Copiar"}</button>
-          <a href={`https://wa.me/?text=${encodeURIComponent(`🗞️ ${title}\n${link}`)}`} target="_blank" rel="noopener noreferrer" className="btn !bg-[#25D366] !py-2 text-sm text-white">
-            <MessageCircle size={15} /> WhatsApp
-          </a>
         </div>
       )}
       <div className="mt-2"><FormMessage state={msg} /></div>
