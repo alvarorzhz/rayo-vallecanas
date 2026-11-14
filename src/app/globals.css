@@ -870,6 +870,8 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
 
 /* 4.7.0: la rotativa. La portada llega girando, se estampa el sello de la edición y se enciende el rayo */
 .rotativa { --rot-delay: 1.05s; }
+/* 4.13.2: lo que asoma al girar no puede ensanchar la página (el iPhone la alejaba el primer segundo) */
+.rotativa-frame { overflow-x: hidden; overflow-x: clip; }
 .rotativa.rotativa-quick { --rot-delay: 0.3s; }
 .news-strip { border-top: 1px solid var(--ink, #141210); border-bottom: 1px solid var(--ink, #141210); }
 .news-strip > * + * { border-left: 1px solid rgba(20, 18, 16, 0.18); }
