@@ -8,6 +8,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.13.0",
+    date: "2026-11-14",
+    title: "Notas de los jugadores en cada partido",
+    changes: [
+      "Debajo de la votación del MVP, ahora todos pueden ponerles nota a los que jugaron: del 1 al 10, con medios puntos, como en los periódicos deportivos. Se toca un número y se afina con − y +. No hace falta puntuar a todos y nadie se puede poner nota a sí mismo.",
+      "Las notas se abren y se cierran con la votación del MVP (a las 23:59) y son secretas: hasta el cierre cada uno solo ve las suyas y nunca se sabe quién puso qué.",
+      "Al cerrar, la ficha del partido enseña la nota media de cada jugador, de mejor a peor y en colores (rojo, gris, verde y dorado), con cuántos le han puntuado y la nota que le pusiste tú. Para tener media hace falta que le puntúen al menos 2 personas.",
+      "En Estadísticas hay una tarjeta nueva, «Nota media», con el mejor valorado de la temporada.",
+    ],
+  },
+  {
     version: "4.12.1",
     date: "2026-11-14",
     title: "La barra de abajo, siempre en su sitio",

@@ -6,6 +6,7 @@ import { sendPush } from "@/lib/push";
 import { CLUB_NAME, type MatchRow } from "@/lib/matches";
 import { shirtName, type Player } from "@/lib/squad";
 import { votesLabel, type MvpBoard } from "@/lib/mvp";
+import type { RatingBoard } from "@/lib/ratings";
 
 type DB = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>;
 
@@ -31,6 +32,12 @@ export async function fetchMvpBoard(supabase: DB, matchId: string): Promise<MvpB
   if (!b || b.open || b.counted) return b;
   const r = await finishMvp(supabase, matchId, true);
   return r.just_closed ? get() : b;
+}
+
+/** Notas de los jugadores del partido (van con la votación del MVP). */
+export async function fetchRatingBoard(supabase: DB, matchId: string): Promise<RatingBoard | null> {
+  const { data, error } = await supabase.rpc("rating_board", { p_match: matchId });
+  return error ? null : ((data ?? null) as RatingBoard | null);
 }
 
 /** Hace el recuento (si toca) y avisa del resultado. inBackground: el aviso sale después de responder. */
@@ -72,7 +79,7 @@ async function announceMvp(matchId: string, r: FinishResult) {
 
 /** Aviso al abrir la votación (con el resumen del acta si se pidió «Avisar»). */
 export async function announceMvpOpen(m: MatchRow, until: string, opts: { except?: string; scorers?: string } = {}) {
-  const body = [scoreLine(m), opts.scorers && `⚽ ${opts.scorers}`, `Vota al mejor del partido ${until}.`].filter(Boolean).join(" · ");
+  const body = [scoreLine(m), opts.scorers && `⚽ ${opts.scorers}`, `Vota al MVP y ponles nota a tus compañeros ${until}.`].filter(Boolean).join(" · ");
   return sendPush(await activeUsers(opts.except), {
     title: "⭐ Vota al MVP del partido",
     body,

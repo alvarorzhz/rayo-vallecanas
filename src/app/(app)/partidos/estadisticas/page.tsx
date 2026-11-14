@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Award, Flame, Footprints, Hand, Shirt, Star, Target } from "lucide-react";
+import { Award, Flame, Footprints, Hand, Shirt, Star, Target, Trophy } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
@@ -8,6 +8,7 @@ import { form, outcomeOf, record, type MatchRow } from "@/lib/matches";
 import { lineOf, ratio, seasonFromSlug, seasonSlug, shirtName, sortRoster, type Membership, type Player } from "@/lib/squad";
 import { getLeagueTableQuick } from "@/lib/league-table";
 import { perGame } from "@/lib/standings";
+import { fmtScore, seasonRatingPool, type SeasonRating } from "@/lib/ratings";
 import { appsLine, assistsLine, goalsLine, joinNames, pct, plural, rankBy, type Ranked } from "@/lib/stats-board";
 import { Empty, PageHeader } from "@/components/ui";
 import { Jersey } from "@/components/squad/jersey";
@@ -29,11 +30,12 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   const current = season === seasonOf();
   // Puesto en la liga (solo la temporada actual y sin esperar más de 2,5 s a la web de la liga)
   const rankP = current ? leagueRank(supabase).catch(() => null) : Promise.resolve(null);
-  const [{ data: rosterData }, { data: allMatches }, seasons, rank] = await Promise.all([
+  const [{ data: rosterData }, { data: allMatches }, seasons, rank, { data: ratingData }] = await Promise.all([
     supabase.from("squad_members_full").select("*, player:players!inner(*)").eq("season", season).returns<Row[]>(),
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("status", "played").order("match_date").returns<MatchRow[]>(),
     fetchMatchSeasons(supabase),
     rankP,
+    supabase.rpc("rating_season", { p_season: season }),
   ]);
   const roster = sortRoster(rosterData ?? []) as Row[];
   const played = (allMatches ?? []).filter((m) => m.season === season);
@@ -57,7 +59,10 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   const zamora = rankBy(gks.filter((r) => r.apps > 0), (r) => r.conceded / r.apps, { asc: true, tie: byNumber });
   const apps = rankBy(roster, (r) => r.apps, { tie: byNumber });
   const cards = rankBy(roster, (r) => r.yellows + r.reds * 2, { tie: byNumber, limit: 3 });
-  const anyStats = [scorers, assisters, mvps, ga, zamora, apps, cards].some((l) => l.length);
+  // Nota media de la temporada (las notas que pone el equipo en cada partido)
+  const ratingPool = seasonRatingPool((ratingData ?? []) as SeasonRating[]);
+  const rated = rankBy(roster.filter((r) => ratingPool.has(r.player_id)), (r) => ratingPool.get(r.player_id)!.avg_score, { tie: byNumber });
+  const anyStats = [scorers, assisters, mvps, ga, zamora, apps, cards, rated].some((l) => l.length);
 
   return (
     <>
@@ -117,6 +122,11 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
                 {apps.length > 0 && (
                   <Mini tone="negro" title="Fijos" what="quién ha jugado más partidos" icon={<Shirt size={16} />}
                     list={apps} ss={ss} foot={(n) => appsLine(n, rec.played)} />
+                )}
+                {rated.length > 0 && (
+                  <Mini tone="gold" title="Nota media" what="la media de las notas que pone el equipo en cada partido" icon={<Trophy size={16} className="text-dorado" />}
+                    list={rated} ss={ss} fmt={(r) => fmtScore(ratingPool.get(r.player_id)!.avg_score, 1)}
+                    foot={() => { const t = ratingPool.get(rated[0].row.player_id)!; return `en ${t.matches} ${plural(t.matches, "partido", "partidos")} · su mejor, un ${fmtScore(t.best, 1)}`; }} />
                 )}
                 {cards.length > 0 && <Cards list={cards} ss={ss} />}
               </div>

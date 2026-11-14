@@ -244,7 +244,7 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
             <div className="relative min-w-0 flex-1">
               <p className="sport flex items-center gap-1 text-xs font-black tracking-widest text-dorado">VOTACIÓN DEL MVP · {timeLeft(mvp.closes_at).toUpperCase()}</p>
               <p className="sport text-2xl font-black leading-tight">{mvp.my_vote ? "Ya has votado ✓" : "¿Quién ha sido el mejor?"}</p>
-              <p className="text-xs text-white/75">{mvp.my_vote ? "Puedes cambiarlo hasta el cierre." : "Toca para votar, es secreto."} Han votado {mvp.voters} de {mvp.eligible}.</p>
+              <p className="text-xs text-white/75">{mvp.my_vote ? "Puedes cambiarlo hasta el cierre." : "Toca para votar, es secreto."} Y ponles nota a los que jugaron. Han votado {mvp.voters} de {mvp.eligible}.</p>
             </div>
             <span className="relative btn-primary shrink-0 px-3 py-1.5 text-sm">{mvp.my_vote ? "Cambiar" : "Votar"}</span>
           </Link>

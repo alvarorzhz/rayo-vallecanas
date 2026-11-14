@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchMatch } from "@/lib/match-queries";
 import { announceMvpOpen } from "@/lib/mvp-server";
 import { mvpClosesAt, untilLabel } from "@/lib/mvp";
+import { validScore } from "@/lib/ratings";
 
 export type MvpState = { error?: string; ok?: string } | undefined;
 
@@ -59,4 +60,18 @@ export async function openMvp(matchId: string): Promise<MvpState> {
   if (opened) await announceMvpOpen(m, untilLabel(closes), { except: s.user.id });
   refresh(matchId);
   return { ok: "¡Votación abierta! Ya le ha llegado el aviso al equipo." };
+}
+
+/**
+ * Pone, cambia o quita (score = null) la nota de un jugador. No refresca la página:
+ * la nota ya se ve en pantalla y así se puede puntuar a todos seguido sin esperas.
+ */
+export async function rateMatchPlayer(matchId: string, playerId: string, score: number | null): Promise<MvpState> {
+  await getSession();
+  if (!UUID.test(matchId) || !UUID.test(playerId)) return { error: "Nota no válida" };
+  if (score !== null && !validScore(score)) return { error: "La nota va del 1 al 10, de medio en medio punto" };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("rating_set", { p_match: matchId, p_player: playerId, p_score: score });
+  if (error) return { error: error.message };
+  return { ok: "Nota guardada" };
 }

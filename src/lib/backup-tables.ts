@@ -33,6 +33,7 @@ export const BACKUP_TABLES: [string, string][] = [
   ["match_goals", "Partidos · goles"],
   ["mvp_polls", "Partidos · votación MVP"],
   ["mvp_votes", "Partidos · votos MVP"],
+  ["player_ratings", "Partidos · notas de los jugadores"],
   ["league_competitions", "Liga · competiciones"],
   ["league_sync", "Liga · sincronización"],
   ["sponsors", "Patrocinadores"],
