@@ -595,6 +595,12 @@ html.rv-final {
    ===================================================================== */
 
 /* --- Barra de abajo: el marcador rojo se desliza de una pestaña a otra */
+/* Barra inferior (v4.12.1): escondida mientras se escribe con el teclado del móvil */
+nav[data-keyboard="1"] { visibility: hidden; pointer-events: none; }
+/* En la app instalada la página no rebota al llegar arriba o abajo (el rebote arrastraba la barra) */
+@media (display-mode: standalone) {
+  html, body { overscroll-behavior-y: none; }
+}
 .nav-slider { transition: transform 0.42s var(--ease-spring), opacity 0.2s; will-change: transform; }
 .nav-ico-on { animation: nav-pop 0.45s var(--ease-spring); }
 @keyframes nav-pop { 0% { transform: scale(0.6) rotate(-14deg); } 100% { transform: none; } }
