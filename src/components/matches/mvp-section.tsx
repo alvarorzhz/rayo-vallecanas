@@ -76,7 +76,7 @@ export function MvpSection({ m, board, pool, canEdit, gala = null }: { m: MatchR
             ? <MvpChoices choices={choices} mine={board.my_vote} action={voteMvp.bind(null, m.id)} mode="vote" dark />
             : <p className="text-sm text-white/80">La votación ya se ha cerrado. En un momento sale el ganador.</p>}
           <div className="text-xs text-white/70">{meta}</div>
-          <p className="text-xs text-white/60">Se cierra el {fecha(board.closes_at, true)}. Nadie ve a quién has votado y el recuento sale al cerrar.</p>
+          <p className="text-xs text-white/60">Se cierra el {fecha(board.closes_at, true)}. Nadie ve a quién has votado y el recuento sale al cerrar. <a href="#notas" className="font-bold text-dorado underline-offset-2 hover:underline">Debajo, pon nota a cada uno ↓</a></p>
         </div>
       </section>
     );

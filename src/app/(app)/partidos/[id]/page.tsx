@@ -4,7 +4,7 @@ import { CalendarPlus, MapPin, Pencil, Radio, StickyNote, Swords } from "lucide-
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fetchCallups, fetchMatch, fetchMyPlayerId, fetchReport, fetchReportPool } from "@/lib/match-queries";
-import { fetchMvpBoard } from "@/lib/mvp-server";
+import { fetchMvpBoard, fetchRatingBoard } from "@/lib/mvp-server";
 import { galaFresh } from "@/lib/mvp";
 import { fetchRosterEntry } from "@/lib/squad-queries";
 import {
@@ -20,6 +20,7 @@ import { Crest } from "@/components/matches/crest";
 import { CallupSection, callupOpen } from "@/components/matches/callup-section";
 import { ReportSection } from "@/components/matches/report-section";
 import { MvpSection } from "@/components/matches/mvp-section";
+import { RatingsSection } from "@/components/matches/ratings-section";
 import { PorraSection } from "@/components/matches/porra";
 import { CallupHistory } from "@/components/matches/callup-history";
 import { ShareImages } from "@/components/matches/share-images";
@@ -50,13 +51,14 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   if (mvp?.winner_id && m.mvp_player_id !== mvp.winner_id) m.mvp_player_id = mvp.winner_id;
   // Posición y puntos de los dos equipos (solo partidos de liga de esta temporada aún sin jugar)
   const rankable = m.competition === "league" && m.season === seasonOf() && m.status !== "played" && m.status !== "cancelled";
-  const [{ data: h2hData }, callups, myPlayerId, report, standings] = await Promise.all([
+  const [{ data: h2hData }, callups, myPlayerId, report, standings, ratings] = await Promise.all([
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("rival_id", m.rival_id).neq("id", m.id)
       .order("match_date", { ascending: false }).limit(20).returns<MatchRow[]>(),
     fetchCallups(supabase, m),
     fetchMyPlayerId(supabase, s.user.id),
     m.status === "played" ? fetchReport(supabase, m) : null,
     rankable ? getStandings(supabase) : null,
+    mvp ? fetchRatingBoard(supabase, m.id) : null,
   ]);
   const ranks = standings ? matchRanks(standings.table.rows, standings.us, [m], m.season).get(m.id) ?? null : null;
   const h2h = h2hData ?? [];
@@ -99,6 +101,8 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
           {ranks && <RankDuel ranks={ranks} rival={m.rival} href={`/partidos?ver=clasificacion`} />}
 
           {m.status === "played" && <MvpSection m={m} board={mvp} pool={mvpPool} canEdit={canEdit} gala={gala} />}
+
+          {m.status === "played" && <RatingsSection m={m} board={ratings} mvp={mvp} pool={mvpPool} />}
 
           {report && <ReportSection m={m} report={report} canEdit={canEdit} hideMvp={!!mvp} />}
 
