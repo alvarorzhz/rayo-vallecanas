@@ -8,6 +8,17 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.12.1",
+    date: "2026-11-14",
+    title: "La barra de abajo, siempre en su sitio",
+    quiet: true,
+    changes: [
+      "La barra de abajo del móvil (Inicio, Partidos, Plantilla…) ya no se sube al bajar por la pantalla: se queda pegada al borde, también en el iPhone y en la app instalada.",
+      "Mientras escribes con el teclado la barra se esconde para no tapar lo que escribes, y vuelve al cerrarlo.",
+      "En la app instalada la página ya no rebota al llegar al final.",
+    ],
+  },
+  {
     version: "4.12.0",
     date: "2026-11-14",
     title: "Acta en vivo, ciclo de amarillas y cumpleaños",

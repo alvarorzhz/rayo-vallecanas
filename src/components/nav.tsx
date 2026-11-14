@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDays, LogOut, Settings, Newspaper } from "lucide-react";
 import { signOut } from "@/app/login/actions";
 import { Avatar } from "@/components/avatar";
@@ -81,8 +82,11 @@ export function BottomNav({ items }: { items: NavItem[] }) {
   const all = items.filter((i) => !i.soon && i.mobile !== false);
   const visible = all.length > 6 ? [...all.slice(0, 5), all[all.length - 1]] : all;
   const activeIdx = visible.findIndex((it) => isActive(path, it.href, it.also));
+  const ref = useRef<HTMLElement>(null);
+  useAnchorToScreenBottom(ref);
   return (
     <nav
+      ref={ref}
       aria-label="Menú principal"
       className="fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-negro/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       style={{ gridTemplateColumns: `repeat(${visible.length}, minmax(0, 1fr))` }}
@@ -117,4 +121,73 @@ export function BottomNav({ items }: { items: NavItem[] }) {
       })}
     </nav>
   );
+}
+
+/** Campos donde se escribe con el teclado del móvil (no casillas ni botones). */
+function isTyping(el: Element | null) {
+  if (!el) return false;
+  if ((el as HTMLElement).isContentEditable || el.tagName === "TEXTAREA" || el.tagName === "SELECT") return true;
+  return el instanceof HTMLInputElement && !/^(checkbox|radio|button|submit|reset|range|file|color|image)$/.test(el.type);
+}
+
+/**
+ * Mantiene la barra inferior pegada al borde de abajo de la pantalla (v4.12.1).
+ * En el iPhone (Safari y la app instalada) una barra «fixed» se puede quedar flotando más arriba:
+ * con el teclado abierto, justo después de cerrarlo o mientras la barra de Safari se encoge.
+ * Aquí se mide dónde termina de verdad lo visible (visualViewport) y se corrige el hueco.
+ * Mientras se escribe con el teclado la barra se esconde, como en las apps nativas.
+ */
+function useAnchorToScreenBottom(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const nav = ref.current;
+    const vv = window.visualViewport;
+    if (!nav || !vv) return;
+    let shift = 0;
+    let raf = 0;
+    const place = () => {
+      raf = 0;
+      const keyboard = isTyping(document.activeElement) && window.innerHeight - vv.height > 120;
+      if (keyboard !== (nav.dataset.keyboard === "1")) nav.dataset.keyboard = keyboard ? "1" : "";
+      // Con zoom de pellizco o con el teclado no se toca: la barra va escondida o sigue a la página
+      let next = 0;
+      if (!keyboard && vv.scale < 1.01) {
+        const natural = nav.getBoundingClientRect().bottom - shift;
+        const gap = Math.round(vv.offsetTop + vv.height - natural);
+        if (Math.abs(gap) >= 1 && Math.abs(gap) < 400) next = gap;
+      }
+      if (next !== shift) {
+        shift = next;
+        nav.style.translate = shift ? `0 ${shift}px` : "";
+      }
+    };
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(place); };
+    // Al cerrar el teclado iOS tarda en recolocar lo fijo: se vuelve a medir cuando termina
+    const settle = () => {
+      schedule();
+      setTimeout(schedule, 120);
+      setTimeout(schedule, 400);
+    };
+    vv.addEventListener("resize", schedule);
+    vv.addEventListener("scroll", schedule);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    window.addEventListener("orientationchange", settle);
+    document.addEventListener("focusin", settle);
+    document.addEventListener("focusout", settle);
+    document.addEventListener("visibilitychange", settle);
+    window.addEventListener("pageshow", settle);
+    place();
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      vv.removeEventListener("resize", schedule);
+      vv.removeEventListener("scroll", schedule);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("orientationchange", settle);
+      document.removeEventListener("focusin", settle);
+      document.removeEventListener("focusout", settle);
+      document.removeEventListener("visibilitychange", settle);
+      window.removeEventListener("pageshow", settle);
+    };
+  }, [ref]);
 }
