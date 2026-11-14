@@ -8,7 +8,7 @@ const KEY = "rv-voz-rotativa";
  * La portada llega girando, como en las películas, y se estampa. La vuelta completa sale una vez por sesión;
  * las siguientes veces la portada solo se «imprime». Cambiar de sección no la repite (el elemento no se vuelve a montar).
  */
-export function Rotativa({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function Rotativa({ children, className = "", frameClassName = "" }: { children: React.ReactNode; className?: string; frameClassName?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = ref.current;
@@ -22,5 +22,11 @@ export function Rotativa({ children, className = "" }: { children: React.ReactNo
     const running = el.getAnimations?.().some((a) => Number(a.currentTime ?? 0) > 80);
     if (seen && !running) el.classList.add("rotativa-quick");
   }, []);
-  return <div ref={ref} className={`rotativa ${className}`}>{children}</div>;
+  // 4.13.2: el marco recorta lo que asoma de la portada mientras gira. Sin él, la página se ensanchaba
+  // durante el primer segundo y el iPhone la alejaba («se hacía más pequeña la pantalla»).
+  return (
+    <div className={`rotativa-frame ${frameClassName}`}>
+      <div ref={ref} className={`rotativa ${className}`}>{children}</div>
+    </div>
+  );
 }

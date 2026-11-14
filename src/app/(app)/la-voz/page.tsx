@@ -34,7 +34,7 @@ export default async function NewsFront({ searchParams }: { searchParams: Promis
   const stamp = editionStamp((newest ?? items)[0]?.published_at);
 
   return (
-    <Rotativa className="paper -mx-4 -mt-5 px-4 pb-8 pt-5 sm:mx-0 sm:mt-0 sm:rounded-sm sm:px-8 sm:pt-6 sm:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.45)] lg:px-10">
+    <Rotativa frameClassName="-mx-4 -mt-5 sm:mt-0 sm:px-4" className="paper px-4 pb-8 pt-5 sm:rounded-sm sm:px-8 sm:pt-6 sm:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.45)] lg:px-10">
       <Masthead count={total} stamp={stamp} />
       {strip && <NewsStripBar strip={strip} />}
 

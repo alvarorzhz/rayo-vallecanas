@@ -8,6 +8,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.13.2",
+    date: "2026-11-14",
+    title: "La Voz entra girando sin encoger la pantalla",
+    quiet: true,
+    changes: [
+      "Al abrir La Voz del Rayo en el móvil, la pantalla ya no se hace más pequeña durante el primer segundo: la portada sigue entrando girando, pero lo que asoma mientras gira ya no ensancha la página.",
+    ],
+  },
+  {
     version: "4.13.1",
     date: "2026-11-14",
     title: "La IA de La Voz, otra vez a la primera",
