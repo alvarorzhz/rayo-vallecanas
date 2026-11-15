@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.16.0",
+    date: "2026-11-15",
+    title: "Uso de la app, para saber qué sobra",
+    changes: [
+      "Nueva pestaña «Uso» en Gestión, solo para el superadministrador: qué pantallas abre el equipo y cuántas personas, quién entra y cuántos días, y las pantallas que nadie ha abierto, candidatas a quitar.",
+      "También cuenta la participación (respuestas a convocatorias, votos al MVP, notas, porra, votaciones, reacciones, felicitaciones y entrevistas), quién tiene la app instalada y quién tiene los avisos activados. Se puede ver la última semana, el último mes o los últimos tres meses.",
+      "Solo se guarda una cuenta por persona, pantalla y día, durante un año. Nada de lo que se escribe. La página de Protección de datos lo explica.",
+    ],
+  },
+  {
     version: "4.15.3",
     date: "2026-11-15",
     title: "Foto y acceso, en un solo apartado",

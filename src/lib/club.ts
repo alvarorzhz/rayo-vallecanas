@@ -7,5 +7,5 @@ export const CLUB = {
   description: "equipo de fútbol aficionado",
   contact: "", // p. ej. "rayovallecanas@gmail.com"
   privacyUrl: "rayo-vallecanas.vercel.app/privacidad",
-  updated: "14 de noviembre de 2026",
+  updated: "15 de noviembre de 2026",
 };

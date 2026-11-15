@@ -14,6 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (s.can("sponsors")) tabs.push({ href: "/admin/patrocinadores", label: "Patrocinadores", icon: "Handshake" });
   if (s.can("users", "update") || s.can("lottery_admin", "update")) tabs.push({ href: "/admin/avisos", label: "Avisos", icon: "BellRing" });
   if (isSuper) {
+    tabs.push({ href: "/admin/uso", label: "Uso", icon: "ChartColumn" });
     tabs.push({ href: "/admin/auditoria", label: "Auditoría", icon: "ScrollText" });
     tabs.push({ href: "/admin/copia", label: "Copia de seguridad", icon: "DatabaseBackup" });
   }

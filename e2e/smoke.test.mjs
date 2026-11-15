@@ -116,7 +116,7 @@ describe("superadministrador", () => {
     "/plantilla", "/plantilla?vista=campo", "/plantilla?vista=lista", "/plantilla/cuotas", "/plantilla/documentos", "/plantilla/historia", "/plantilla/nuevo",
     "/loteria", "/loteria/nueva", "/mis-ventas",
     "/finanzas", "/finanzas/movimientos", "/finanzas/informes", "/finanzas/ajustes", "/finanzas/nuevo?tipo=ingreso",
-    "/admin", "/admin/usuarios", "/admin/perfiles", "/admin/avisos", "/admin/patrocinadores", "/admin/auditoria", "/admin/auditoria/accesos", "/admin/copia",
+    "/admin", "/admin/usuarios", "/admin/perfiles", "/admin/avisos", "/admin/patrocinadores", "/admin/auditoria", "/admin/auditoria/accesos", "/admin/copia", "/admin/uso",
     "/votaciones", "/perfil", "/novedades", "/la-voz", "/la-voz/nueva",
   ];
   for (const path of SECTIONS) test(`se abre ${path}`, () => visit(s, path));
@@ -181,7 +181,7 @@ describe("jugador", () => {
     assert.ok(!labels.includes("Finanzas") && !labels.includes("Gestión"), `menú: ${labels}`);
   });
 
-  for (const path of ["/finanzas", "/finanzas/movimientos", "/admin/usuarios", "/admin/auditoria", "/admin/patrocinadores", "/plantilla/cuotas"]) {
+  for (const path of ["/finanzas", "/finanzas/movimientos", "/admin/usuarios", "/admin/auditoria", "/admin/uso", "/admin/patrocinadores", "/plantilla/cuotas"]) {
     test(`no puede entrar en ${path} aunque escriba la dirección`, async () => {
       await s.page.goto(BASE + path, { waitUntil: "networkidle" });
       assert.notEqual(new URL(s.page.url()).pathname, path, `${path} se ha abierto para un jugador`);
