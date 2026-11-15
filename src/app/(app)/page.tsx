@@ -146,7 +146,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     .sort((a, b) => Number(a.my_vote !== null) - Number(b.my_vote !== null));
   const canManagePolls = s.can("users", "update") || s.can("lottery_admin", "update");
 
-  // La Voz del Rayo: si hay una noticia destacada (3 días), Inicio se abre como la portada del periódico
+  // La Voz del Rayo: si hay una noticia destacada (2 días), Inicio se abre como la portada del periódico
   const [news, newsCount, pendingChronicle] = s.can("news")
     ? await Promise.all([fetchPublished(supabase, { limit: 6 }), countPublished(supabase), s.can("news", "create") ? fetchPendingChronicle(supabase) : null])
     : [[], 0, null];

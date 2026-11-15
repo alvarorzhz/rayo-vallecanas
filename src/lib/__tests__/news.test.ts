@@ -30,9 +30,10 @@ test("las fotos del texto van en su propia línea y no cuentan como texto", () =
   assert.equal(parseBody("![x](javascript:alert(1))")[0].t, "p");
 });
 
-test("una pieza destacada abre Inicio durante tres días", () => {
+test("una pieza destacada abre Inicio durante dos días", () => {
   const now = new Date("2026-11-15T12:00:00Z");
   assert.equal(isFeaturedNow({ featured: true, status: "published", published_at: "2026-11-13T12:00:01Z" }, now), true);
+  assert.equal(isFeaturedNow({ featured: true, status: "published", published_at: "2026-11-13T11:59:00Z" }, now), false);
   assert.equal(isFeaturedNow({ featured: true, status: "published", published_at: "2026-11-12T11:00:00Z" }, now), false);
   assert.equal(isFeaturedNow({ featured: true, status: "draft", published_at: null }, now), false);
   assert.equal(isFeaturedNow({ featured: false, status: "published", published_at: "2026-11-15T10:00:00Z" }, now), false);

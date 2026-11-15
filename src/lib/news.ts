@@ -315,7 +315,7 @@ export function parseAiReply(raw: string): { kicker?: string; title?: string; su
 }
 
 /** Horas que una pieza destacada abre Inicio como la portada del periódico. */
-export const FEATURED_HOURS = 72;
+export const FEATURED_HOURS = 48;
 export const isFeaturedNow = (a: Pick<Article, "featured" | "status" | "published_at">, now = new Date()) =>
   a.featured && a.status === "published" && !!a.published_at && now.getTime() - new Date(a.published_at).getTime() < FEATURED_HOURS * 3_600_000;
 

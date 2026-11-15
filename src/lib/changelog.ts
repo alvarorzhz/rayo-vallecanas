@@ -8,6 +8,14 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.15.1",
+    date: "2026-11-15",
+    title: "La portada de La Voz, dos días",
+    changes: [
+      "Una noticia marcada como portada abre Inicio durante 2 días desde que se publica (antes eran 3).",
+    ],
+  },
+  {
     version: "4.15.0",
     date: "2026-11-14",
     title: "Vender en Sorteos, con cara de boleto",
