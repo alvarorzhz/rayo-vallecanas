@@ -390,13 +390,6 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
             </FoldCard>
           )}
 
-          {isMe && (
-            <FoldCard title="Tu foto">
-              <p className="mb-3 text-sm text-negro/60">La foto de tu ficha es la de tu perfil.</p>
-              <Link href="/perfil" className="btn-ghost"><Camera size={16} /> Cambiar mi foto</Link>
-            </FoldCard>
-          )}
-
           {isManager && member && (
             <FoldCard title={<>Situación en {member.season}</>}>
               <p className="mb-3 text-sm text-negro/60">
@@ -409,15 +402,26 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
             </FoldCard>
           )}
 
-          {isManager && (
-            <FoldCard title="Foto de la ficha">
-              <AvatarUpload name={fullName(player)} url={player.photo_url} upload={uploadPlayerPhoto.bind(null, id)} remove={removePlayerPhoto.bind(null, id)} />
-            </FoldCard>
-          )}
-
-          {canUsers && (
-            <FoldCard title="Acceso a la app">
-              <div className="space-y-4">
+          {/* Foto y acceso, juntos: la foto de la ficha (gestores o el propio jugador) y su usuario */}
+          {(isMe || isManager || canUsers) && (
+            <FoldCard title={canUsers ? "Foto y acceso" : isMe && !isManager ? "Tu foto" : "Foto de la ficha"}>
+              <div className="space-y-5">
+              {(isMe || isManager) && (
+                <div>
+                  {canUsers && <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-negro/65">Foto de la ficha</h3>}
+                  {isManager ? (
+                    <AvatarUpload name={fullName(player)} url={player.photo_url} upload={uploadPlayerPhoto.bind(null, id)} remove={removePlayerPhoto.bind(null, id)} />
+                  ) : (
+                    <>
+                      <p className="mb-3 text-sm text-negro/60">La foto de tu ficha es la de tu perfil.</p>
+                      <Link href="/perfil" className="btn-ghost"><Camera size={16} /> Cambiar mi foto</Link>
+                    </>
+                  )}
+                </div>
+              )}
+              {canUsers && (
+              <div className={`space-y-4 ${isMe || isManager ? "border-t border-black/5 pt-5" : ""}`}>
+              <h3 className="text-xs font-bold uppercase tracking-wide text-negro/65">Acceso a la app</h3>
               {linked ? (
                 <>
                   <Link href={`/admin/usuarios/${linked.id}`} className="flex items-center gap-3 rounded-xl bg-gris p-3 hover:ring-1 hover:ring-rojo">
@@ -439,6 +443,8 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                     <div className="border-t border-black/5 pt-4"><CreateAccessForm action={createAccess.bind(null, id)} email={priv?.email ?? null} /></div>
                   )}
                 </>
+              )}
+              </div>
               )}
               </div>
             </FoldCard>

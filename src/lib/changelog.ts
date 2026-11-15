@@ -8,6 +8,14 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.15.3",
+    date: "2026-11-15",
+    title: "Foto y acceso, en un solo apartado",
+    changes: [
+      "En la ficha del jugador, «Tu foto», «Foto de la ficha» y «Acceso a la app» pasan a ser un único apartado plegable, «Foto y acceso».",
+    ],
+  },
+  {
     version: "4.15.2",
     date: "2026-11-15",
     title: "La ficha del jugador, más recogida",
