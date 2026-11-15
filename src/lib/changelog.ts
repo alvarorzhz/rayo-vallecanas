@@ -8,6 +8,15 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.15.2",
+    date: "2026-11-15",
+    title: "La ficha del jugador, más recogida",
+    changes: [
+      "En la ficha de cada jugador, los apartados de debajo de Logros (sus partidos, sus convocatorias, trayectoria, contacto, documentos, cuota y el resto) entran plegados. Se abren tocando su cabecera, que ya enseña cuántos hay.",
+      "Logros sigue abierto, como siempre.",
+    ],
+  },
+  {
     version: "4.15.1",
     date: "2026-11-15",
     title: "La portada de La Voz, dos días",

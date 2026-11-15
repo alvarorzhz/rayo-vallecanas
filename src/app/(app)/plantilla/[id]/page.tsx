@@ -29,6 +29,7 @@ import { Achievements } from "@/components/squad/achievements";
 import { achievements } from "@/lib/achievements";
 import { fetchDiscipline } from "@/lib/discipline-queries";
 import { CardCycle } from "@/components/squad/card-cycle";
+import { FoldCard } from "@/components/squad/fold-card";
 import { createAccess, deletePlayer, deletePlayerDoc, linkUser, rejoinPlayer, removePlayerPhoto, retirePlayer, savePlayerDoc, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
 import { registerFeePayment, saveFeeOverride } from "../cuotas/actions";
 
@@ -214,8 +215,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
           {log.length > 0 && (
-            <section className="card">
-              <h2 className="mb-3">Sus partidos {season}</h2>
+            <FoldCard title={<>Sus partidos {season}</>} meta={<span className="text-xs font-bold uppercase tracking-wider text-negro/55">{log.length}</span>}>
               <ol className="space-y-1.5">
                 {log.map((a) => {
                   const g = gOf(a.match_id), as = aOf(a.match_id), m = a.match;
@@ -238,12 +238,11 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                   );
                 })}
               </ol>
-            </section>
+            </FoldCard>
           )}
 
           {callupLog.length > 0 && (
-            <section className="card">
-              <h2 className="mb-1 flex items-center gap-2"><ClipboardList size={18} className="text-rojo" /> Sus convocatorias {season}</h2>
+            <FoldCard title={<><ClipboardList size={18} className="shrink-0 text-rojo" /> Sus convocatorias {season}</>} meta={<span className="text-xs font-bold uppercase tracking-wider text-negro/55">{callupLog.length}</span>}>
               <p className="mb-3 text-sm text-negro/65">
                 Convocado <b className="text-negro">{callupLog.length} {callupLog.length === 1 ? "vez" : "veces"}</b>
                 {cRec.called > 0 && <> · dijo «Voy» en <b className="text-negro">{cRec.yes}</b> de {cRec.called} partidos jugados</>}
@@ -268,12 +267,11 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                   );
                 })}
               </ol>
-            </section>
+            </FoldCard>
           )}
 
           {/* Trayectoria y estadísticas por temporada */}
-          <section className="card">
-            <h2 className="mb-1">Trayectoria en el Rayo</h2>
+          <FoldCard title="Trayectoria en el Rayo" meta={seasons.length > 0 && <span className="text-xs font-bold uppercase tracking-wider text-negro/55">{seasons.length} {seasons.length === 1 ? "temporada" : "temporadas"}</span>}>
             {player.joined_club_on && <p className="mb-3 text-sm text-negro/60">En el club desde el <b>{fecha(player.joined_club_on)}</b>.</p>}
             {seasons.length ? (
               <div className="-mx-4 overflow-x-auto sm:-mx-5">
@@ -320,12 +318,11 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
             {isManager && !seasons.some((m) => m.season === seasonOf()) && (
               <Link href={`/plantilla/${id}/editar?temporada=${seasonSlug(seasonOf())}`} className="btn-ghost mt-4">Añadir a la temporada {seasonOf()}</Link>
             )}
-          </section>
+          </FoldCard>
 
           {/* Contacto: gestores y el propio jugador */}
           {contact && (canPrivate || isMe) && (
-            <section className="card">
-              <h2 className="mb-1">{isMe && !canPrivate ? "Mis datos" : "Contacto"}</h2>
+            <FoldCard title={isMe && !canPrivate ? "Mis datos" : "Contacto"}>
               <p className="mb-4 text-xs text-negro/65">Solo lo ven los gestores con permiso de datos personales{isMe ? " y tú" : " y el propio jugador"}.</p>
               {isMe && !canPrivate ? (
                 <MyContactForm action={updateMyContact} data={contact} />
@@ -339,35 +336,29 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                     actions={contact.emergency_phone && <a href={`tel:${contact.emergency_phone}`} className="btn-ghost px-2.5 py-1.5" aria-label="Llamar"><Phone size={15} /></a>} />
                 </div>
               )}
-            </section>
+            </FoldCard>
           )}
 
           {showDocs && (
-            <section className="card">
-              <h2 className="mb-1 flex items-center gap-2"><FolderLock size={20} className="text-rojo" /> {isMe && !canPrivate ? "Mis documentos" : "Documentos"}</h2>
+            <FoldCard title={<><FolderLock size={20} className="shrink-0 text-rojo" /> {isMe && !canPrivate ? "Mis documentos" : "Documentos"}</>} meta={(docs?.length ?? 0) > 0 && <span className="text-xs font-bold uppercase tracking-wider text-negro/55">{docs!.length}</span>}>
               <p className="mb-3 text-xs text-negro/65">Privados: solo los ven los gestores con permiso de datos personales{isMe ? " y tú" : " y el propio jugador"}.</p>
               <PlayerDocs playerId={id} docs={docs ?? []} canUpload={s.can("squad_private", "create") || isMe} deletable={deletable}
                 save={savePlayerDoc.bind(null, id)} remove={deletePlayerDoc} />
-            </section>
+            </FoldCard>
           )}
 
           {canPrivate && priv && (priv.sport_notes || priv.internal_notes) && (
-            <section className="card">
-              <h2 className="mb-1">Observaciones</h2>
+            <FoldCard title="Observaciones">
               <p className="mb-3 text-xs text-negro/65">Solo para gestores.</p>
               {priv.sport_notes && <><h3 className="text-xs font-bold uppercase tracking-wide text-negro/65">Deportivas</h3><p className="mb-3 whitespace-pre-line text-sm">{priv.sport_notes}</p></>}
               {priv.internal_notes && <><h3 className="text-xs font-bold uppercase tracking-wide text-negro/65">Internas</h3><p className="whitespace-pre-line text-sm">{priv.internal_notes}</p></>}
-            </section>
+            </FoldCard>
           )}
         </div>
 
         <div className="space-y-6">
           {fees && (
-            <section className="card">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h2 className="flex items-center gap-2"><Wallet size={20} className="text-rojo" /> Cuota {season}</h2>
-                <span className={`badge ${FEE_STATUS_TONE[feeStatus(feeDue, feePaid)]}`}>{FEE_STATUS_LABEL[feeStatus(feeDue, feePaid)]}</span>
-              </div>
+            <FoldCard title={<><Wallet size={20} className="shrink-0 text-rojo" /> Cuota {season}</>} meta={<span className={`badge ${FEE_STATUS_TONE[feeStatus(feeDue, feePaid)]}`}>{FEE_STATUS_LABEL[feeStatus(feeDue, feePaid)]}</span>}>
               <FeeBar due={feeDue} paid={feePaid} />
               {fees.overrides.get(id) && <p className="mt-2 text-xs text-negro/60">Cuota especial{fees.overrides.get(id)!.reason ? `: ${fees.overrides.get(id)!.reason}` : ""}.</p>}
               {!fees.plan && !fees.overrides.get(id) && <p className="mt-2 text-xs text-negro/60">Aún no hay cuota para {season}. <Link href={`/plantilla/cuotas?temporada=${seasonSlug(season)}`} className="font-semibold text-rojo">Ponerla</Link></p>}
@@ -396,20 +387,18 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                 </details>
               )}
               <p className="mt-3 text-xs text-negro/65">Los pagos se apuntan como ingresos en Finanzas. El jugador no ve esta información.</p>
-            </section>
+            </FoldCard>
           )}
 
           {isMe && (
-            <section className="card">
-              <h2 className="mb-2">Tu foto</h2>
+            <FoldCard title="Tu foto">
               <p className="mb-3 text-sm text-negro/60">La foto de tu ficha es la de tu perfil.</p>
               <Link href="/perfil" className="btn-ghost"><Camera size={16} /> Cambiar mi foto</Link>
-            </section>
+            </FoldCard>
           )}
 
           {isManager && member && (
-            <section className="card">
-              <h2 className="mb-2">Situación en {member.season}</h2>
+            <FoldCard title={<>Situación en {member.season}</>}>
               <p className="mb-3 text-sm text-negro/60">
                 {member.status === "left"
                   ? <>Se fue del equipo{member.left_on ? <> el <b>{fecha(member.left_on)}</b></> : ""}. Sus estadísticas y su historia se conservan.</>
@@ -417,19 +406,18 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
               </p>
               <RetireForm retire={retirePlayer.bind(null, id, member.season)} rejoin={rejoinPlayer.bind(null, id, member.season)}
                 left={member.status === "left"} today={today} />
-            </section>
+            </FoldCard>
           )}
 
           {isManager && (
-            <section className="card">
-              <h2 className="mb-4">Foto de la ficha</h2>
+            <FoldCard title="Foto de la ficha">
               <AvatarUpload name={fullName(player)} url={player.photo_url} upload={uploadPlayerPhoto.bind(null, id)} remove={removePlayerPhoto.bind(null, id)} />
-            </section>
+            </FoldCard>
           )}
 
           {canUsers && (
-            <section className="card space-y-4">
-              <h2>Acceso a la app</h2>
+            <FoldCard title="Acceso a la app">
+              <div className="space-y-4">
               {linked ? (
                 <>
                   <Link href={`/admin/usuarios/${linked.id}`} className="flex items-center gap-3 rounded-xl bg-gris p-3 hover:ring-1 hover:ring-rojo">
@@ -452,15 +440,15 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
                   )}
                 </>
               )}
-            </section>
+              </div>
+            </FoldCard>
           )}
 
           {s.can("squad", "delete") && (
-            <section className="card">
-              <h2 className="mb-2">Eliminar ficha</h2>
+            <FoldCard title="Eliminar ficha">
               <p className="mb-3 text-sm text-negro/60">Solo para fichas creadas por error. Si se va del equipo, márcalo como <b>baja definitiva</b> y se conserva su historia.</p>
               <DeletePlayerForm action={deletePlayer.bind(null, id)} />
-            </section>
+            </FoldCard>
           )}
         </div>
       </div>
