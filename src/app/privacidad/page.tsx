@@ -67,6 +67,9 @@ export default function PrivacyPage() {
             abiertas, quienes pueden votar ven qué ha votado cada uno; en las de voto secreto, nadie lo ve, ni los gestores: solo el recuento.</p>
           <p><b>Accesos a la app:</b> cuándo entras y sales, con la dirección IP y el tipo de navegador o móvil, para poder detectar
             accesos extraños y cerrar sesiones abiertas. Solo lo ve el superadministrador.</p>
+          <p><b>Uso de la app:</b> cuántas veces abres cada pantalla cada día (por ejemplo, «Partidos, 3 veces el lunes»), si usas la
+            app instalada o el navegador y si es un móvil o un ordenador. No guardamos lo que escribes ni cada clic. Sirve para saber
+            qué partes de la app se usan y cuáles sobran. Solo lo ve el superadministrador.</p>
         </S>
 
         <S title="3. Lo que se ve fuera de la app">
@@ -87,6 +90,8 @@ export default function PrivacyPage() {
             <li><b>Noticias, imágenes y estadísticas del equipo:</b> el interés legítimo del club en contar su actividad deportiva, como
               hace cualquier equipo (art. 6.1.f). Puedes oponerte cuando quieras.</li>
             <li><b>Registro de accesos:</b> el interés legítimo en mantener la app segura (art. 6.1.f).</li>
+            <li><b>Uso de la app:</b> el interés legítimo del club en mejorar la app y quitar lo que no se usa (art. 6.1.f). Puedes oponerte
+              diciéndoselo a un gestor.</li>
             <li><b>Registro de operaciones económicas:</b> el interés legítimo en poder justificar las cuentas y evitar errores o fraudes (art. 6.1.f).</li>
             <li><b>Otras comunicaciones del club</b> (avisos de futuras campañas, eventos…): solo si lo aceptas expresamente (art. 6.1.a).
               El justificante de compra no implica ese permiso.</li>
@@ -121,6 +126,7 @@ export default function PrivacyPage() {
             estadísticas y la historia deportiva del equipo (partidos, goles, temporadas) se conservan como parte de la historia del club.</p>
           <p>Cada lunes se hace una copia de seguridad de todos los datos y archivos, que se guarda en el mismo almacén privado de
             Frankfurt. Se conservan las 8 últimas (unos dos meses) y solo las puede descargar el superadministrador.</p>
+          <p>Las cuentas de uso de la app (qué pantallas se abren cada día) se guardan un año y después se borran solas.</p>
         </S>
 
         <S title="7. Tus derechos">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BellRing, DatabaseBackup, Handshake, IdCard, ScrollText, Users, type LucideIcon } from "lucide-react";
+import { BellRing, ChartColumn, DatabaseBackup, Handshake, IdCard, ScrollText, Users, type LucideIcon } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -31,7 +31,7 @@ export default async function OfficeDesk() {
   const admin = createAdminClient();
   const season = seasonOf();
   const none = Promise.resolve(null);
-  const [people, defs, custom, sponsors, deals, subs, lastNotice, openPolls, todayLog, lastBackup] = await Promise.all([
+  const [people, defs, custom, sponsors, deals, subs, lastNotice, openPolls, todayLog, lastBackup, usage7] = await Promise.all([
     canUsers ? supabase.from("profiles").select("active") : none,
     canUsers ? fetchProfileDefs(supabase) : none,
     canUsers ? supabase.from("user_permissions").select("user_id") : none,
@@ -42,6 +42,7 @@ export default async function OfficeDesk() {
     canNotices ? supabase.from("polls").select("id", { count: "exact", head: true }).gt("closes_at", new Date().toISOString()) : none,
     isSuper ? supabase.from("audit_log").select("id", { count: "exact", head: true }).gte("created_at", madridDayRange(madridDay(), "start")!) : none,
     isSuper ? supabase.from("audit_log").select("created_at").eq("action", "BACKUP").order("created_at", { ascending: false }).limit(1).maybeSingle() : none,
+    isSuper ? supabase.from("usage_daily").select("user_id").gte("day", madridDay(new Date(Date.now() - 6 * 86400_000))) : none,
   ]);
 
   const folders: Folder[] = [];
@@ -65,6 +66,9 @@ export default async function OfficeDesk() {
       detail: openPolls?.count ? `${openPolls.count} ${openPolls.count === 1 ? "votación abierta" : "votaciones abiertas"}` : last ? `Último: ${last.title}` : "Tablón de anuncios del equipo" });
   }
   if (isSuper) {
+    const active7 = new Set((usage7?.data ?? []).map((r) => r.user_id)).size;
+    folders.push({ href: "/admin/uso", title: "Uso", icon: ChartColumn, tab: "var(--color-rojo)", value: active7, unit: active7 === 1 ? "persona esta semana" : "personas esta semana",
+      detail: "Qué pantallas usa de verdad el equipo" });
     folders.push({ href: "/admin/auditoria", title: "Auditoría", icon: ScrollText, tab: "var(--color-dorado)", value: todayLog?.count ?? 0, unit: todayLog?.count === 1 ? "anotación hoy" : "anotaciones hoy",
       detail: "Libro de registro: quién cambió qué" });
     const b = lastBackup?.data;

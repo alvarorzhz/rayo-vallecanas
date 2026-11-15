@@ -2,9 +2,9 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BellRing, BriefcaseBusiness, DatabaseBackup, Handshake, IdCard, ScrollText, Users } from "lucide-react";
+import { BellRing, BriefcaseBusiness, ChartColumn, DatabaseBackup, Handshake, IdCard, ScrollText, Users } from "lucide-react";
 
-const ICONS = { BriefcaseBusiness, Users, IdCard, BellRing, Handshake, ScrollText, DatabaseBackup };
+const ICONS = { BriefcaseBusiness, ChartColumn, Users, IdCard, BellRing, Handshake, ScrollText, DatabaseBackup };
 export type AdminTab = { href: string; label: string; icon: keyof typeof ICONS; exact?: boolean };
 
 /** Pestañas de archivador del despacho: la activa sobresale y se une a la hoja. */
