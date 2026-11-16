@@ -2,7 +2,7 @@ import "server-only";
 import type { Outcome } from "@/lib/matches";
 import type { Line } from "@/lib/squad";
 import {
-  Backdrop, CrestImg, Kicker, NEGRO, ORO, PosterFooter, PosterHeader, ROJO, SIZES, drawTree,
+  Backdrop, CrestImg, Kicker, NEGRO, ORO, ORO_CLARO, PosterFooter, PosterHeader, ROJO, SIZES, drawTree,
   type Format, type Pic,
 } from "@/lib/result-image";
 
@@ -19,6 +19,7 @@ export type Team = {
   crest: Pic | string | null;
   isUs: boolean;
   rank: { pos: number; points: number } | null;
+  form: Outcome[];               // últimos 3 resultados (el más reciente al final)
 };
 
 type Common = {
@@ -33,7 +34,7 @@ type Common = {
 };
 
 export type CallupPosterData = Common & {
-  players: { name: string; number: number | null; line: Line }[];
+  players: { name: string; number: number | null; line: Line; photo: Pic | null }[];
 };
 
 export type MatchdayPosterData = Common & {
@@ -47,13 +48,6 @@ export type Sky = "sun" | "cloud" | "rain" | "snow" | "storm";
 
 const FORM_LETTER: Record<Outcome, string> = { W: "V", D: "E", L: "D" };
 const FORM_BG: Record<Outcome, string> = { W: ORO, D: "#6b6b6b", L: ROJO };
-const LINE_TITLE: Record<Line, [string, string]> = {
-  GK: ["PORTERO", "PORTEROS"],
-  DEF: ["DEFENSA", "DEFENSAS"],
-  MID: ["MEDIO", "MEDIOS"],
-  FWD: ["DELANTERO", "DELANTEROS"],
-};
-const LINE_HEX: Record<Line, string> = { GK: "#F59E0B", DEF: "#0284C7", MID: "#059669", FWD: ROJO };
 
 // ---------------------------------------------------------------- Piezas
 
@@ -124,80 +118,180 @@ function SkyIcon({ kind, size }: { kind: Sky; size: number }) {
   );
 }
 
-/** Franja con día, hora y campo. */
-function InfoStrip({ day, kickoff, venue, fs = 1 }: { day: string; kickoff: string | null; venue: string | null; fs?: number }) {
-  const item = (icon: React.ReactNode, text: string, key: string) => (
-    <div key={key} style={{ display: "flex", alignItems: "center", margin: "0 18px" }}>
-      <div style={{ display: "flex", marginRight: 10 }}>{icon}</div>
-      <span style={{ fontSize: 26 * fs, color: "rgba(255,255,255,0.92)" }}>{text}</span>
-    </div>
-  );
-  const items = [
-    item(<Calendar size={28 * fs} />, day, "d"),
-    kickoff ? item(<Clock size={28 * fs} />, kickoff, "k") : null,
-    venue ? item(<Pin size={28 * fs} />, venue, "v") : null,
-  ].filter(Boolean);
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", margin: "0 60px", padding: "14px 10px", background: "rgba(0,0,0,0.55)", border: "2px solid rgba(255,255,255,0.1)", borderRadius: 999 }}>
-      {items}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------- Convocatoria
 
-type Group = { line: Line; players: CallupPosterData["players"] };
+type CallupPlayer = CallupPosterData["players"][number];
+
+const LINE_ORDER: Line[] = ["GK", "DEF", "MID", "FWD"];
+/** Solo la línea, no la posición exacta: así la imagen no da pistas al rival. */
+const LINE_CODE: Record<Line, string> = { GK: "POR", DEF: "DEF", MID: "MED", FWD: "DEL" };
+const CARD_RATIO = 1.3;          // alto / ancho de cada cromo
+/** Tamaño al que se recortan las fotos de los cromos (lo justo para el cromo más grande). */
+export const PHOTO_BOX = { w: 300, h: 260 };
 
 /**
- * Tamaño de cada camiseta para que la lista quepa en el hueco: se prueba de mayor a menor.
- * Cada línea va en su banda, con el rótulo a la izquierda y las camisetas a la derecha.
+ * Filas de cromos (v4.18.0): una por línea de juego (portería, defensa, medio y delantera), centradas.
+ * Si una línea no cabe en una fila se parte en dos. Se prueba cuántos caben por fila y se queda con el
+ * reparto que deja el cromo más grande sin salirse del hueco ni pasar de `max`.
  */
-function fitTiles(groups: Group[], width: number, height: number) {
-  for (const tw of [190, 170, 152, 136, 122, 110, 100, 90, 80]) {
-    const perRow = Math.max(1, Math.floor(width / tw));
-    const rows = groups.reduce((n, g) => n + Math.ceil(g.players.length / perRow), 0);
-    const th = Math.round(tw * 1.02);
-    // + separación entre líneas (margen, filete y relleno) + relleno de la caja
-    const total = rows * th + (groups.length - 1) * 34 + 48;
-    if (total <= height) return { tw, th, perRow };
+export function fitCards(lines: number[], width: number, height: number, gap: number, max: number) {
+  const widest = Math.max(1, ...lines);
+  let best = { w: 0, rows: [] as number[] };
+  for (let cols = Math.min(widest, 6); cols >= Math.min(widest, 3); cols--) {
+    const rows = lines.flatMap((n) => {
+      const parts = Math.ceil(n / cols), base = Math.floor(n / parts), extra = n % parts;
+      return Array.from({ length: parts }, (_, k) => base + (k < extra ? 1 : 0));
+    });
+    const used = Math.max(...rows);
+    const w = Math.min(max, (width - (used - 1) * gap) / used, (height - (rows.length - 1) * gap) / rows.length / CARD_RATIO);
+    if (w > best.w) best = { w, rows };
   }
-  return { tw: 80, th: 78, perRow: Math.floor(width / 80) };
+  return { w: Math.floor(best.w), rows: best.rows };
 }
 
 /**
- * Camiseta para la lista: negra con mangas rojas y cuello y bajo dorados (la porteria, dorada),
- * sin la franja que cruza el pecho, para que el dorsal se lea bien aunque sea pequeña.
+ * Camiseta para el cromo sin foto: negra con mangas rojas y cuello y bajo dorados (la del portero,
+ * dorada), sin la franja que cruza el pecho, para que el dorsal se lea bien.
  */
 function TileJersey({ goalkeeper, size }: { goalkeeper: boolean; size: number }) {
-  const body = goalkeeper ? ORO : "#151515";
-  const trim = goalkeeper ? NEGRO : ROJO;
+  const body = goalkeeper ? "#1a1a1a" : "#151515";
+  const trim = goalkeeper ? ORO : ROJO;
   const shape = "M20 2 L26 6 Q32 9 38 6 L44 2 L62 12 L56 26 L50 23 L50 58 L14 58 L14 23 L8 26 L2 12 Z";
   return (
     <svg width={size} height={(size * 60) / 64} viewBox="0 0 64 60">
       <defs><clipPath id="tj"><path d={shape} /></clipPath></defs>
       <g clipPath="url(#tj)">
         <rect width="64" height="60" fill={body} />
-        <path d="M44 2 L62 12 L56 26 L50 23 Z M20 2 L2 12 L8 26 L14 23 Z" fill={trim} opacity={goalkeeper ? 0.85 : 1} />
-        <rect x="0" y="53" width="64" height="5" fill={goalkeeper ? NEGRO : ORO} opacity={goalkeeper ? 0.6 : 1} />
+        <path d="M44 2 L62 12 L56 26 L50 23 Z M20 2 L2 12 L8 26 L14 23 Z" fill={trim} />
+        <rect x="0" y="53" width="64" height="5" fill={ORO} />
       </g>
-      <path d="M20 2 L26 6 Q32 9 38 6 L44 2" fill="none" stroke={goalkeeper ? NEGRO : ORO} strokeWidth="2.4" />
-      <path d={shape} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+      <path d="M20 2 L26 6 Q32 9 38 6 L44 2" fill="none" stroke={ORO} strokeWidth="2.4" />
+      <path d={shape} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
     </svg>
   );
 }
 
-function PlayerTile({ p, tw, th }: { p: CallupPosterData["players"][number]; tw: number; th: number }) {
-  const js = Math.round(tw * 0.66);
+/**
+ * Cromo de cada convocado, con la silueta de los de la plantilla: negro con filo dorado (el del
+ * portero, dorado), dorsal y posición arriba a la izquierda, foto (o camiseta) y el nombre abajo.
+ */
+function PlayerCard({ p, w, crest }: { p: CallupPlayer; w: number; crest: Pic }) {
+  const h = Math.round(w * CARD_RATIO);
   const gk = p.line === "GK";
+  const ink = gk ? NEGRO : "white";
+  const accent = gk ? NEGRO : ORO;
+  const id = `c${p.number ?? 0}${gk ? "g" : "o"}`;
+  const shape = (i: number) => `${w * 0.13 + i * 0.4},${i} ${w * 0.87 - i * 0.4},${i} ${w - i},${h * 0.07 + i * 0.4} ${w - i},${h * 0.91 - i * 0.25} ${w / 2},${h - i * 1.15} ${i},${h * 0.91 - i * 0.25} ${i},${h * 0.07 + i * 0.4}`;
+  const rim = Math.max(3, w * 0.02);
+  const photoW = Math.round(p.photo ? w - rim * 3 : w * 0.8), photoH = Math.round(h * 0.63);
+  const face = gk ? "rgba(226,190,80," : "rgba(24,24,26,";     // color del cromo detrás de la foto
   const name = p.name.toUpperCase();
-  const fs = tw * (name.length > 10 ? 0.15 : name.length > 8 ? 0.17 : 0.2);
+  const fs = Math.min(w * 0.17, (w * 0.86) / Math.max(1, name.length * 0.47));
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: tw, height: th }}>
-      <div style={{ display: "flex", position: "relative", width: js, height: (js * 60) / 64 }}>
-        <TileJersey goalkeeper={gk} size={js} />
-        <div style={{ display: "flex", position: "absolute", top: js * 0.2, left: 0, width: js, justifyContent: "center", fontFamily: "Display", fontSize: js * 0.44, lineHeight: 1, color: gk ? NEGRO : "white" }}>{p.number ?? ""}</div>
+    <div style={{ display: "flex", position: "relative", width: w, height: h }}>
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ position: "absolute", top: 0, left: 0 }}>
+        <defs>
+          <linearGradient id={`${id}f`} x1="0" y1="0" x2="0.7" y2="1">
+            {gk ? <stop offset="0" stopColor="#fdf0b4" /> : <stop offset="0" stopColor="#2a2a2e" />}
+            {gk ? <stop offset="0.4" stopColor="#e6c65a" /> : <stop offset="0.45" stopColor="#141416" />}
+            {gk ? <stop offset="1" stopColor="#a57d14" /> : <stop offset="1" stopColor="#0a0a0b" />}
+          </linearGradient>
+          <linearGradient id={`${id}r`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor={ORO_CLARO} />
+            <stop offset="0.5" stopColor={ORO} />
+            <stop offset="1" stopColor="#8a6a12" />
+          </linearGradient>
+        </defs>
+        <polygon points={shape(0)} fill={`url(#${id}r)`} />
+        <polygon points={shape(rim)} fill={`url(#${id}f)`} />
+        {/* Franja del Rayo cruzando el cromo */}
+        <polygon points={`${w * 0.66},${rim} ${w * 0.8},${rim} ${w * 0.12},${h * 0.66} ${w * 0.02},${h * 0.66}`} fill={ROJO} opacity={gk ? 0.8 : 0.7} />
+        <polygon points={`${w * 0.83},${rim} ${w * 0.87},${rim} ${w * 0.19},${h * 0.66} ${w * 0.15},${h * 0.66}`} fill={gk ? NEGRO : ORO} opacity={gk ? 0.55 : 0.6} />
+        {/* Pie oscuro para el nombre */}
+        <polygon points={`${rim},${h * 0.7} ${w - rim},${h * 0.7} ${w - rim},${h * 0.91 - rim * 0.25} ${w / 2},${h - rim * 1.15} ${rim},${h * 0.91 - rim * 0.25}`} fill={gk ? "rgba(0,0,0,0.12)" : "rgba(0,0,0,0.55)"} />
+        <polygon points={shape(rim * 2.2)} fill="none" stroke={gk ? NEGRO : ORO} strokeOpacity={gk ? 0.3 : 0.35} strokeWidth={Math.max(1, w * 0.006)} />
+      </svg>
+      {/* Foto o camiseta con el dorsal */}
+      <div style={{ display: "flex", position: "absolute", top: h * 0.07, left: p.photo ? rim * 1.5 : w * 0.17, width: photoW, height: photoH, alignItems: "flex-end", justifyContent: "center" }}>
+        {p.photo ? (
+          <div style={{ display: "flex", position: "relative", width: photoW, height: photoH }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.photo.src} width={photoW} height={photoH} style={{ objectFit: "cover" }} alt="" />
+            {/* La foto se funde con el cromo por la izquierda y por arriba (por abajo ya viene fundida) */}
+            <div style={{ display: "flex", position: "absolute", top: 0, left: 0, width: photoW * 0.5, height: photoH, background: `linear-gradient(90deg, ${face}0.92) 0%, ${face}0.7) 40%, ${face}0) 100%)` }} />
+            <div style={{ display: "flex", position: "absolute", top: 0, right: 0, width: photoW * 0.14, height: photoH, background: `linear-gradient(270deg, ${face}0.8) 0%, ${face}0) 100%)` }} />
+            <div style={{ display: "flex", position: "absolute", top: 0, left: 0, width: photoW, height: photoH * 0.22, background: `linear-gradient(180deg, ${face}1) 0%, ${face}0) 100%)` }} />
+          </div>
+        ) : (
+          <div style={{ display: "flex", position: "relative", marginBottom: h * 0.04 }}>
+            <TileJersey goalkeeper={gk} size={w * 0.6} />
+            <div style={{ display: "flex", position: "absolute", top: w * 0.13, left: 0, width: w * 0.6, justifyContent: "center", fontFamily: "Display", fontSize: w * 0.27, lineHeight: 1, color: "white" }}>{p.number ?? ""}</div>
+          </div>
+        )}
       </div>
-      <span style={{ display: "flex", marginTop: tw * 0.05, fontFamily: "Display", fontSize: fs, lineHeight: 1, textAlign: "center", justifyContent: "center", width: tw - 6 }}>{name}</span>
+      {/* Dorsal, posición y escudo */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "absolute", top: h * 0.07, left: w * 0.07, color: accent }}>
+        <span style={{ fontFamily: "Display", fontSize: w * 0.25, lineHeight: 0.9 }}>{p.number ?? "–"}</span>
+        <span style={{ fontFamily: "Display", fontSize: w * 0.11, lineHeight: 1, marginTop: w * 0.01, color: ink }}>{LINE_CODE[p.line]}</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={crest.src} width={Math.round(w * 0.13)} height={Math.round((w * 0.13) / crest.ratio)} style={{ marginTop: w * 0.035 }} alt="" />
+      </div>
+      {/* Nombre */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "absolute", top: h * 0.715, left: 0, width: w }}>
+        <span style={{ fontFamily: "Display", fontSize: fs, lineHeight: 1, color: ink, letterSpacing: w * 0.004 }}>{name}</span>
+        <div style={{ display: "flex", width: w * 0.32, height: Math.max(2, w * 0.014), marginTop: w * 0.035, background: gk ? NEGRO : ORO, opacity: gk ? 0.5 : 0.9 }} />
+      </div>
+    </div>
+  );
+}
+
+/** Los dos equipos en una sola franja, con el día, la hora y el campo debajo. */
+function MatchBar({ d, story }: { d: CallupPosterData; story: boolean }) {
+  const cs = story ? 116 : 80;
+  const fb = story ? 32 : 26;    // casillas de la racha
+  const team = (t: Team, right: boolean) => (
+    <div style={{ display: "flex", alignItems: "center", flexDirection: right ? "row-reverse" : "row", width: 400 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: cs + 20 }}>
+        <div style={{ display: "flex", width: cs, height: cs, alignItems: "center", justifyContent: "center" }}>
+          <CrestImg crest={t.crest} short={t.short} color={t.color} size={cs} />
+        </div>
+        {t.form.length > 0 && (
+          <div style={{ display: "flex", marginTop: story ? 10 : 8 }}>
+            {t.form.map((r, k) => (
+              <div key={k} style={{ display: "flex", width: fb, height: fb, marginLeft: k ? 5 : 0, alignItems: "center", justifyContent: "center", borderRadius: 5, background: FORM_BG[r], color: r === "W" ? NEGRO : "white", fontFamily: "Display", fontSize: fb * 0.68, lineHeight: 1 }}>{FORM_LETTER[r]}</div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: right ? "flex-end" : "flex-start", margin: right ? "0 18px 0 0" : "0 0 0 18px", flexShrink: 1 }}>
+        <span style={{ fontFamily: "Display", fontSize: (t.name.length > 16 ? 0.8 : 1) * (story ? 32 : 32), lineHeight: 1, textTransform: "uppercase", color: t.isUs ? ORO : "white", textAlign: right ? "right" : "left" }}>{t.name}</span>
+        {t.rank && (
+          <span style={{ display: "flex", fontSize: story ? 22 : 19, color: "rgba(255,255,255,0.65)", marginTop: 6 }}>
+            {`${t.rank.pos}º · ${t.rank.points} ${t.rank.points === 1 ? "PT" : "PTS"}`}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+  const fs = story ? 1.05 : 0.9;
+  const item = (icon: React.ReactNode, text: string, key: string) => (
+    <div key={key} style={{ display: "flex", alignItems: "center", margin: "0 16px" }}>
+      <div style={{ display: "flex", marginRight: 9 }}>{icon}</div>
+      <span style={{ fontSize: 25 * fs, color: "rgba(255,255,255,0.92)" }}>{text}</span>
+    </div>
+  );
+  return (
+    <div style={{ display: "flex", flexDirection: "column", margin: "0 60px", background: "rgba(0,0,0,0.55)", border: "2px solid rgba(255,255,255,0.1)", borderRadius: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: story ? "22px 24px" : "14px 20px" }}>
+        {team(d.home, false)}
+        <span style={{ fontFamily: "Display", fontSize: story ? 64 : 52, lineHeight: 1, color: ORO, transform: "skewX(-7deg)" }}>VS</span>
+        {team(d.away, true)}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", padding: story ? "16px 10px" : "11px 10px", borderTop: "2px solid rgba(255,255,255,0.08)" }}>
+        {item(<Calendar size={26 * fs} />, d.day, "d")}
+        {d.kickoff ? item(<Clock size={26 * fs} />, d.kickoff, "k") : null}
+        {d.venue ? item(<Pin size={26 * fs} />, d.venue, "v") : null}
+      </div>
     </div>
   );
 }
@@ -206,30 +300,30 @@ function renderCallup(d: CallupPosterData, format: Format) {
   const { w: W, h: H } = SIZES[format];
   const story = format === "story";
 
-  const groups: Group[] = (["GK", "DEF", "MID", "FWD"] as Line[])
-    .map((line) => ({ line, players: d.players.filter((p) => p.line === line) }))
-    .filter((g) => g.players.length > 0);
+  // Por líneas (portería, defensa, medio y delantera), cada una en su fila, y dentro como vengan
+  const by = (line: Line) => d.players.filter((p) => p.line === line).length;
+  const players = LINE_ORDER.flatMap((line) => d.players.filter((p) => p.line === line));
 
-  // Hueco que queda para la lista (lo demás mide más o menos lo mismo siempre)
-  const ranked = !!(d.home.rank || d.away.rank);
-  const fixed = story ? 110 + 92 + 70 + 200 + 50 + (290 + (ranked ? 50 : 0)) + 50 + 80 + 60 + 210
-    : 44 + 78 + 26 + 150 + 22 + (206 + (ranked ? 50 : 0)) + 26 + 70 + 36 + 130;
-  const labelW = 150;
-  const areaW = W - 120 - 44 - labelW;
-  const fit = fitTiles(groups, areaW, H - fixed);
+  // Hueco que queda para los cromos (lo demás mide siempre lo mismo)
+  const fixed = story ? 945 : 605;   // medido en las imágenes de prueba (cabecera, titular, franja del partido y pie)
+  const gap = story ? 22 : 16;
+  // Si no caben bien, los porteros comparten fila con los defensas y los medios con los delanteros
+  const [gk, df, md, fw] = [by("GK"), by("DEF"), by("MID"), by("FWD")];
+  const options = [[gk, df, md, fw], [gk + df, md, fw], [gk, df, md + fw], [gk + df, md + fw]]
+    .map((o) => fitCards(o.filter((n) => n > 0), W - 120 - (o.length < 4 ? gap * 2 : 0), H - fixed, gap, story ? 230 : 180));
+  const fit = options.reduce((best, o) => (o.w > best.w * 1.08 ? o : best));   // juntar solo si el cromo crece de verdad
 
-  const list = (
-    <div style={{ display: "flex", flexDirection: "column", margin: "0 60px", padding: "22px 22px 22px 22px", background: "linear-gradient(160deg, rgba(20,20,22,0.9) 0%, rgba(8,8,9,0.9) 100%)", border: "2px solid rgba(255,255,255,0.1)", borderLeft: `6px solid ${ROJO}`, borderRadius: 18 }}>
-      {groups.map((g, k) => (
-        <div key={g.line} style={{ display: "flex", alignItems: "center", marginTop: k ? 18 : 0, paddingTop: k ? 14 : 0, borderTop: k ? "2px solid rgba(255,255,255,0.08)" : "none" }}>
-          <div style={{ display: "flex", flexDirection: "column", width: labelW }}>
-            <div style={{ display: "flex", width: 34, height: 6, borderRadius: 3, background: LINE_HEX[g.line], marginBottom: 8 }} />
-            <span style={{ fontFamily: "Display", fontSize: 26, letterSpacing: 2, color: ORO, lineHeight: 1 }}>{LINE_TITLE[g.line][g.players.length === 1 ? 0 : 1]}</span>
-            <span style={{ fontSize: 18, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{g.players.length}</span>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", width: areaW, justifyContent: g.players.length < fit.perRow ? "flex-start" : "flex-start" }}>
-            {g.players.map((p, i) => <PlayerTile key={`${p.name}-${i}`} p={p} tw={fit.tw} th={fit.th} />)}
-          </div>
+  let k = 0;
+  const grid = (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      {fit.rows.map((count, r) => (
+        <div key={r} style={{ display: "flex", justifyContent: "center", marginTop: r ? gap : 0 }}>
+          {players.slice(k, (k += count)).map((p, i, row) => (
+            // Un poco más de aire donde cambia la línea, si comparten fila
+            <div key={`${p.name}-${i}`} style={{ display: "flex", marginLeft: !i ? 0 : row[i - 1].line !== p.line ? gap * 3 : gap }}>
+              <PlayerCard p={p} w={fit.w} crest={d.crest} />
+            </div>
+          ))}
         </div>
       ))}
     </div>
@@ -237,19 +331,18 @@ function renderCallup(d: CallupPosterData, format: Format) {
 
   const tree = (
     <div style={{ display: "flex", flexDirection: "column", width: W, height: H, background: "#070707", color: "white", fontFamily: "Text", position: "relative" }}>
-      <Backdrop w={W} h={H} glow={ORO} glowY={story ? 0.27 : 0.25} />
+      <Backdrop w={W} h={H} glow={ORO} glowY={story ? 0.55 : 0.6} />
       <PosterHeader crest={d.crest} competition={d.competition} day={d.day} story={story} />
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", marginTop: story ? 70 : 26 }}>
-        <Ghost text="CONVOCATORIA" W={W} top={story ? -30 : -24} size={story ? 230 : 200} />
-        <Kicker text={`${d.players.length} CONVOCADOS`} />
-        <div style={{ display: "flex", marginTop: 4, fontFamily: "Display", fontSize: story ? 150 : 112, lineHeight: 1, letterSpacing: 4, transform: "skewX(-7deg)" }}>CONVOCATORIA</div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", marginTop: story ? 60 : 20 }}>
+        <Ghost text="CONVOCATORIA" W={W} top={story ? -26 : -18} size={story ? 200 : 160} />
+        <Kicker text={`${d.players.length} ${d.players.length === 1 ? "CONVOCADO" : "CONVOCADOS"}`} />
+        <div style={{ display: "flex", marginTop: 2, fontFamily: "Display", fontSize: story ? 120 : 88, lineHeight: 1, letterSpacing: 4, transform: "skewX(-7deg)" }}>CONVOCATORIA</div>
       </div>
-      <Duel home={d.home} away={d.away} crestSize={story ? 190 : 120} nameSize={story ? 38 : 32} vsSize={story ? 110 : 84} marginTop={story ? 50 : 22} />
-      <div style={{ display: "flex", marginTop: story ? 50 : 26, justifyContent: "center" }}>
-        <InfoStrip day={d.day} kickoff={d.kickoff} venue={d.venue} fs={story ? 1.1 : 1} />
+      <div style={{ display: "flex", flexDirection: "column", marginTop: story ? 50 : 20 }}>
+        <MatchBar d={d} story={story} />
       </div>
-      <div style={{ display: "flex", flexGrow: 1, flexDirection: "column", justifyContent: "center", paddingTop: story ? 30 : 16, paddingBottom: story ? 40 : 20 }}>
-        {list}
+      <div style={{ display: "flex", flexGrow: 1, flexDirection: "column", justifyContent: "center", paddingTop: story ? 30 : 16, paddingBottom: story ? 40 : 22 }}>
+        {grid}
       </div>
       <PosterFooter sponsor={d.sponsor} venue={null} story={story} />
     </div>
