@@ -17,6 +17,21 @@ type DB = Awaited<ReturnType<typeof createClient>>;
  */
 export async function embed(url: string | null | undefined, buckets: string[], opts: Parameters<typeof prepareImage>[1]): Promise<Pic | null> {
   if (!url) return null;
+  // Lo ya preparado se guarda unos minutos: pasar de publicación a historia no vuelve a pedir ni recortar las fotos (4.18.3)
+  const key = `${url}|${JSON.stringify(opts)}`;
+  const hit = prepared.get(key);
+  if (hit && hit.until > Date.now()) return hit.pic;
+  const pic = await embedFresh(url, buckets, opts);
+  if (pic) {
+    if (prepared.size >= 120) prepared.delete(prepared.keys().next().value!);
+    prepared.set(key, { pic, until: Date.now() + 5 * 60_000 });
+  }
+  return pic;
+}
+
+const prepared = new Map<string, { pic: Pic; until: number }>();
+
+async function embedFresh(url: string, buckets: string[], opts: Parameters<typeof prepareImage>[1]): Promise<Pic | null> {
   try {
     let buf: Buffer;
     if (url.startsWith("/")) {

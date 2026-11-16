@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.18.3",
+    date: "2026-11-16",
+    title: "Imágenes para compartir más rápidas",
+    changes: [
+      "Las imágenes para compartir (convocatoria, «Hoy jugamos», resultado y resúmenes) se preparan en menos de la mitad de tiempo, y salen exactamente igual.",
+      "Al abrir una, la otra medida se prepara por detrás: pasar de publicación a historia es al momento.",
+      "«Descargar» la guarda directamente: en Android va a la galería. En iPhone una web no puede meter fotos en el carrete por su cuenta, así que el botón «Guardar o compartir» abre el menú del iPhone, donde «Guardar imagen» la manda a Fotos.",
+    ],
+  },
+  {
     version: "4.18.2",
     date: "2026-11-16",
     title: "Más parches de seguridad",
