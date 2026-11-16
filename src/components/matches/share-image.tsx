@@ -1,10 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, ImageDown, Share2, X } from "lucide-react";
 
 type Format = "post" | "story";
 type Ready = { file: File; src: string; format: Format };
+
+/** Lo que dura guardada una imagen ya preparada (si alguien dice «Voy» entretanto, sale en la siguiente). */
+const FRESH_MS = 60_000;
+
+/** iPhone o iPad (el iPad se presenta como un Mac con pantalla táctil). */
+const isApple = () => typeof navigator !== "undefined" && (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
 
 const FORMATS: { key: Format; label: string }[] = [
   { key: "post", label: "Publicación" },
@@ -16,13 +22,20 @@ const FORMATS: { key: Format; label: string }[] = [
  * Antes se abría el menú de compartir directamente al acabar de prepararla, pero si tardaba unos
  * segundos el móvil ya no lo permitía (hace falta un toque reciente) y no salía nada (v3.20.1).
  * Dos formatos (v3.22.0): publicación (4:5) e historia (9:16, para estados de WhatsApp e historias).
+ * Desde la 4.18.3, en cuanto está lista una se prepara la otra de fondo, así cambiar de formato es
+ * al momento, y cada una se guarda un minuto por si se vuelve a abrir.
  */
 function useShareImage(url: string, name: string, title: string) {
   const [busy, setBusy] = useState<Format | null>(null);
   const [ready, setReady] = useState<Ready | null>(null);
   const [error, setError] = useState(false);
+  // Imágenes ya preparadas (o en camino), por formato
+  const cache = useRef(new Map<Format, { at: number; p: Promise<Ready> }>());
 
-  useEffect(() => () => { if (ready) URL.revokeObjectURL(ready.src); }, [ready]);
+  useEffect(() => {
+    const c = cache.current;
+    return () => c.forEach(({ p }) => p.then((r) => URL.revokeObjectURL(r.src), () => {}));
+  }, []);
   useEffect(() => {
     if (!ready) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setReady(null);
@@ -30,17 +43,32 @@ function useShareImage(url: string, name: string, title: string) {
     return () => window.removeEventListener("keydown", onKey);
   }, [ready]);
 
-  async function prepare(format: Format = "post") {
-    setBusy(format);
-    setError(false);
-    try {
+  function load(format: Format): Promise<Ready> {
+    const hit = cache.current.get(format);
+    if (hit && Date.now() - hit.at < FRESH_MS) return hit.p;
+    if (hit) hit.p.then((r) => URL.revokeObjectURL(r.src), () => {});
+    const p = (async () => {
       const res = await fetch(format === "story" ? `${url}?formato=historia` : url, { cache: "no-store" });
       const type = res.headers.get("content-type") ?? "";
       if (!res.ok || !type.startsWith("image/")) throw new Error();
       const blob = await res.blob();
       if (!blob.size) throw new Error();
       const file = fileName(name, format, type);
-      setReady({ file: new File([blob], file, { type: blob.type || type }), src: URL.createObjectURL(blob), format });
+      return { file: new File([blob], file, { type: blob.type || type }), src: URL.createObjectURL(blob), format };
+    })();
+    cache.current.set(format, { at: Date.now(), p });
+    p.catch(() => cache.current.get(format)?.p === p && cache.current.delete(format));
+    return p;
+  }
+
+  async function prepare(format: Format = "post") {
+    setBusy(format);
+    setError(false);
+    try {
+      const r = await load(format);
+      setReady(r);
+      // La otra, de fondo, para que el cambio de formato sea al momento
+      load(format === "post" ? "story" : "post").catch(() => {});
     } catch {
       setError(true);
     } finally {
@@ -48,7 +76,10 @@ function useShareImage(url: string, name: string, title: string) {
     }
   }
 
-  function download() {
+  // Descargar: en Android y en el ordenador se guarda directamente (en el móvil sale en la galería,
+  // en «Descargas»). En iPhone una página web no puede meter nada en Fotos por su cuenta: lo más
+  // directo es el menú de compartir con la imagen, donde «Guardar imagen» la manda a Fotos (4.18.3).
+  function saveFile() {
     if (!ready) return;
     const a = document.createElement("a");
     a.href = ready.src;
@@ -63,14 +94,15 @@ function useShareImage(url: string, name: string, title: string) {
         await navigator.share({ files: [ready.file] });
       } catch (e) {
         // Cancelar el menú no es un error; si el móvil no deja compartir, se descarga
-        if ((e as Error)?.name !== "AbortError") download();
+        if ((e as Error)?.name !== "AbortError") saveFile();
       }
     } else {
-      download();
+      saveFile();
     }
   }
 
   const canShare = typeof navigator !== "undefined" && !!navigator.canShare && !!ready && navigator.canShare({ files: [ready.file] });
+  const apple = isApple();
 
   // En un portal: dentro de la portada animada «fixed» no cubriría la pantalla
   const modal = ready && createPortal(
@@ -91,10 +123,17 @@ function useShareImage(url: string, name: string, title: string) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={ready.src} alt={title} className={`max-h-[68dvh] w-full rounded-2xl object-contain shadow-xl transition-opacity ${busy ? "opacity-50" : ""}`} />
         {error && <p className="text-center text-sm text-white/80">No se ha podido preparar. Prueba otra vez.</p>}
-        <div className="flex gap-2">
-          {canShare && <button type="button" onClick={share} className="btn-primary flex-1"><Share2 size={16} /> Compartir</button>}
-          <button type="button" onClick={download} className={`${canShare ? "btn-ghost bg-white" : "btn-primary"} flex-1`}><Download size={16} /> Descargar</button>
-        </div>
+        {apple && canShare ? (
+          <>
+            <button type="button" onClick={share} className="btn-primary w-full"><Download size={16} /> Guardar o compartir</button>
+            <p className="text-center text-xs text-white/75">Toca «Guardar imagen» y va directa a Fotos.</p>
+          </>
+        ) : (
+          <div className="flex gap-2">
+            {canShare && <button type="button" onClick={share} className="btn-ghost flex-1 bg-white"><Share2 size={16} /> Compartir</button>}
+            <button type="button" onClick={saveFile} className="btn-primary flex-1"><Download size={16} /> Descargar</button>
+          </div>
+        )}
       </div>
     </div>,
     document.body,

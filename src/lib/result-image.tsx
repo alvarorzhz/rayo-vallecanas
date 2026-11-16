@@ -4,6 +4,7 @@ import { join } from "node:path";
 import satori from "satori";
 import { ImageResponse } from "next/og";
 import type { Outcome } from "@/lib/matches";
+import { lighten } from "@/lib/svg-lighten";
 
 /**
  * Imagen del resultado para compartir (v3.22.0): póster de partido con la franja del Rayo,
@@ -12,8 +13,8 @@ import type { Outcome } from "@/lib/matches";
  *
  * Rendimiento: nada de boxShadow/textShadow, filtros ni <pattern> girados (cada uno cuesta segundos
  * en el dibujo, ver v3.20.1), y nada de overflow: hidden en la raíz (satori mete una máscara por
- * elemento). Satori lo pasa a SVG y sharp lo dibuja en JPEG: ~0,8 s y ~250 KB, frente a ~4 s y
- * ~1,5 MB del PNG de next/og. Las fotos y escudos se reducen antes con sharp.
+ * elemento). Satori lo pasa a SVG y sharp lo dibuja en JPEG: ~0,4 s y ~400 KB desde la 4.18.3 (ver
+ * lighten), frente a ~4 s y ~1,5 MB del PNG de next/og. Las fotos y escudos se reducen antes con sharp.
  */
 
 export type Format = "post" | "story";
@@ -574,8 +575,9 @@ export async function drawTree(tree: React.ReactElement, width: number, height: 
   if (sharp) {
     try {
       const svg = await satori(tree, { width, height, fonts });
-      const body = await sharp(Buffer.from(svg), { density: 72, limitInputPixels: false }).flatten({ background: "#070707" })
-        .jpeg({ quality: 90, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer();
+      // Sin mozjpeg (4.18.3): comprimía un 15 % más, pero costaba ~0,25 s por imagen
+      const body = await sharp(Buffer.from(lighten(svg)), { density: 72, limitInputPixels: false }).flatten({ background: "#070707" })
+        .jpeg({ quality: 90, chromaSubsampling: "4:4:4" }).toBuffer();
       return { body, type: "image/jpeg" };
     } catch (e) {
       console.error("Imagen para compartir: sharp ha fallado, se usa el dibujo de next/og", e);
