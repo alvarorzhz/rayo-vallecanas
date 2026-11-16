@@ -8,6 +8,14 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.18.2",
+    date: "2026-11-16",
+    title: "Más parches de seguridad",
+    changes: [
+      "Se actualizan la pieza que dibuja las imágenes para compartir y otras que usan las subidas de archivos y las exportaciones a Excel, porque tenían fallos de seguridad conocidos. Ya no queda ninguno pendiente. Por fuera todo sigue igual.",
+    ],
+  },
+  {
     version: "4.18.1",
     date: "2026-11-16",
     title: "Parche de seguridad",

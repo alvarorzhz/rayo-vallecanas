@@ -39,6 +39,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // satori (imágenes para compartir) carga harfbuzz en WebAssembly desde su carpeta: si se empaqueta,
+  // no encuentra el .wasm y las imágenes salen por el plan B, más lento
+  serverExternalPackages: ["satori"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
