@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.18.0",
+    date: "2026-11-16",
+    title: "La convocatoria, con un cromo por jugador",
+    changes: [
+      "En la imagen de la convocatoria cada jugador que ha dicho «Voy» sale en su propio cromo: dorsal, línea, escudo y nombre, con su foto si la tiene o su camiseta si no. Los porteros llevan el cromo dorado y siempre sin foto.",
+      "Los cromos van por líneas de juego, cada una en su fila. Si no caben bien, los porteros comparten fila con los defensas y los medios con los delanteros. En el cromo solo pone POR, DEF, MED o DEL, sin la posición exacta, para no dar pistas al rival.",
+      "El rival y el Rayo van en una sola franja con la clasificación y, bajo cada escudo, los tres últimos resultados (V, E o D). Debajo, el día, la hora y el campo.",
+    ],
+  },
+  {
     version: "4.17.0",
     date: "2026-11-16",
     title: "Jugadores nuevos en la liga",

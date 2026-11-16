@@ -77,7 +77,9 @@ export async function posterTeams(supabase: DB, m: MatchRow, crest: Pic, crestSi
   ]);
   const ranks = standings ? matchRanks(standings.table.rows, standings.us, [m], m.season).get(m.id) ?? null : null;
   const rank = (r: Rank | null | undefined) => (r ? { pos: r.pos, points: r.points } : null);
-  const us: Team = { name: CLUB_NAME, short: "RVA", color: "#D20D17", crest, isUs: true, rank: rank(ranks?.us) };
-  const them: Team = { name: m.rival.name, short: rivalShort(m.rival), color: rivalColor(m.rival), crest: themCrest, isUs: false, rank: rank(ranks?.rival) };
+  // Últimos 3 resultados de cada uno según la web de la liga, del más antiguo al más reciente (v4.18.0)
+  const form = (r: Rank | null | undefined) => (r?.form ?? []).slice(-3);
+  const us: Team = { name: CLUB_NAME, short: "RVA", color: "#D20D17", crest, isUs: true, rank: rank(ranks?.us), form: form(ranks?.us) };
+  const them: Team = { name: m.rival.name, short: rivalShort(m.rival), color: rivalColor(m.rival), crest: themCrest, isUs: false, rank: rank(ranks?.rival), form: form(ranks?.rival) };
   return { home: m.is_home ? us : them, away: m.is_home ? them : us, ranks };
 }
