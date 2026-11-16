@@ -14,6 +14,7 @@ import {
 import { madridDay } from "@/lib/dates";
 import { resultNotice } from "@/lib/result-watch";
 import { alertLeagueProblem, recordLeagueFailure, type LeagueStatus } from "@/lib/league-alerts";
+import { matchPlayer, mergeNewcomers, newcomersText, storedNewcomers, type Newcomer } from "@/lib/newcomers";
 
 // Los lectores de páginas viven en league-parse.ts (sin dependencias, con pruebas propias)
 export { competitionFromUrl } from "@/lib/league-parse";
@@ -87,19 +88,8 @@ const crestUrls = (teamId: string) => ["shields_g", "shields_p"].map((d) => `htt
 
 // ---------------------------------------------------------------- Plantilla
 
-const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-
-/** Nombre y apellidos: las dos últimas palabras son los apellidos. */
-const splitName = (full: string) => {
-  const w = full.split(" ");
-  return w.length <= 2 ? { first_name: w[0], last_name: w.slice(1).join(" ") } : { first_name: w.slice(0, -2).join(" "), last_name: w.slice(-2).join(" ") };
-};
-
-async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: string) => Promise<string>, team: string, season: string, competition: string, issues: string[]) {
-  const html = await get(`team.aspx?itm=${team}`);
-  const roster = inspectTeam(html);
-  issues.push(...roster.issues);
-  const ids = roster.items;
+/** Lee las fichas de la plantilla en futormes de cinco en cinco. Una ficha que no se lee no tumba el resto. */
+async function readPlayers(get: (p: string) => Promise<string>, ids: string[], issues: string[]) {
   const list: LeaguePlayer[] = [];
   const unread: string[] = [];
   const failed: string[] = [];
@@ -116,63 +106,119 @@ async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: s
     }));
     list.push(...batch.filter((p): p is LeaguePlayer => !!p));
   }
-  // Una ficha que no se lee no tumba el resto: se apunta y se sigue
   if (failed.length) issues.push(`Plantilla: ${failed.length} de ${ids.length} fichas de jugador no se han podido descargar.`);
   for (const msg of new Set(unread)) issues.push(`${msg} (${unread.filter((m) => m === msg).length} de ${ids.length})`);
+  return list;
+}
+
+/**
+ * Actualiza a los jugadores de la plantilla que ya están en la app (lo que falte de su ficha y las
+ * estadísticas de la liga). Los que faltan en la plantilla de la temporada no se añaden solos
+ * desde la 4.17.0: se devuelven para que un gestor los revise en Plantilla.
+ */
+async function syncSquad(admin: ReturnType<typeof createAdminClient>, get: (p: string) => Promise<string>, team: string, season: string, competition: string, issues: string[]) {
+  const roster = inspectTeam(await get(`team.aspx?itm=${team}`));
+  issues.push(...roster.issues);
+  const list = await readPlayers(get, roster.items, issues);
   const [{ data: players }, { data: members }] = await Promise.all([
     admin.from("players").select("id, first_name, last_name, nickname, foot, height_cm, ext_id"),
     admin.from("squad_members").select("id, player_id, number, status, league_stats_by").eq("season", season),
   ]);
   const memberOf = new Map((members ?? []).map((m) => [m.player_id as string, m]));
-  let playersNew = 0, playersUpdated = 0;
+  const numberOf = new Map((members ?? []).map((m) => [m.player_id as string, m.number as number | null]));
+  const missing: (LeaguePlayer & { playerId: string | null })[] = [];
+  let playersUpdated = 0;
   for (const lp of list) {
     const ext = `futormes:${lp.extId}`;
-    const full = norm(lp.name);
-    // Ya en la app: por su enlace con la liga, por el nombre o por el dorsal de esta temporada con el mismo nombre de pila
-    let p = players?.find((x) => x.ext_id === ext)
-      ?? players?.find((x) => { const n = norm(`${x.first_name} ${x.last_name}`); return n === full || (n.split(" ").length >= 2 && full.startsWith(n + " ")); })
-      ?? players?.find((x) => memberOf.get(x.id)?.number === lp.number && norm(x.first_name) === norm(splitName(lp.name).first_name));
-    if (!p) {
-      const { data, error } = await admin.from("players").insert({ ...splitName(lp.name), nickname: lp.nickname, foot: lp.foot, height_cm: lp.height, ext_id: ext })
-        .select("id, first_name, last_name, nickname, foot, height_cm, ext_id").single();
-      if (error) throw error;
-      p = data;
-      playersNew++;
-      if (lp.birth) await admin.from("player_private").update({ birth_date: lp.birth }).eq("player_id", p.id);
-    } else {
-      // Solo se rellena lo que falta: lo editado en la app manda
-      const patch: Record<string, unknown> = {};
-      // En cada competición la liga puede dar otro número al mismo jugador: manda el de la actual
-      if (p.ext_id !== ext) patch.ext_id = ext;
-      if (!p.foot && lp.foot) patch.foot = lp.foot;
-      if (!p.height_cm && lp.height) patch.height_cm = lp.height;
-      if (!p.nickname && lp.nickname) patch.nickname = lp.nickname;
-      if (Object.keys(patch).length) { await admin.from("players").update(patch).eq("id", p.id); playersUpdated++; }
-      if (lp.birth) await admin.from("player_private").update({ birth_date: lp.birth }).eq("player_id", p.id).is("birth_date", null);
+    const p = matchPlayer(players ?? [], numberOf, lp);
+    const m = p ? memberOf.get(p.id) : undefined;
+    if (!p || !m) {
+      missing.push({ ...lp, playerId: p?.id ?? null });
+      continue;
     }
+    // Solo se rellena lo que falta: lo editado en la app manda
+    const patch: Record<string, unknown> = {};
+    // En cada competición la liga puede dar otro número al mismo jugador: manda el de la actual
+    if (p.ext_id !== ext) patch.ext_id = ext;
+    if (!p.foot && lp.foot) patch.foot = lp.foot;
+    if (!p.height_cm && lp.height) patch.height_cm = lp.height;
+    if (!p.nickname && lp.nickname) patch.nickname = lp.nickname;
+    if (Object.keys(patch).length) { await admin.from("players").update(patch).eq("id", p.id); playersUpdated++; }
+    if (lp.birth) await admin.from("player_private").update({ birth_date: lp.birth }).eq("player_id", p.id).is("birth_date", null);
     // Las fotos de la liga no se traen: son diminutas (71×85) y en el cromo se ven pixeladas.
-    // Cada jugador sube la suya desde su ficha.
-    // Ficha de la temporada y estadísticas de la liga
     // Los totales de la liga van aparte: la app suma previas + actas y, de cada dato, lo que la liga tenga de más.
     // Se guardan por competición y league_stats lleva la suma de la temporada: empezar otra liga no borra la anterior.
-    const m = memberOf.get(p!.id);
-    const mine: LeagueStats = { apps: lp.apps, goals: lp.goals, conceded: lp.line === "POR" ? lp.conceded : 0, yellows: lp.yellows, reds: lp.reds };
-    const merged = mergeLeagueStats(m?.league_stats_by as Record<string, LeagueStats> | null | undefined, competition, mine);
-    const stats = { league_stats: merged.total, league_stats_by: merged.by };
-    if (!m) {
-      const { error } = await admin.from("squad_members").insert({ player_id: p!.id, season, number: lp.number, position: lp.line, status: "active", joined_on: new Date().toISOString().slice(0, 10), ...stats });
-      // Dorsal repetido: entra sin dorsal
-      if (error && /number_uniq/.test(error.message)) await admin.from("squad_members").insert({ player_id: p!.id, season, number: null, position: lp.line, status: "active", ...stats });
-      else if (error) throw error;
-    } else {
-      await admin.from("squad_members").update(stats).eq("id", m.id);
+    const merged = mergeLeagueStats(m.league_stats_by as Record<string, LeagueStats> | null | undefined, competition, leagueStatsOf(lp));
+    await admin.from("squad_members").update({ league_stats: merged.total, league_stats_by: merged.by }).eq("id", m.id);
+  }
+  return { missing, playersUpdated, players: list.length };
+}
+
+/** Estadísticas de la liga de un jugador tal y como se guardan por competición. */
+export const leagueStatsOf = (lp: LeaguePlayer): LeagueStats => ({ apps: lp.apps, goals: lp.goals, conceded: lp.line === "POR" ? lp.conceded : 0, yellows: lp.yellows, reds: lp.reds });
+
+/** Quien recibe el aviso de jugadores nuevos: quien puede fichar en Plantilla. */
+async function squadManagers(except?: string) {
+  const { data } = await createAdminClient().rpc("users_with_perm", { p_module: "squad", p_action: "create" });
+  return ((data ?? []) as string[]).filter((id) => id !== except);
+}
+
+/**
+ * Rehace la lista de jugadores nuevos con los que faltan ahora y avisa de los que no estaban.
+ * Devuelve la lista para guardarla en league_sync.last_summary (quien llama la guarda).
+ */
+async function reviewNewcomers(summary: Record<string, unknown> | null, missing: (LeaguePlayer & { playerId: string | null })[], except?: string) {
+  const { newcomers: prev, ignored } = storedNewcomers(summary);
+  const { list, fresh } = mergeNewcomers({ missing, prev, ignored, now: new Date().toISOString() });
+  let sent = 0;
+  if (fresh.length) {
+    try {
+      sent = await sendPush(await squadManagers(except), { ...newcomersText(fresh), url: "/plantilla#nuevos-liga", tag: "liga-fichajes" });
+    } catch (e) {
+      console.error("No se ha podido avisar de los jugadores nuevos:", e instanceof Error ? e.message : e);
     }
   }
-  return { playersNew, playersUpdated, players: list.length };
+  return { list, fresh: fresh.length, sent };
+}
+
+/**
+ * Comprobación diaria (v4.17.0): lee la plantilla del Rayo en futormes y apunta a quien falta en
+ * la de la temporada en la app. Solo baja las fichas de los jugadores que no reconoce por su enlace
+ * con la liga. No añade a nadie ni toca partidos.
+ */
+export async function checkNewcomers() {
+  const admin = createAdminClient();
+  const { data: cfg } = await admin.from("league_sync").select("competition, team").eq("id", 1).maybeSingle();
+  if (!cfg) return { status: "sin-liga" as const };
+  const { get } = await openSession(cfg.competition);
+  const roster = inspectTeam(await get(`team.aspx?itm=${cfg.team}`));
+  if (!roster.items.length) throw new Error(roster.issues[0] ?? "La plantilla de la liga sale vacía");
+  const season = seasonOf();
+  const [{ data: players }, { data: members }] = await Promise.all([
+    admin.from("players").select("id, first_name, last_name, ext_id"),
+    admin.from("squad_members").select("player_id, number").eq("season", season),
+  ]);
+  const inSquad = new Set((members ?? []).map((m) => m.player_id as string));
+  const numberOf = new Map((members ?? []).map((m) => [m.player_id as string, m.number as number | null]));
+  const known = new Set((players ?? []).filter((p) => p.ext_id && inSquad.has(p.id)).map((p) => (p.ext_id as string).replace("futormes:", "")));
+  const issues: string[] = [];
+  const unknown = await readPlayers(get, roster.items.filter((id) => !known.has(id)), issues);
+  const missing = unknown.flatMap((lp) => {
+    const p = matchPlayer(players ?? [], numberOf, lp);
+    return p && inSquad.has(p.id) ? [] : [{ ...lp, playerId: p?.id ?? null }];
+  });
+  // Si alguna ficha no se ha podido leer, no se sabe si falta alguien: se conservan los que ya estaban
+  const { data: row } = await admin.from("league_sync").select("last_summary").eq("id", 1).maybeSingle();
+  const summary = (row?.last_summary ?? {}) as Record<string, unknown>;
+  const r = await reviewNewcomers(summary, missing);
+  const list = issues.length ? [...r.list, ...storedNewcomers(summary).newcomers.filter((o) => !r.list.some((n) => n.extId === o.extId))] : r.list;
+  await admin.from("league_sync").update({ last_summary: { ...summary, newcomers: list, newcomersCheckedAt: new Date().toISOString() } }).eq("id", 1);
+  return { status: "ok" as const, players: roster.items.length, read: unknown.length, pending: list.length, fresh: r.fresh, sent: r.sent, issues };
 }
 
 export type SyncSummary = {
-  playersNew: number; players: number; squadError?: string; rivalsNew: number; matchesNew: number; matchesUpdated: number; results: number;
+  /** Jugadores de la liga que faltan en la plantilla de la temporada (se revisan en Plantilla) */
+  newcomers: number; players: number; squadError?: string; rivalsNew: number; matchesNew: number; matchesUpdated: number; results: number;
   competition: string | null; at: string;
   /** Partidos nuestros leídos y cuántos están jugados */
   matches: number; played: number;
@@ -328,11 +374,13 @@ async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, op
   }
 
   // ---- Plantilla de la temporada (si falla, el calendario ya está guardado)
-  let squad = { playersNew: 0, players: 0 } as { playersNew: number; players: number; squadError?: string };
+  let squad = { newcomers: 0, players: 0 } as { newcomers: number; players: number; squadError?: string };
+  let newcomers: Newcomer[] | null = null;
   try {
     const season = finance_season(ours[0].date);
     const r = await syncSquad(admin, sess.get, cfg.team, season, cfg.competition, issues);
-    squad = { playersNew: r.playersNew, players: r.players };
+    newcomers = (await reviewNewcomers(cfg.last_summary, r.missing, opts.notifyExcept)).list;
+    squad = { newcomers: newcomers.length, players: r.players };
   } catch (e) {
     squad.squadError = e instanceof Error ? e.message : String(e);
     issues.push(`Plantilla: no se ha podido leer (${squad.squadError}).`);
@@ -352,10 +400,11 @@ async function runSync(admin: ReturnType<typeof createAdminClient>, cfg: Cfg, op
     status: issues.length ? "partial" : "ok", issues,
   };
   // Se conservan la última revisión semanal, el último aviso enviado y la liga siguiente ya encontrada
-  const keep = Object.fromEntries(Object.entries(cfg.last_summary ?? {}).filter(([k]) => k === "health" || k === "alert" || k === "next"));
+  // y la lista de jugadores nuevos por revisar (si esta vez no se ha podido leer la plantilla, se queda la anterior)
+  const keep = Object.fromEntries(Object.entries(cfg.last_summary ?? {}).filter(([k]) => ["health", "alert", "next", "newcomers", "ignoredPlayers"].includes(k)));
   const name = league.competitionName?.slice(0, 160) ?? cfg.competition_name;
   const teamName = league.teams.find((t) => t.id === cfg.team)?.name.slice(0, 120) ?? cfg.team_name;
-  await admin.from("league_sync").update({ last_synced_at: summary.at, last_summary: { ...keep, ...summary }, competition_name: name, team_name: teamName }).eq("id", 1);
+  await admin.from("league_sync").update({ last_synced_at: summary.at, last_summary: { ...keep, ...summary, ...(newcomers ? { newcomers } : {}) }, competition_name: name, team_name: teamName }).eq("id", 1);
   // Histórico: esta competición queda apuntada con su temporada
   await admin.from("league_competitions").upsert({
     competition: cfg.competition, name, team: cfg.team, team_name: teamName, season: finance_season(ours[0].date), finished, last_synced_at: summary.at,

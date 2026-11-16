@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.17.0",
+    date: "2026-11-16",
+    title: "Jugadores nuevos en la liga",
+    changes: [
+      "Cada mañana la app mira la plantilla del Rayo en futormes. Si aparece alguien que no está en la de la app, avisa al móvil de quien puede fichar: «🆕 Jugador nuevo en la liga».",
+      "En Plantilla sale arriba «Nuevos en la liga» con su dorsal, su posición y sus partidos. «Añadir» lo mete en la plantilla con los datos de la liga, y al resto del equipo le sale la presentación del fichaje al entrar. «Ignorar» lo quita de la lista para siempre.",
+      "La sincronización con la liga ya no mete a nadie en la plantilla sin preguntar: los que faltan van a esa misma lista.",
+    ],
+  },
+  {
     version: "4.16.0",
     date: "2026-11-15",
     title: "Uso de la app, para saber qué sobra",

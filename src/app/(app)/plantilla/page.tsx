@@ -14,6 +14,9 @@ import { Pitch } from "@/components/squad/pitch";
 import { Jersey } from "@/components/squad/jersey";
 import { Ball } from "@/components/squad/ball";
 import { CountUp } from "@/components/squad/count-up";
+import { LeagueNewcomers, type NewcomerItem } from "@/components/squad/league-newcomers";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { storedNewcomers } from "@/lib/newcomers";
 
 export const metadata = { title: "Plantilla" };
 
@@ -55,6 +58,12 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
 
   const canCreate = s.can("squad", "create");
   const current = season === seasonOf();
+  // Nuevos en la liga: solo para quien puede fichar (la configuración de la liga es de Partidos, se lee en el servidor)
+  const newcomers: NewcomerItem[] = canCreate && current
+    ? await createAdminClient().from("league_sync").select("last_summary").eq("id", 1).maybeSingle()
+      .then((r) => storedNewcomers(r.data?.last_summary as Record<string, unknown> | null).newcomers
+        .map((n) => ({ extId: n.extId, name: n.name, number: n.number, line: n.line, returning: !!n.playerId, apps: n.apps, goals: n.goals, seenAt: n.seenAt })))
+    : [];
   const link = (p: Partial<SP>) => {
     const next = { temporada: seasonSlug(season), vista: view, linea: sp.linea, estado: sp.estado, orden: sp.orden, q: sp.q, ...p };
     const qs = new URLSearchParams(Object.entries(next).filter(([k, v]) => v && !(k === "vista" && v === "cromos") && !(k === "orden" && v === "lineas")) as [string, string][]);
@@ -75,6 +84,8 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
           ¡Temporada {season} preparada con {sp.preparada} jugadores!{sp.sindorsal ? ` ${sp.sindorsal} se han quedado sin dorsal porque estaba repetido: pónselo desde su ficha.` : ""} Ahora puedes fichar a los nuevos.
         </p>
       )}
+
+      {canCreate && current && <LeagueNewcomers items={newcomers} />}
 
       {/* Mesa de la plantilla: las herramientas en baldosas */}
       <nav aria-label="Herramientas de la plantilla" className="relative z-20 mb-6 grid grid-cols-[repeat(auto-fill,minmax(3.9rem,1fr))] gap-1.5 sm:max-w-2xl sm:grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] sm:gap-3">
