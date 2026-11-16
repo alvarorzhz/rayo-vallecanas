@@ -6,6 +6,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { tempPassword } from "@/lib/password";
 import { DOC_KINDS, DOC_MAX_BYTES, DOC_MIME, POSITIONS, STAT_KEYS, STAT_LABEL, seasonSlug } from "@/lib/squad";
 import type { AvatarState } from "@/app/(app)/perfil/actions";
+import { getSession } from "@/lib/session";
+import { seasonOf } from "@/lib/finance";
+import { mergeLeagueStats } from "@/lib/league-plan";
+import { splitName, storedNewcomers } from "@/lib/newcomers";
 
 export type ActionState = { error?: string; ok?: string; password?: string; name?: string; phone?: string | null; email?: string } | undefined;
 
@@ -391,4 +395,88 @@ export async function deletePlayerDoc(docId: string): Promise<ActionState> {
   revalidatePath(`/plantilla/${doc.player_id}`);
   revalidatePath("/plantilla/documentos");
   return { ok: "Documento borrado" };
+}
+
+// ------------------------------------------------------------------ Nuevos en la liga (v4.17.0)
+
+/** Lista de jugadores nuevos de la liga guardada en la configuración de la liga (la lee el servidor). */
+async function leagueNewcomers() {
+  const admin = createAdminClient();
+  const { data } = await admin.from("league_sync").select("competition, last_summary").eq("id", 1).maybeSingle();
+  const summary = (data?.last_summary ?? {}) as Record<string, unknown>;
+  return { admin, competition: data?.competition as string | undefined, summary, ...storedNewcomers(summary) };
+}
+
+/**
+ * Añade a la plantilla de la temporada a los jugadores nuevos de la liga elegidos (uno o todos).
+ * Se crea su ficha con lo que da la liga (o se reutiliza la que tenía de otra temporada) y entra
+ * con su dorsal, su posición y las estadísticas de la liga. Al resto del equipo le saldrá la
+ * presentación del fichaje al entrar.
+ */
+export async function addLeagueNewcomers(exts: string[]): Promise<ActionState> {
+  const s = await getSession();
+  if (!s.can("squad", "create")) return { error: "No tienes permiso para hacer esto" };
+  const { admin, competition, summary, newcomers } = await leagueNewcomers();
+  const chosen = newcomers.filter((n) => exts.includes(n.extId));
+  if (!chosen.length) return { error: "Ese jugador ya no está en la lista. Recarga la página." };
+  const supabase = await createClient();
+  const season = seasonOf();
+  const today = new Date().toISOString().slice(0, 10);
+  const added: string[] = [];
+  const noNumber: string[] = [];
+  try {
+    for (const n of chosen) {
+      let id = n.playerId;
+      if (id) {
+        const { data } = await supabase.from("players").select("id").eq("id", id).maybeSingle();
+        if (!data) id = null;
+      }
+      if (!id) {
+        // Si otro ya tiene ese número de la liga (ficha de otra temporada sin reconocer), se le quita
+        await admin.from("players").update({ ext_id: null }).eq("ext_id", `futormes:${n.extId}`);
+        const { data, error } = await supabase.from("players")
+          .insert({ ...splitName(n.name), nickname: n.nickname, foot: n.foot, height_cm: n.height, ext_id: `futormes:${n.extId}` })
+          .select("id").single();
+        if (error) throw error;
+        id = data.id as string;
+        if (n.birth) await supabase.from("player_private").update({ birth_date: n.birth }).eq("player_id", id);
+      }
+      const stats = competition
+        ? (() => { const m = mergeLeagueStats(null, competition, { apps: n.apps, goals: n.goals, conceded: n.line === "POR" ? n.conceded : 0, yellows: n.yellows, reds: n.reds }); return { league_stats: m.total, league_stats_by: m.by }; })()
+        : {};
+      const row = { player_id: id, season, number: n.number, position: n.line, status: "active", joined_on: today, ...stats };
+      let { error } = await supabase.from("squad_members").insert(row);
+      // Dorsal repetido: entra sin dorsal y se le pone desde su ficha
+      if (error && /number_uniq/.test(error.message)) {
+        ({ error } = await supabase.from("squad_members").insert({ ...row, number: null }));
+        if (!error) noNumber.push(n.name);
+      }
+      // Ya estaba en la plantilla (lo ha fichado otro a la vez): no es un fallo
+      if (error && !/duplicate key/.test(error.message)) throw error;
+      added.push(n.extId);
+    }
+  } catch (e) {
+    return { error: errMsg(e) };
+  } finally {
+    if (added.length) {
+      await admin.from("league_sync").update({ last_summary: { ...summary, newcomers: newcomers.filter((n) => !added.includes(n.extId)) } }).eq("id", 1);
+      refresh();
+    }
+  }
+  const who = chosen.length === 1 ? chosen[0].name : `${added.length} jugadores`;
+  return { ok: `¡${who} ya ${added.length === 1 ? "está" : "están"} en la plantilla!${noNumber.length ? ` ${noNumber.join(", ")} sin dorsal porque estaba repetido: pónselo desde su ficha.` : ""}` };
+}
+
+/** «No es de los nuestros»: lo quita de la lista y no se vuelve a avisar de él. */
+export async function ignoreLeagueNewcomer(ext: string): Promise<ActionState> {
+  const s = await getSession();
+  if (!s.can("squad", "create")) return { error: "No tienes permiso para hacer esto" };
+  const { admin, summary, newcomers, ignored } = await leagueNewcomers();
+  const n = newcomers.find((x) => x.extId === ext);
+  if (!n) return { error: "Ese jugador ya no está en la lista. Recarga la página." };
+  await admin.from("league_sync").update({
+    last_summary: { ...summary, newcomers: newcomers.filter((x) => x.extId !== ext), ignoredPlayers: [...ignored, { ext: n.extId, name: n.name }].slice(-100) },
+  }).eq("id", 1);
+  refresh();
+  return { ok: `${n.name} no saldrá más en la lista.` };
 }

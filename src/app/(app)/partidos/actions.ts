@@ -331,15 +331,16 @@ export async function runLeagueSync(): Promise<LeagueState> {
       r.matchesNew && `${r.matchesNew} ${r.matchesNew === 1 ? "partido nuevo" : "partidos nuevos"}`,
       r.matchesUpdated && `${r.matchesUpdated} ${r.matchesUpdated === 1 ? "partido actualizado" : "partidos actualizados"}`,
       r.rivalsNew && `${r.rivalsNew} ${r.rivalsNew === 1 ? "rival nuevo" : "rivales nuevos"}`,
-      r.playersNew && `${r.playersNew} ${r.playersNew === 1 ? "jugador nuevo" : "jugadores nuevos"} en la plantilla`,
     ].filter(Boolean);
+    // Los jugadores que faltan no se añaden solos: se revisan en Plantilla
+    const review = r.newcomers ? ` ${r.newcomers === 1 ? "Hay 1 jugador nuevo" : `Hay ${r.newcomers} jugadores nuevos`} en la liga: revísalos en Plantilla.` : "";
     revalidatePath("/plantilla", "layout");
     revalidatePath("/partidos/liga");
     if (r.status === "partial") {
       const done = bits.length ? `Guardado: ${bits.join(", ")}.` : "Lo que se ha podido leer está al día.";
-      return { error: `Sincronización incompleta. ${done} ${r.issues.length === 1 ? "Incidencia" : `${r.issues.length} incidencias`}: ${r.issues.slice(0, 3).join(" · ")}${r.issues.length > 3 ? " · …" : ""} Queda apuntado en Partidos → Liga.` };
+      return { error: `Sincronización incompleta. ${done} ${r.issues.length === 1 ? "Incidencia" : `${r.issues.length} incidencias`}: ${r.issues.slice(0, 3).join(" · ")}${r.issues.length > 3 ? " · …" : ""} Queda apuntado en Partidos → Liga.${review}` };
     }
-    return { ok: bits.length ? `¡Listo! ${bits.join(", ")}.` : "Todo al día: no había cambios en la liga." };
+    return { ok: (bits.length ? `¡Listo! ${bits.join(", ")}.` : "Todo al día: no había cambios en la liga.") + review };
   } catch (e) {
     return { error: errMsg(e) };
   }

@@ -61,6 +61,7 @@ export const NOTICE_CATALOG: NoticeKind[] = [
 
   { area: "sponsors", title: "🤝 Patrocinadores", when: "Cada mañana, si un plazo pasa de fecha sin cobrar (como mucho uno a la semana) o falta un mes para que venza un acuerdo.", who: "Quien puede editar Patrocinadores.", how: "auto" },
 
+  { area: "league", title: "🆕 Jugador nuevo en la liga", when: "Cada mañana (10:00) y al sincronizar con la liga, si en la plantilla del Rayo en futormes aparece alguien que no está en la de la app. Una sola vez por jugador; se añade o se ignora en Plantilla.", who: "Quien puede fichar en Plantilla.", how: "auto" },
   { area: "league", title: "🏆 Hay liga nueva en futormes", when: "Al acabar la liga, cuando la app encuentra al Rayo en otra competición (una sola vez por competición).", who: "Quien puede editar Partidos.", how: "auto" },
   { area: "fees", title: "💶 Cuota del Rayo", when: "Con «Recordar a los que deben» en Plantilla → Cuotas (como mucho una vez al día). Dice a cada uno lo que le falta.", who: "Solo los jugadores que deben cuota esta temporada.", how: "manual" },
 
@@ -78,7 +79,7 @@ export function areaOf(url: string | null, tag: string | null): NoticeArea {
   if (tag?.startsWith("cuota-")) return "fees";
   if (tag?.startsWith("cumple-")) return "squad";
   if (u.startsWith("/admin/copia")) return "backup";
-  if (tag === "liga-sincronizacion" || u.startsWith("/partidos/liga")) return "league";
+  if (tag === "liga-sincronizacion" || tag === "liga-fichajes" || u.startsWith("/partidos/liga")) return "league";
   if (u.startsWith("/partidos")) return "matches";
   if (u.startsWith("/la-voz")) return "news";
   if (u.startsWith("/loteria")) return "lottery";
