@@ -8,6 +8,16 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.19.0",
+    date: "2026-11-17",
+    title: "La app, más ágil",
+    changes: [
+      "Si una página tarda en llegar (poca cobertura, primera vez que se abre), sale al momento su silueta mientras llegan los datos, en vez de quedarse la anterior quieta. La barrita dorada de carga ya no se esconde detrás de la hora en el iPhone.",
+      "Inicio abre más rápido: pide todo a la vez en lugar de una cosa detrás de otra.",
+      "Si a alguien le falla algo, queda apuntado para el superadministrador en Gestión → Uso → Fallos (la pantalla, el error y la versión; nada de lo que estuviera escribiendo).",
+    ],
+  },
+  {
     version: "4.18.3",
     date: "2026-11-16",
     title: "Imágenes para compartir más rápidas",

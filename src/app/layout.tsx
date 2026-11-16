@@ -15,6 +15,7 @@ const newsHead = Playfair_Display({ subsets: ["latin"], weight: ["700", "800", "
 const newsBody = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600", "700"], style: ["normal", "italic"], variable: "--nf-news-body", display: "swap", preload: false });
 import { RegisterSW } from "@/components/register-sw";
 import { Splash } from "@/components/splash";
+import { EARLY_ERROR_SCRIPT } from "@/lib/error-log";
 
 export const metadata: Metadata = {
   title: { default: "Rayo Vallecañas", template: "%s · Rayo Vallecañas" },
@@ -35,6 +36,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" className={`${body.variable} ${display.variable} ${newsHead.variable} ${newsBody.variable}`}>
+      <head>
+        {/* 4.19.0 · Apunta los fallos desde el primer momento (también el repintado de React al arrancar) */}
+        <script dangerouslySetInnerHTML={{ __html: EARLY_ERROR_SCRIPT }} />
+      </head>
       <body className="min-h-dvh antialiased">
         <Splash />
         {children}

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-/** Barra de carga arriba del todo mientras se abre otra página. */
+/** Barra de carga arriba del todo mientras se abre otra página (por debajo de la hora y la batería en la app instalada del iPhone). */
 export function NavProgress() {
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -33,7 +33,7 @@ export function NavProgress() {
 
   if (!active) return null;
   return (
-    <div role="progressbar" aria-label="Cargando" className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-1 overflow-hidden bg-dorado/20">
+    <div role="progressbar" aria-label="Cargando" className="pointer-events-none fixed inset-x-0 top-[env(safe-area-inset-top)] z-[60] h-1 overflow-hidden bg-dorado/20">
       <div className="h-full w-2/5 animate-progress rounded-full bg-dorado" />
     </div>
   );
