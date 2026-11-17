@@ -9,12 +9,18 @@ export type ActionState = { error?: string; ok?: string } | undefined;
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const errMsg = (e: unknown) =>
-  e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: string }).message) : String(e);
+  typeof e === "object" && e && "code" in e && (e as { code: string }).code === "23505"
+    ? "Ese plazo de patrocinio ya está cobrado en otro movimiento"
+    : e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: string }).message) : String(e);
 const METHODS = ["cash", "bizum", "transfer", "card", "other"];
 
 function refresh() {
   revalidatePath("/finanzas", "layout");
   revalidatePath("/");
+  // 4.20.2 · Una cuota o un patrocinio enlazados también cambian Cuotas, «Mi cuota» y Patrocinadores
+  revalidatePath("/plantilla", "layout");
+  revalidatePath("/perfil");
+  revalidatePath("/admin/patrocinadores", "layout");
 }
 
 function movementFromForm(f: FormData) {
@@ -29,7 +35,20 @@ function movementFromForm(f: FormData) {
   const method = METHODS.includes(str(f, "method")) ? str(f, "method") : "cash";
   const path = str(f, "attachment_path");
   if (path && !/^[0-9a-f-]{36}\/[^/]+$/.test(path)) throw new Error("Justificante no válido");
+  // 4.20.2 · Una cuota queda enlazada al jugador y un patrocinio a su plazo, como si se cobrasen desde allí.
+  // Solo llegan si el formulario los enseñó (categoría de cuotas o de patrocinios); si no, se quita el enlace.
+  const linked = f.get("links") === "1";
+  const feePlayer = str(f, "fee_player_id");
+  const feeSeason = str(f, "fee_season");
+  if (feePlayer && !/^[0-9a-f-]{36}$/.test(feePlayer)) throw new Error("Jugador no válido");
+  if (feePlayer && !/^\d{4}\/\d{2}$/.test(feeSeason)) throw new Error("Temporada de la cuota no válida");
+  const installment = str(f, "sponsor_installment_id");
+  if (installment && !/^[0-9a-f-]{36}$/.test(installment)) throw new Error("Plazo no válido");
+  const links = linked
+    ? { player_id: feePlayer || null, fee_season: feePlayer ? feeSeason : null, sponsor_installment_id: installment || null }
+    : {};
   return {
+    ...links,
     op_date,
     concept: concept.slice(0, 200),
     category_id,

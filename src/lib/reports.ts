@@ -28,3 +28,16 @@ export type ReportView = {
   goals: (MatchGoal & { scorer: ReportPlayer | null; assist: ReportPlayer | null })[];
   mvp: ReportPlayer | null;
 };
+
+/**
+ * 4.20.2 · Si el acta llega sin portero (ya no hay titulares en la convocatoria), se marca solo al único
+ * jugador con posición de portero que jugó: titular, portero y con lo encajado. Así cuentan solas las
+ * porterías a cero y lo encajado. Con dos porteros o ninguno no se toca: lo decide el gestor.
+ */
+export function presetKeeper(draft: ReportDraft, positions: Map<string, string>, goalsAgainst: number): ReportDraft {
+  if (Object.values(draft.apps).some((a) => a.goalkeeper)) return draft;
+  const keepers = Object.keys(draft.apps).filter((id) => positions.get(id) === "POR");
+  if (keepers.length !== 1) return draft;
+  const id = keepers[0];
+  return { ...draft, apps: { ...draft.apps, [id]: { ...draft.apps[id], started: true, goalkeeper: true, conceded: goalsAgainst } } };
+}
