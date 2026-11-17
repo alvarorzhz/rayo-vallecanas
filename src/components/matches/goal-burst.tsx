@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { CLUB_NAME } from "@/lib/matches";
 import type { LiveScorer } from "@/lib/live-queries";
+import { Jersey } from "@/components/squad/jersey";
 
 /**
  * 4.20.0 · Pantalla ¡GOOOL! cuando marca el Rayo en el acta en vivo: roja, a pantalla completa,
@@ -61,7 +62,8 @@ export function GoalBurst({ burst, onClose }: { burst: Burst; onClose: () => voi
             // eslint-disable-next-line @next/next/no-img-element
             <img src={w.photo} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
           ) : (
-            <span aria-hidden className="sport absolute inset-x-0 top-8 text-center text-[7rem] leading-none font-black italic text-white/10">{w.name.charAt(0)}</span>
+            // 4.20.2 · Sin foto, su camiseta con el dorsal, como en los cromos de la plantilla
+            <span aria-hidden className="absolute inset-x-0 top-7 flex justify-center"><Jersey number={w.number} size={124} /></span>
           )}
           <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-negro via-negro/30 to-transparent" />
           {w.number != null && <p className="sport absolute left-3 top-2 text-4xl font-black italic text-dorado [text-shadow:0_2px_6px_rgba(0,0,0,0.6)]">{w.number}</p>}

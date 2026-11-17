@@ -1,6 +1,6 @@
 {
   "name": "rayo-vallecanas",
-  "version": "4.20.1",
+  "version": "4.20.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,8 +9,7 @@
     "lint": "eslint",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test --test-reporter=spec \"src/lib/__tests__/*.test.ts\"",
     "test:e2e": "node --test --test-concurrency=1 --test-reporter=spec e2e/smoke.test.mjs",
-    "test:live": "LEAGUE_LIVE=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test --test-reporter=spec src/lib/__tests__/league-live.test.ts",
-    "test:db": "node --import ./tests/db/register.mjs --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test --test-concurrency=1 --test-reporter=spec \"tests/db/*.test.ts\""
+    "test:live": "LEAGUE_LIVE=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test --test-reporter=spec src/lib/__tests__/league-live.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

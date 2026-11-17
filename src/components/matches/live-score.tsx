@@ -10,6 +10,7 @@ import { GoalBurst, OUR_SHORT, type Burst } from "@/components/matches/goal-burs
  * cada 15 segundos (solo con la pantalla a la vista) y lo reparte al marcador y a la lista de jugadas.
  */
 const POLL_MS = 15_000;
+const WAIT_KEY = "rv-directo-desde-";
 type Store = { view: LiveView; subs: Set<() => void>; stop: (() => void) | null };
 const stores = new Map<string, Store>();
 
@@ -63,6 +64,15 @@ export function LiveScoreBox({ matchId, initial, home }: { matchId: string; init
   const [goal, setGoal] = useState(false);
   const [burst, setBurst] = useState<Burst | null>(null);
   const closeBurst = useCallback(() => setBurst(null), []);
+  // 4.20.2 · Si la portada se acaba de poner al día desde LiveWaiter, se celebra lo que marcó el Rayo mientras tanto
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(`${WAIT_KEY}${matchId}`)) {
+        sessionStorage.removeItem(`${WAIT_KEY}${matchId}`);
+        last.current = { gf: 0, ga: 0 };
+      }
+    } catch { /* sin almacenamiento */ }
+  }, [matchId]);
   useEffect(() => {
     const prev = last.current;
     last.current = { gf: v.gf, ga: v.ga };
@@ -128,4 +138,34 @@ export function LiveFeed({ matchId, initial }: { matchId: string; initial: LiveV
       )}
     </div>
   );
+}
+
+/**
+ * 4.20.2 · Con Inicio ya abierta antes del pitido inicial no había marcador que vigilar, así que el directo
+ * (y la pantalla ¡GOOOL!) no salía hasta recargar. Este vigilante mira cada 15 segundos, solo con la
+ * pantalla a la vista, y en cuanto quien lleva el acta da el pitido inicial, pone la portada al día.
+ */
+export function LiveWaiter({ matchId }: { matchId: string }) {
+  const router = useRouter();
+  useEffect(() => {
+    let done = false;
+    const check = async () => {
+      if (done || document.visibilityState !== "visible") return;
+      try {
+        const r = await fetch(`/api/partidos/${matchId}/directo`, { cache: "no-store" });
+        if (!r.ok) return;
+        const v = (await r.json()) as LiveView;
+        if (v.started || v.events.length || v.played) {
+          done = true;
+          try { if (!v.played) sessionStorage.setItem(`${WAIT_KEY}${matchId}`, "1"); } catch { /* sin almacenamiento */ }
+          router.refresh();
+        }
+      } catch { /* sin conexión: otra vuelta */ }
+    };
+    const timer = setInterval(check, POLL_MS);
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
+  }, [matchId, router]);
+  return null;
 }

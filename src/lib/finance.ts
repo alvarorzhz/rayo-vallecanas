@@ -19,6 +19,7 @@ export type Movement = {
   campaign_id: string | null;
   player_id?: string | null;
   fee_season?: string | null;
+  sponsor_installment_id?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -65,3 +66,14 @@ export function seasonRange(season: string): { from: string; to: string } | null
 export const today = () => madridDay();
 
 export const MOVEMENT_SELECT = "*, category:finance_categories(name), author:profiles!finance_movements_created_by_fkey(full_name)";
+
+/** 4.20.2 · Categorías que se enlazan solas: una cuota va a la ficha del jugador y un patrocinio, a su plazo. */
+export const isFeeCategory = (name: string) => /cuota/i.test(name);
+export const isSponsorCategory = (name: string) => /patrocin/i.test(name);
+
+/** Lo que se puede enlazar a un ingreso al apuntarlo desde Finanzas. */
+export type MovementLinks = {
+  season: string;
+  players: { id: string; name: string }[];
+  installments: { id: string; label: string }[];
+};

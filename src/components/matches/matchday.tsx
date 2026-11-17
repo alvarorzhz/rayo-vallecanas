@@ -24,7 +24,7 @@ import { InForm, PreviaTable, Stake } from "@/components/matches/previa";
 import type { HotPlayer } from "@/lib/match-queries";
 import type { MatchRanks } from "@/lib/standings";
 import { Ball } from "@/components/squad/ball";
-import { LiveFeed, LiveScoreBox } from "@/components/matches/live-score";
+import { LiveFeed, LiveScoreBox, LiveWaiter } from "@/components/matches/live-score";
 import type { LiveView } from "@/lib/live-queries";
 
 const darkBtn = "btn bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20";
@@ -128,6 +128,7 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null, weath
         <div className="mt-5 flex flex-col items-center gap-3">
           {ahead && m.kickoff && <MatchdayCountdown to={kickoffDate(m).toISOString()} />}
           {ahead && !m.kickoff && <p className="text-sm text-white/70">{phase === "week" && when ? `${when} · ` : ""}Hora por confirmar</p>}
+          {(phase === "live" || phase === "day") && !live && <LiveWaiter matchId={m.id} />}
           {phase === "live" && (live ? <LiveFeed matchId={m.id} initial={live} /> : (
             <p className="sport flex items-center gap-2 text-2xl font-black text-white"><span className="md-live-dot" aria-hidden /> Partido en juego · ¡vamos Rayo!</p>
           ))}

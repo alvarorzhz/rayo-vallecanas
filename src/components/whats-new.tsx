@@ -2,21 +2,21 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, X } from "lucide-react";
-import { APP_VERSION, releaseToAnnounce, type Release } from "@/lib/changelog";
+import { APP_VERSION, releaseToAnnounce, visibleChanges, type Release } from "@/lib/changelog";
 
 const KEY = "rv-version-vista";
 
 /** Muestra las novedades una vez cuando la app se actualiza a una versión nueva. */
-export function WhatsNew({ skip = false }: { skip?: boolean }) {
+export function WhatsNew({ skip = false, staff = true }: { skip?: boolean; staff?: boolean }) {
   const [release, setRelease] = useState<Release | null>(null);
   const open = release !== null;
   useEffect(() => {
     try {
-      const news = skip ? null : releaseToAnnounce(localStorage.getItem(KEY));
+      const news = skip ? null : releaseToAnnounce(localStorage.getItem(KEY), undefined, staff);
       if (news) setRelease(news);
       else localStorage.setItem(KEY, APP_VERSION);
     } catch {}
-  }, [skip]);
+  }, [skip, staff]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
@@ -44,7 +44,7 @@ export function WhatsNew({ skip = false }: { skip?: boolean }) {
           <button onClick={close} aria-label="Cerrar" className="rounded-lg p-1 text-negro/65 hover:text-negro"><X size={20} /></button>
         </div>
         <ul className="mb-4 list-disc space-y-1 pl-5 text-sm text-negro/80">
-          {r.changes.map((c) => <li key={c}>{c}</li>)}
+          {visibleChanges(r, staff).map((c) => <li key={c}>{c}</li>)}
         </ul>
         <div className="flex gap-2">
           <Link href="/novedades" onClick={close} className="btn-ghost flex-1">Ver historial</Link>
