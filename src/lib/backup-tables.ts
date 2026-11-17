@@ -54,6 +54,7 @@ export const BACKUP_TABLES: [string, string][] = [
   ["user_activity", "Auditoría · última conexión"],
   ["session_activity", "Auditoría · sesiones"],
   ["usage_daily", "Uso de la app"],
+  ["app_errors", "Uso de la app · fallos"],
 ];
 
 /** Tablas que NO se copian a propósito: claves privadas del servidor y los dispositivos de los avisos. */

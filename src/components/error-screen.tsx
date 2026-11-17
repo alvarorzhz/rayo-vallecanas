@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { RotateCcw } from "lucide-react";
+import { reportAppError } from "@/components/error-reporter";
 
 const KEY = "rv-error-recarga";
 
@@ -20,6 +21,8 @@ export function ErrorScreen({ error, reset, full = false }: { error: Error & { d
 
   useEffect(() => {
     console.error(error);
+    // 4.19.0 · Queda apuntado para el superadministrador (salvo versión vieja o sin cobertura, que se arreglan solos)
+    if (!staleOrOffline(error) && !offline) reportAppError("pantalla", `${error.name && error.name !== "Error" ? error.name + ": " : ""}${error.message}`, error.digest);
     if (!staleOrOffline(error) || offline) return;
     try {
       const last = Number(sessionStorage.getItem(KEY) || 0);

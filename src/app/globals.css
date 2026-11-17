@@ -988,3 +988,19 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
 @media (prefers-reduced-motion: reduce) {
   .bb-spin, .bb-jump, .bb-fall, .bb-big, .gala-float, .gala-seal, .gala-rise, .ach-in, .ach-shine::after, .ach-bar, .rx-pop, .rx-burst, .tl-up, .tl-down { animation: none !important; }
 }
+
+/* 4.19.0 · Pantallas de carga: brillo que recorre la silueta */
+.skeleton {
+  background: linear-gradient(100deg, rgb(0 0 0 / 0.08) 30%, rgb(0 0 0 / 0.14) 50%, rgb(0 0 0 / 0.08) 70%);
+  background-size: 200% 100%;
+  animation: rv-shimmer 1.3s linear infinite;
+}
+.skeleton-dark {
+  background-image: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.07) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: rv-shimmer 1.3s linear infinite;
+}
+/* Si la página llega enseguida, la silueta ni se ve (aparece con un pequeño retraso) */
+.skeleton-in { animation: rv-skel-in 0.2s ease-out 0.12s both; }
+@keyframes rv-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes rv-skel-in { from { opacity: 0; } to { opacity: 1; } }

@@ -37,130 +37,136 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const supabase = await createClient();
   const isAdmin = s.can("lottery_admin");
   const canSell = s.can("lottery_sell", "create");
+  const season = seasonOf();
+  const today = todayMadrid();
+  const year = Number(today.slice(0, 4));
+  const canMatches = s.can("matches");
+  const canSquad = s.can("squad");
 
-  // Campaña activa más reciente visible para el usuario (solo mientras está abierta)
-  let campaign: Campaign | null = null;
-  if (isAdmin) {
-    const { data } = await supabase.from("lottery_campaigns").select("*").eq("status", "active").is("archived_at", null).order("created_at", { ascending: false }).limit(1).returns<Campaign[]>();
-    campaign = data?.[0] ?? null;
-  } else if (canSell) {
-    const { data } = await supabase
-      .from("lottery_campaign_sellers")
-      .select("campaign:lottery_campaigns!inner(*)")
-      .eq("user_id", s.user.id)
-      .eq("campaign.status", "active")
-      .limit(1);
-    campaign = (data?.[0]?.campaign as unknown as Campaign) ?? null;
-  }
+  // 4.19.0 · Inicio más rápido: todo lo que no depende de nada se pide a la vez (antes iba una consulta detrás de otra)
+  const [campaign, roster, bdayRows, [matchday, focus], [display, showcase, board], [news, newsCount, pendingChronicle], ended, myInterviews, myPlayerId] = await Promise.all([
+    // Campaña activa más reciente visible para el usuario (solo mientras está abierta)
+    (async (): Promise<Campaign | null> => {
+      if (isAdmin) {
+        const { data } = await supabase.from("lottery_campaigns").select("*").eq("status", "active").is("archived_at", null).order("created_at", { ascending: false }).limit(1).returns<Campaign[]>();
+        return data?.[0] ?? null;
+      }
+      if (canSell) {
+        const { data } = await supabase
+          .from("lottery_campaign_sellers")
+          .select("campaign:lottery_campaigns!inner(*)")
+          .eq("user_id", s.user.id)
+          .eq("campaign.status", "active")
+          .limit(1);
+        return (data?.[0]?.campaign as unknown as Campaign) ?? null;
+      }
+      return null;
+    })(),
+    // Plantilla de la temporada (de ahí sale también la ficha del propio usuario)
+    canSquad ? fetchRoster(supabase, season) : Promise.resolve([] as Awaited<ReturnType<typeof fetchRoster>>),
+    // Cumpleaños de la plantilla (solo día y mes)
+    canSquad ? supabase.rpc("squad_birthdays", { p_season: season }).then((r) => (r.data ?? []) as BirthdayRow[]) : Promise.resolve([] as BirthdayRow[]),
+    // Partidos: el próximo y los últimos resultados
+    canMatches ? Promise.all([fetchMatchday(supabase, 40), fetchMatchdayFocus(supabase)]) : Promise.resolve([null, null] as const),
+    // Patrocinadores (una línea discreta al final) y votaciones abiertas
+    Promise.all([fetchDisplay(supabase), supabase.rpc("sponsor_showcase"), supabase.rpc("poll_board", { p_limit: 10 })]),
+    // La Voz del Rayo
+    s.can("news")
+      ? Promise.all([fetchPublished(supabase, { limit: 6 }), countPublished(supabase), s.can("news", "create") ? fetchPendingChronicle(supabase) : null])
+      : Promise.resolve([[], 0, null] as const),
+    // ¿Se acaba de terminar una liga (el Apertura…)? Tres semanas con el acceso a «Tu resumen»
+    canMatches ? fetchJustEnded(supabase, today) : Promise.resolve(null),
+    // Entrevistas que me ha mandado la redacción y aún no he entregado
+    fetchMyPendingInterviews(supabase, s.user.id),
+    canMatches ? fetchMyPlayerId(supabase, s.user.id) : Promise.resolve(null),
+  ]);
+
+  const squad = roster.filter((r) => r.status !== "left");
+  const me = roster.find((r) => r.player.user_id === s.user.id) ?? null;
+
+  // Cumpleaños: hoy (con las felicitaciones) y los de la próxima semana
+  const byId = new Map(squad.map((r) => [r.player_id, r]));
+  const bd = birthdays(bdayRows, today);
+  const bdaySoon = bd.upcoming.filter((r) => byId.has(r.player_id)).slice(0, 3).map((r) => ({ name: shirtName(byId.get(r.player_id)!.player), when: whenLabel(r.date, r.inDays) }));
+  const bdayIds = bd.today.map((r) => r.player_id).filter((id) => byId.has(id));
+
+  // ¿Me han convocado para el próximo partido? También durante el final y el post partido del anterior:
+  // la convocatoria de la semana siguiente se publica antes de que se quite el resultado de la portada.
+  const afterMatch = !!focus && (focus.phase === "final" || focus.phase === "post") && matchday?.next?.id !== focus.m.id;
+  const wantCallup = (!focus || afterMatch) && !!matchday?.next && callupOpen(matchday.next);
+
+  // Segunda tanda: lo que depende de la primera, también a la vez
+  const [sales, myLog, wishData, nextCallups, md] = await Promise.all([
+    campaign
+      ? Promise.all([
+          supabase.rpc("lottery_campaign_summary", { p_campaign_id: campaign.id }),
+          supabase.from("lottery_sales").select("quantity, total_cents, paid_cents").eq("campaign_id", campaign.id).eq("seller_id", s.user.id).is("cancelled_at", null),
+        ])
+      : null,
+    me && canMatches ? fetchPlayerLog(supabase, me.player_id, season) : Promise.resolve([]),
+    bdayIds.length ? supabase.rpc("birthday_wishers", { p_players: bdayIds, p_year: year }).then((r) => r.data) : Promise.resolve(null),
+    wantCallup && matchday?.next ? fetchCallups(supabase, matchday.next) : Promise.resolve(null),
+    // Especial Matchday: la víspera y el día del partido, Inicio se convierte en la portada del partido
+    focus
+      ? (async () => {
+          const final = focus.phase === "final" || focus.phase === "post";
+          const [mvp, callups, preview, report, weather, lv] = await Promise.all([
+            // Votación del MVP (si ya toca, hace el recuento antes de leer el acta)
+            final ? fetchMvpBoard(supabase, focus.m.id) : Promise.resolve(null),
+            final ? Promise.resolve([]) : fetchCallups(supabase, focus.m),
+            final ? Promise.resolve({ lastH2H: null, topScorer: null, hot: [], ranks: null, stake: null }) : fetchMatchdayPreview(supabase, focus.m),
+            final && focus.m.report_saved_at ? fetchReport(supabase, focus.m) : Promise.resolve(null),
+            // El tiempo en Salamanca a la hora del partido: la víspera y el mismo día
+            focus.phase === "eve" || focus.phase === "day" ? fetchMatchWeather(focus.m.match_date, focus.m.kickoff) : Promise.resolve(null),
+            // Acta en vivo: el marcador sale en la portada en cuanto quien lo lleva da el pitido inicial
+            focus.phase === "live" || focus.phase === "day" ? fetchLiveView(supabase, focus.m) : Promise.resolve(null),
+          ]);
+          if (mvp?.winner_id) focus.m.mvp_player_id = mvp.winner_id;
+          // Gala del MVP: sale sola en Inicio la primera vez tras el recuento
+          const galaEntry = mvp?.winner_id && galaFresh(mvp) ? await fetchRosterEntry(supabase, focus.m.season, mvp.winner_id) : null;
+          const gala = galaEntry && mvp?.winner_id
+            ? { entry: galaEntry, me: s.user.id, rival: `${focus.m.is_home ? "vs" : "en"} ${focus.m.rival.name}`, auto: true, votes: mvp.tally?.[mvp.winner_id] ?? 0, picked: mvp.picked }
+            : null;
+          const live = lv && (lv.started || lv.events.length) ? lv : null;
+          return { ...focus, callups, myPlayerId, ...preview, report, weather, mvp, gala, live };
+        })()
+      : null,
+  ]);
 
   let summary: Summary | null = null;
   let mine = { shares: 0, total: 0, paid: 0 };
-  if (campaign) {
-    const [sum, own] = await Promise.all([
-      supabase.rpc("lottery_campaign_summary", { p_campaign_id: campaign.id }),
-      supabase.from("lottery_sales").select("quantity, total_cents, paid_cents").eq("campaign_id", campaign.id).eq("seller_id", s.user.id).is("cancelled_at", null),
-    ]);
+  if (sales) {
+    const [sum, own] = sales;
     summary = sum.data as Summary;
     for (const r of own.data ?? []) mine = { shares: mine.shares + r.quantity, total: mine.total + r.total_cents, paid: mine.paid + r.paid_cents };
   }
 
-  const season = seasonOf();
+  const myCallup = nextCallups?.find((r) => r.player_id === myPlayerId) ?? null;
 
-  // Plantilla de la temporada y la ficha del propio usuario
-  const roster = s.can("squad") ? await fetchRoster(supabase, season) : [];
-  const squad = roster.filter((r) => r.status !== "left");
-  const me = roster.find((r) => r.player.user_id === s.user.id) ?? null;
-  const myLog = me && s.can("matches") ? await fetchPlayerLog(supabase, me.player_id, season) : [];
-
-  // Cumpleaños: hoy (con las felicitaciones) y los de la próxima semana
-  const today = todayMadrid();
-  const year = Number(today.slice(0, 4));
   let bdayToday: BirthdayToday[] = [];
-  let bdaySoon: { name: string; when: string }[] = [];
-  if (squad.length) {
-    const { data: rows } = await supabase.rpc("squad_birthdays", { p_season: season });
-    const bd = birthdays((rows ?? []) as BirthdayRow[], today);
-    const byId = new Map(squad.map((r) => [r.player_id, r]));
-    bdaySoon = bd.upcoming.filter((r) => byId.has(r.player_id)).slice(0, 3).map((r) => ({ name: shirtName(byId.get(r.player_id)!.player), when: whenLabel(r.date, r.inDays) }));
-    const ids = bd.today.map((r) => r.player_id).filter((id) => byId.has(id));
-    if (ids.length) {
-      const { data: wishData } = await supabase.rpc("birthday_wishers", { p_players: ids, p_year: year });
-      const wishes = (wishData ?? []) as { player_id: string; user_id: string; first_name: string }[];
-      // El nombre de su ficha si es jugador (el apodo con el que le conoce el equipo); si no, el de pila
-      const nameOf = new Map<string, string>();
-      for (const r of roster) if (r.player.user_id) nameOf.set(r.player.user_id, shirtName(r.player));
-      bdayToday = ids.map((id) => {
-        const r = byId.get(id)!;
-        const mine = wishes.filter((w) => w.player_id === id);
-        return {
-          playerId: id, name: shirtName(r.player), number: r.number, photo: r.player.photo_url, gk: lineOf(r.position) === "GK",
-          isMe: r.player.user_id === s.user.id,
-          wishers: mine.map((w) => nameOf.get(w.user_id) ?? w.first_name),
-          wished: mine.some((w) => w.user_id === s.user.id),
-        };
-      });
-    }
+  if (bdayIds.length) {
+    const wishes = (wishData ?? []) as { player_id: string; user_id: string; first_name: string }[];
+    // El nombre de su ficha si es jugador (el apodo con el que le conoce el equipo); si no, el de pila
+    const nameOf = new Map<string, string>();
+    for (const r of roster) if (r.player.user_id) nameOf.set(r.player.user_id, shirtName(r.player));
+    bdayToday = bdayIds.map((id) => {
+      const r = byId.get(id)!;
+      const mine = wishes.filter((w) => w.player_id === id);
+      return {
+        playerId: id, name: shirtName(r.player), number: r.number, photo: r.player.photo_url, gk: lineOf(r.position) === "GK",
+        isMe: r.player.user_id === s.user.id,
+        wishers: mine.map((w) => nameOf.get(w.user_id) ?? w.first_name),
+        wished: mine.some((w) => w.user_id === s.user.id),
+      };
+    });
   }
 
-  // Partidos: el próximo y los últimos resultados
-  const [matchday, focus] = s.can("matches") ? await Promise.all([fetchMatchday(supabase, 40), fetchMatchdayFocus(supabase)]) : [null, null];
-  // ¿Me han convocado para el próximo partido? También durante el final y el post partido del anterior:
-  // la convocatoria de la semana siguiente se publica antes de que se quite el resultado de la portada.
-  const afterMatch = !!focus && (focus.phase === "final" || focus.phase === "post") && matchday?.next?.id !== focus.m.id;
-  let myCallup = null;
-  if ((!focus || afterMatch) && matchday?.next && callupOpen(matchday.next)) {
-    const [rows, me] = await Promise.all([fetchCallups(supabase, matchday.next), fetchMyPlayerId(supabase, s.user.id)]);
-    myCallup = rows.find((r) => r.player_id === me) ?? null;
-  }
-  // Especial Matchday: la víspera y el día del partido, Inicio se convierte en la portada del partido
-  const md = focus
-    ? await (async () => {
-        const final = focus.phase === "final" || focus.phase === "post";
-        // Votación del MVP (si ya toca, hace el recuento antes de leer el acta)
-        const mvp = final ? await fetchMvpBoard(supabase, focus.m.id) : null;
-        if (mvp?.winner_id) focus.m.mvp_player_id = mvp.winner_id;
-        const [callups, myPlayerId, preview, report, weather] = await Promise.all([
-          final ? Promise.resolve([]) : fetchCallups(supabase, focus.m),
-          fetchMyPlayerId(supabase, s.user.id),
-          final ? Promise.resolve({ lastH2H: null, topScorer: null, hot: [], ranks: null, stake: null }) : fetchMatchdayPreview(supabase, focus.m),
-          final && focus.m.report_saved_at ? fetchReport(supabase, focus.m) : Promise.resolve(null),
-          // El tiempo en Salamanca a la hora del partido: la víspera y el mismo día
-          focus.phase === "eve" || focus.phase === "day" ? fetchMatchWeather(focus.m.match_date, focus.m.kickoff) : Promise.resolve(null),
-        ]);
-        // Gala del MVP: sale sola en Inicio la primera vez tras el recuento
-        const galaEntry = mvp?.winner_id && galaFresh(mvp) ? await fetchRosterEntry(supabase, focus.m.season, mvp.winner_id) : null;
-        const gala = galaEntry && mvp?.winner_id
-          ? { entry: galaEntry, me: s.user.id, rival: `${focus.m.is_home ? "vs" : "en"} ${focus.m.rival.name}`, auto: true, votes: mvp.tally?.[mvp.winner_id] ?? 0, picked: mvp.picked }
-          : null;
-        // Acta en vivo: el marcador sale en la portada en cuanto quien lo lleva da el pitido inicial
-        const lv = focus.phase === "live" || focus.phase === "day" ? await fetchLiveView(supabase, focus.m) : null;
-        const live = lv && (lv.started || lv.events.length) ? lv : null;
-        return { ...focus, callups, myPlayerId, ...preview, report, weather, mvp, gala, live };
-      })()
-    : null;
-
-  // Patrocinadores (una línea discreta al final) y votaciones abiertas en las que puede votar (las que aún no ha votado, primero)
-  const [display, showcase, board] = await Promise.all([fetchDisplay(supabase), supabase.rpc("sponsor_showcase"), supabase.rpc("poll_board", { p_limit: 10 })]);
   const polls = ((board.data ?? []) as Poll[])
     .filter((p) => p.open && p.can_vote)
     .sort((a, b) => Number(a.my_vote !== null) - Number(b.my_vote !== null));
   const canManagePolls = s.can("users", "update") || s.can("lottery_admin", "update");
 
   // La Voz del Rayo: si hay una noticia destacada (2 días), Inicio se abre como la portada del periódico
-  const [news, newsCount, pendingChronicle] = s.can("news")
-    ? await Promise.all([fetchPublished(supabase, { limit: 6 }), countPublished(supabase), s.can("news", "create") ? fetchPendingChronicle(supabase) : null])
-    : [[], 0, null];
-  // ¿Se acaba de terminar una liga (el Apertura…)? Tres semanas con el acceso a «Tu resumen»
-  let ended: { competition: string; name: string } | null = null;
-  if (s.can("matches")) {
-    const { data: done } = await supabase.from("league_competitions").select("competition, name").eq("finished", true);
-    for (const c of done ?? []) {
-      const { data: lastM } = await supabase.from("matches").select("match_date").eq("league_competition", c.competition).eq("status", "played").order("match_date", { ascending: false }).limit(1).maybeSingle();
-      if (lastM && Date.now() - new Date(lastM.match_date + "T12:00:00").getTime() < 21 * 86_400_000) { ended = { competition: c.competition, name: competitionShort(c.name) }; break; }
-    }
-  }
-  // Entrevistas que me ha mandado la redacción y aún no he entregado
-  const myInterviews = await fetchMyPendingInterviews(supabase, s.user.id);
   const featured = news.find((a) => isFeaturedNow(a)) ?? null;
   const latest = news[0] && Date.now() - new Date(news[0].published_at ?? 0).getTime() < 14 * 86_400_000 ? news[0] : null;
   const front = featured && <HomeFront lead={featured} others={news.filter((a) => a.id !== featured.id).slice(0, 2)} count={newsCount} />;
@@ -299,4 +305,23 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <SponsorStrip sponsors={sponsors} />
     </>
   );
+}
+
+/**
+ * Liga terminada hace menos de tres semanas (para el acceso a «Tu resumen»).
+ * Una consulta para todas las ligas terminadas (antes iba una por cada liga).
+ */
+async function fetchJustEnded(supabase: Awaited<ReturnType<typeof createClient>>, today: string): Promise<{ competition: string; name: string } | null> {
+  const { data: done } = await supabase.from("league_competitions").select("competition, name").eq("finished", true);
+  if (!done?.length) return null;
+  const since = new Date(Date.now() - 21 * 86_400_000);
+  const { data: recent } = await supabase.from("matches").select("league_competition, match_date")
+    .in("league_competition", done.map((c) => c.competition)).eq("status", "played").lte("match_date", today)
+    .gte("match_date", since.toISOString().slice(0, 10));
+  // La primera liga terminada (en el orden de siempre) que tenga su último partido dentro de las tres semanas
+  for (const c of done) {
+    const last = (recent ?? []).filter((m) => m.league_competition === c.competition).map((m) => m.match_date as string).sort().pop();
+    if (last && Date.now() - new Date(last + "T12:00:00").getTime() < 21 * 86_400_000) return { competition: c.competition, name: competitionShort(c.name) };
+  }
+  return null;
 }

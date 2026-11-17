@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BellRing, Smartphone, Monitor, Tablet } from "lucide-react";
+import { BellRing, Bug, Smartphone, Monitor, Tablet } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -8,6 +8,7 @@ import { madridDay } from "@/lib/dates";
 import { fecha, ultimaConexion } from "@/lib/format";
 import { AREA_BY_KEY, areaStats, dailyPeople, personStats, type UsageGroup, type UsageRow } from "@/lib/usage";
 import { Empty, PageHeader, Stat } from "@/components/ui";
+import { ERROR_KIND_LABEL, groupErrors, type ErrorRow } from "@/lib/error-log";
 
 export const metadata = { title: "Uso de la app" };
 
@@ -41,7 +42,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
 
   const supabase = await createClient();
   const admin = createAdminClient();
-  const [usage, { data: activity }, { data: people }, { data: subs }, callups, mvp, porra, ratings, polls, reactions, wishes, interviews] = await Promise.all([
+  const [usage, { data: activity }, { data: people }, { data: subs }, callups, mvp, porra, ratings, polls, reactions, wishes, interviews, errorsRes] = await Promise.all([
     all<UsageRow>((a, b) => supabase.from("usage_daily").select("day, user_id, area, hits").gte("day", fromDay).order("day").range(a, b)),
     supabase.from("user_activity").select("user_id, last_seen_at, device, installed"),
     supabase.from("member_directory").select("id, full_name, active").order("full_name"),
@@ -54,7 +55,12 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
     all<{ u: string }>((a, b) => admin.from("news_reactions").select("u:user_id").gte("created_at", fromTs).range(a, b)),
     all<{ u: string }>((a, b) => admin.from("birthday_wishes").select("u:user_id").gte("created_at", fromTs).range(a, b)),
     admin.from("news_interviews").select("id", { count: "exact", head: true }).eq("status", "answered").gte("answered_at", fromTs),
+    // 4.19.0 · Fallos que ha tenido el equipo
+    supabase.from("app_errors").select("day, user_id, sig, kind, path, message, digest, version, device, hits, last_at").gte("day", fromDay)
+      .order("last_at", { ascending: false }).limit(500).returns<ErrorRow[]>(),
   ]);
+  const errorsReady = !errorsRes.error;
+  const errors = groupErrors(errorsRes.data ?? []);
 
   const ready = !usage.error;
   const rows = usage.data;
@@ -217,7 +223,36 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
               })}
             </ul>
           </section>
-          <p className="mt-3 text-center text-xs text-negro/50">Se guarda una cuenta por persona, pantalla y día, durante un año. Solo lo ve el superadministrador.</p>
+
+          {/* 4.19.0 · Fallos */}
+          <section className="card mt-4" id="fallos">
+            <h2 className="h2 flex items-center gap-2"><Bug size={18} className="text-rojo" /> Fallos</h2>
+            <p className="mb-3 text-xs text-negro/60">Lo que le ha fallado a alguien en estos días: en qué pantalla, el texto del error y con qué versión. No se guarda nada de lo que estaba escribiendo.</p>
+            {!errorsReady ? (
+              <p className="text-sm text-negro/70">El registro de fallos todavía no está activado en la base de datos. Hay que ejecutar el SQL de la versión 4.19.0.</p>
+            ) : errors.length === 0 ? (
+              <p className="text-sm font-semibold text-green-700">Ningún fallo en los últimos {days} días. 👌</p>
+            ) : (
+              <ul className="divide-y divide-black/5 text-sm">
+                {errors.slice(0, 40).map((e) => (
+                  <li key={e.sig} className="py-2.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={`badge ${e.kind === "pantalla" ? "bg-rojo text-white" : e.kind === "js" ? "bg-dorado/25 text-negro" : "bg-black/5 text-negro/70"}`}>{ERROR_KIND_LABEL[e.kind]}</span>
+                      <code className="rounded bg-black/5 px-1.5 py-0.5 text-xs">{e.path}</code>
+                    </div>
+                    <p className="mt-1 break-words font-mono text-xs text-negro/80">{e.message}</p>
+                    <p className="mt-1 text-xs text-negro/55">
+                      {e.hits} {e.hits === 1 ? "vez" : "veces"} · {e.people.length === 1 ? names.get(e.people[0]) ?? "1 persona" : `${e.people.length} personas`}
+                      {" · "}{ultimaConexion(e.last_at)}
+                      {e.versions.length > 0 && ` · v${e.versions.join(", v")}`}
+                      {e.digest && ` · código ${e.digest}`}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <p className="mt-3 text-center text-xs text-negro/50">Se guarda una cuenta por persona, pantalla y día, durante un año. Los fallos, 90 días. Solo lo ve el superadministrador.</p>
         </>
       )}
     </>

@@ -11,6 +11,7 @@ import { WhatsNew } from "@/components/whats-new";
 import { NavProgress } from "@/components/nav-progress";
 import { RefreshOnVisit } from "@/components/refresh-on-visit";
 import { UsageTracker } from "@/components/usage-tracker";
+import { ErrorReporter } from "@/components/error-reporter";
 import { APP_VERSION } from "@/lib/changelog";
 import { Tour } from "@/components/tour";
 import { EasterEggs } from "@/components/easter-eggs";
@@ -97,6 +98,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <SigningsOnEnter entries={signings} init={!s.signingsSeen} now={new Date().toISOString()} me={s.user.id} />
       )}
       <PushPrompt />
+      <ErrorReporter version={APP_VERSION} />
       <EasterEggs />
       <Suspense>
         <NavProgress />
