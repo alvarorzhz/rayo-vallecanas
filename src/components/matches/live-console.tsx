@@ -8,8 +8,20 @@ import { addLiveEvent, deleteLiveEvent, finishLive, resetLive, startHalf, type L
 import { clockLabel, KIND_ICON, liveClock, type LiveKind } from "@/lib/live";
 import type { LiveView } from "@/lib/live-queries";
 import { CLUB_SHORT, rivalShort, type Rival } from "@/lib/matches";
+import { CYCLE } from "@/lib/discipline";
+import { CardFlash, type CardFlashInfo } from "@/components/fx/card-flash";
 
-export type LivePlayer = { id: string; name: string; number: number | null; gk: boolean; going: boolean };
+/** inCycle: amarillas del ciclo de liga que ya lleva (null si el partido no es de liga); yellowsToday: las apuntadas hoy en vivo. */
+export type LivePlayer = { id: string; name: string; number: number | null; gk: boolean; going: boolean; inCycle?: number | null; yellowsToday?: number };
+
+/** 4.21.0 · Qué supone la tarjeta, en una línea (o nada si no supone nada especial). */
+export function cardNote(kind: "yellow" | "red", p: Pick<LivePlayer, "inCycle" | "yellowsToday">): string | null {
+  if (kind === "red") return "Se pierde el próximo partido";
+  if ((p.yellowsToday ?? 0) >= 1) return "Segunda amarilla: expulsado, se pierde el próximo";
+  if (p.inCycle == null) return null;
+  if (p.inCycle + 1 >= CYCLE) return `Ciclo cumplido (${CYCLE}ª): no juega el próximo`;
+  return `${p.inCycle + 1} de ${CYCLE} del ciclo${p.inCycle + 1 === CYCLE - 1 ? " · a una de la sanción" : ""}`;
+}
 
 type Sheet =
   | { kind: "goal"; step: "scorer" }
@@ -25,6 +37,7 @@ export function LiveConsole({ matchId, home, rival, view, players }: { matchId: 
   const [msg, setMsg] = useState<LiveState>();
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [finishing, setFinishing] = useState(false);
+  const [flash, setFlash] = useState<CardFlashInfo | null>(null);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 10_000);
@@ -38,6 +51,8 @@ export function LiveConsole({ matchId, home, rival, view, players }: { matchId: 
   });
   const add = (kind: LiveKind, extra: { player_id?: string | null; assist_id?: string | null; own_goal?: boolean } = {}) => {
     setSheet(null);
+    const p = (kind === "yellow" || kind === "red") ? players.find((x) => x.id === extra.player_id) : undefined;
+    if (p && (kind === "yellow" || kind === "red")) setFlash({ kind, name: p.name, number: p.number, gk: p.gk, note: cardNote(kind, p), key: Date.now() });
     run(() => addLiveEvent(matchId, { kind, ...extra }));
   };
 
@@ -146,6 +161,8 @@ export function LiveConsole({ matchId, home, rival, view, players }: { matchId: 
           ) : null}
         />
       )}
+
+      {flash && <CardFlash key={flash.key} info={flash} onDone={() => setFlash(null)} />}
 
       {finishing && (
         <FinishDialog score={`${a.name} ${a.goals} - ${b.goals} ${b.name}`} pending={pending} onClose={() => setFinishing(false)}

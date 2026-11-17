@@ -9,6 +9,7 @@ import { FORMATIONS, DEFAULT_FORMATION, REPLIES, REPLY_LABEL, slotsOf, type Repl
 import { hhmm, type MatchRow } from "@/lib/matches";
 import type { CallupState } from "@/app/(app)/partidos/callup-actions";
 import { CYCLE, type Discipline } from "@/lib/discipline";
+import { VoyShot } from "@/components/fx/voy-shot";
 
 type A = (s: CallupState, f: FormData) => Promise<CallupState>;
 
@@ -202,7 +203,9 @@ export function ReplyBox({ action, reply, note, dark = false }: { action: A; rep
   const [choice, setChoice] = useState<Reply>(reply);
   const [pending, start] = useTransition();
   const [text, setText] = useState(note ?? "");
+  const [shot, setShot] = useState(0);
   function send(r: Reply) {
+    if (r === "yes" && choice !== "yes" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) setShot((n) => n + 1);
     setChoice(r);
     const fd = new FormData();
     fd.set("reply", r);
@@ -211,7 +214,8 @@ export function ReplyBox({ action, reply, note, dark = false }: { action: A; rep
   }
   return (
     <div className="space-y-3">
-      <div role="group" aria-label="¿Vas al partido?" className="grid grid-cols-3 gap-2">
+      <div role="group" aria-label="¿Vas al partido?" className="relative grid grid-cols-3 gap-2">
+        {shot > 0 && <VoyShot key={shot} onDone={() => setShot(0)} />}
         {REPLIES.map((r) => {
           const on = choice === r.key;
           return (

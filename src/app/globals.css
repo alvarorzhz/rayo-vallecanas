@@ -1023,3 +1023,47 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
 @media (prefers-reduced-motion: reduce) {
   .gb-screen, .gb-title, .gb-card, .gb-score, .gb-band, .gb-stripes, .gb-strip { animation: none !important; }
 }
+
+/* 4.21.0 · Animaciones cortas: «Voy» a la red, videomarcador, tarjeta del bolsillo y objetivo cumplido */
+.voy-shot { animation: voy-out 0.25s ease-in 0.85s both; }
+.voy-goal { position: absolute; right: 6px; top: 50%; width: 30px; height: 46px; margin-top: -23px; border: 3px solid #fff; border-right: 0; border-radius: 4px 0 0 4px; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.15); animation: voy-goal 0.2s ease-out both; }
+.voy-net { position: absolute; inset: 0; transform-origin: right center; background:
+  repeating-linear-gradient(45deg, transparent 0 5px, rgb(255 255 255 / 0.55) 5px 6px),
+  repeating-linear-gradient(-45deg, transparent 0 5px, rgb(255 255 255 / 0.55) 5px 6px), rgb(0 0 0 / 0.25);
+  animation: voy-net 0.35s ease-out 0.55s both; }
+.voy-ball { position: absolute; left: calc(16.66% - 9px); top: 50%; width: 18px; height: 18px; margin-top: -9px; border-radius: 9999px;
+  background: radial-gradient(circle at 50% 50%, #111 0 3px, transparent 3.5px), radial-gradient(circle at 35% 30%, #fff 0 55%, #ddd 100%);
+  box-shadow: inset 0 0 0 1.5px #111, 0 3px 6px rgb(0 0 0 / 0.3); animation: voy-ball 0.5s cubic-bezier(0.3, 0.1, 0.4, 1) 0.08s both; }
+@keyframes voy-goal { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@keyframes voy-ball { 0% { transform: scale(1.2); } 50% { transform: translateY(-14px) rotate(300deg); } 100% { left: calc(100% - 30px); transform: rotate(620deg) scale(0.85); } }
+@keyframes voy-net { 0% { transform: none; } 40% { transform: scaleX(1.35); } 100% { transform: none; } }
+@keyframes voy-out { to { opacity: 0; } }
+
+.flip-digit { display: inline-block; perspective: 220px; }
+.flip-face { display: inline-block; transform-origin: 50% 50%; animation: flip-face 0.1s ease-out both; }
+@keyframes flip-face { from { transform: rotateX(80deg); opacity: 0.4; } to { transform: none; opacity: 1; } }
+
+.card-flash { animation: cf-out 0.3s ease-in 1.9s both; }
+.card-flash > div { animation: cf-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.card-flash-card { transform-origin: 50% 100%; animation: cf-card 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.05s both; }
+@keyframes cf-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes cf-card { 0% { transform: translateY(70px) rotate(-14deg); opacity: 0; } 70% { transform: translateY(-5px) rotate(5deg); opacity: 1; } 100% { transform: rotate(-4deg); } }
+@keyframes cf-out { to { opacity: 0; transform: translateY(16px); } }
+.card-flash-card { transform: rotate(-4deg); }
+
+.goal-done-fill { width: 100%; transform-origin: left; background: repeating-linear-gradient(90deg, #2f8a3e 0 12px, #287a35 12px 24px); }
+.goal-done-flag { position: relative; display: block; width: 18px; height: 24px; flex-shrink: 0; }
+.goal-done-flag i { position: absolute; left: 0; bottom: 0; width: 2px; height: 24px; border-radius: 1px; background: var(--color-negro); }
+.goal-done-flag b { position: absolute; left: 2px; top: 0; width: 15px; height: 10px; background: var(--color-rojo); clip-path: polygon(0 0, 100% 50%, 0 100%); transform-origin: left center; }
+.goal-done-shine { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 40%, rgb(214 174 53 / 0.45) 50%, transparent 60%); transform: translateX(-100%); }
+.goal-done.is-playing .goal-done-fill { animation: gd-fill 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+.goal-done.is-playing .goal-done-flag { animation: gd-flag 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) 0.75s both; }
+.goal-done.is-playing .goal-done-flag b { animation: gd-wave 1s ease-in-out 1.1s 2; }
+.goal-done.is-playing .goal-done-shine { animation: gd-shine 0.8s ease 0.95s both; }
+@keyframes gd-fill { from { transform: scaleX(0.75); } }
+@keyframes gd-flag { from { transform: translateY(-22px); opacity: 0; } }
+@keyframes gd-wave { 50% { transform: skewY(-10deg) scaleX(0.85); } }
+@keyframes gd-shine { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .voy-shot, .voy-shot *, .flip-face, .card-flash-card, .goal-done * { animation: none !important; }
+}
