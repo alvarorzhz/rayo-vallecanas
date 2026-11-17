@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { APP_VERSION, CHANGELOG, releaseToAnnounce, type Release } from "../changelog.ts";
+import { APP_VERSION, CHANGELOG, releaseToAnnounce, visibleChanges, type Release } from "../changelog.ts";
 
 const r = (version: string, quiet = false): Release => ({ version, date: "2026-01-01", title: version, changes: ["x"], quiet });
 
@@ -43,4 +43,15 @@ test("sin versión guardada o con una desconocida se anuncia la última con nove
   assert.equal(releaseToAnnounce("0.0.1", log)?.version, "3.1.0");
   assert.equal(releaseToAnnounce(null, [r("1.0.0", true)]), null);
   assert.equal(releaseToAnnounce(null, []), null);
+});
+
+test("a un jugador no se le cuentan los cambios de gestión ni se le abre una versión solo de gestión", () => {
+  const mixta: Release = { version: "3.1.0", date: "2026-01-01", title: "m", changes: ["para todos", { staff: "solo gestión" }] };
+  const gestion: Release = { version: "3.2.0", date: "2026-01-01", title: "g", changes: [{ staff: "solo gestión" }] };
+  assert.deepEqual(visibleChanges(mixta, false), ["para todos"]);
+  assert.deepEqual(visibleChanges(mixta, true), ["para todos", "solo gestión"]);
+  const log = [gestion, mixta, r("3.0.0")];
+  assert.equal(releaseToAnnounce("3.0.0", log, true)?.version, "3.2.0");
+  assert.equal(releaseToAnnounce("3.0.0", log, false)?.version, "3.1.0");
+  assert.equal(releaseToAnnounce("3.1.0", log, false), null);
 });

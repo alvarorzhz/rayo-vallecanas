@@ -3,7 +3,7 @@ import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fetchCallups, fetchMatch, fetchReport } from "@/lib/match-queries";
 import { CLUB_NAME, longDay } from "@/lib/matches";
-import { emptyApp, type DraftApp, type ReportDraft } from "@/lib/reports";
+import { emptyApp, presetKeeper, type DraftApp, type ReportDraft } from "@/lib/reports";
 import { PageHeader } from "@/components/ui";
 import { DeleteReportButton, ReportEditor } from "@/components/matches/report-editor";
 import { deleteReport, leaguePrefill, saveReport } from "../../report-actions";
@@ -39,6 +39,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     };
     // Si se llevó el acta en vivo, sale ya con las tarjetas y los goles apuntados desde la banda
     if (live.length) initial = draftFromLive(live, initial.apps, new Set(report.pool.map((p) => p.player_id)), m.goals_against ?? 0);
+    // Y con el portero ya marcado si solo jugó uno
+    initial = presetKeeper(initial, new Map(report.pool.map((p) => [p.player_id, p.position])), m.goals_against ?? 0);
   }
   const score = m.is_home ? `${CLUB_NAME} ${m.goals_for}-${m.goals_against} ${m.rival.name}` : `${m.rival.name} ${m.goals_against}-${m.goals_for} ${CLUB_NAME}`;
   return (

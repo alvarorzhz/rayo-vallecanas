@@ -6,7 +6,7 @@ import { shrinkImage as shrink } from "@/lib/shrink-image";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { PAYMENT_METHOD_LABEL } from "@/lib/format";
-import { KIND_SLUG, type Category, type FinanceKind, type Movement } from "@/lib/finance";
+import { KIND_SLUG, isFeeCategory, isSponsorCategory, type Category, type FinanceKind, type Movement, type MovementLinks } from "@/lib/finance";
 import type { ActionState } from "@/app/(app)/finanzas/actions";
 
 const eurosInput = (c?: number | null) => (c ? (c / 100).toFixed(2).replace(".", ",") : "");
@@ -17,12 +17,15 @@ export function MovementForm({
   action,
   movement,
   today,
+  links,
 }: {
   kind: FinanceKind;
   categories: Category[];
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
   movement?: Movement;
   today: string;
+  /** 4.20.2 · Jugadores y plazos de patrocinio para enlazar el ingreso (solo ingresos). */
+  links?: MovementLinks;
 }) {
   const [state, formAction] = useActionState(action, undefined);
   const [file, setFile] = useState<{ path: string; name: string } | null>(
@@ -33,6 +36,15 @@ export function MovementForm({
   const input = useRef<HTMLInputElement>(null);
   const income = kind === "income";
   const options = categories.filter((c) => c.kind === kind && (c.active || c.id === movement?.category_id));
+  const [categoryId, setCategoryId] = useState(movement?.category_id ?? "");
+  const catName = options.find((c) => c.id === categoryId)?.name ?? "";
+  const fee = income && !!links && isFeeCategory(catName);
+  const sponsor = income && !!links && isSponsorCategory(catName);
+  // Lo ya enlazado se conserva aunque quien edita no vea la plantilla o los patrocinios
+  const players = links && movement?.fee_season && movement.player_id && !links.players.some((p) => p.id === movement.player_id)
+    ? [{ id: movement.player_id, name: movement.counterparty || "Jugador enlazado" }, ...links.players] : links?.players ?? [];
+  const installments = links && movement?.sponsor_installment_id && !links.installments.some((i) => i.id === movement.sponsor_installment_id)
+    ? [{ id: movement.sponsor_installment_id, label: "Plazo ya enlazado" }, ...links.installments] : links?.installments ?? [];
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0];
@@ -60,6 +72,7 @@ export function MovementForm({
       <input type="hidden" name="kind" value={KIND_SLUG[kind]} />
       <input type="hidden" name="attachment_path" value={file?.path ?? ""} />
       <input type="hidden" name="attachment_name" value={file?.name ?? ""} />
+      {income && links && <input type="hidden" name="links" value="1" />}
       <section className="card grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className="label" htmlFor="amount">Importe (€)</label>
@@ -70,15 +83,38 @@ export function MovementForm({
         <div className="sm:col-span-2">
           <label className="label" htmlFor="concept">Concepto</label>
           <input id="concept" name="concept" required maxLength={200} className="input" defaultValue={movement?.concept}
-            placeholder={income ? "Ej.: Cuota de octubre de Juan" : "Ej.: Arbitraje jornada 5"} />
+            placeholder={income ? "Ej.: Venta de bocadillos del torneo" : "Ej.: Arbitraje jornada 5"} />
         </div>
         <div>
           <label className="label" htmlFor="category_id">Categoría</label>
-          <select id="category_id" name="category_id" required className="input" defaultValue={movement?.category_id ?? ""}>
+          <select id="category_id" name="category_id" required className="input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="" disabled>Elige…</option>
             {options.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
+        {fee && links && (
+          <div className="sm:col-span-2 rounded-xl bg-dorado/10 p-3 ring-1 ring-dorado/30">
+            <label className="label" htmlFor="fee_player_id">¿De quién es la cuota?</label>
+            <select id="fee_player_id" name="fee_player_id" className="input" defaultValue={movement?.fee_season ? movement.player_id ?? "" : ""}>
+              <option value="">De nadie en concreto</option>
+              {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <input type="hidden" name="fee_season" value={movement?.fee_season ?? links.season} />
+            <p className="mt-1 text-xs text-negro/65">Así cuenta como pagada en Plantilla → Cuotas ({movement?.fee_season ?? links.season}) y en su «Mi cuota».</p>
+          </div>
+        )}
+        {sponsor && links && (
+          <div className="sm:col-span-2 rounded-xl bg-dorado/10 p-3 ring-1 ring-dorado/30">
+            <label className="label" htmlFor="sponsor_installment_id">¿Qué plazo de patrocinio cobra?</label>
+            <select id="sponsor_installment_id" name="sponsor_installment_id" className="input" defaultValue={movement?.sponsor_installment_id ?? ""}>
+              <option value="">Ninguno (no es de un acuerdo)</option>
+              {installments.map((i) => <option key={i.id} value={i.id}>{i.label}</option>)}
+            </select>
+            <p className="mt-1 text-xs text-negro/65">
+              {installments.length ? "Así sale cobrado en Gestión → Patrocinadores." : "No hay plazos de patrocinio sin cobrar. Los acuerdos se apuntan en Gestión → Patrocinadores."}
+            </p>
+          </div>
+        )}
         <div>
           <label className="label" htmlFor="op_date">Fecha</label>
           <input id="op_date" name="op_date" type="date" required className="input" defaultValue={movement?.op_date ?? today} />

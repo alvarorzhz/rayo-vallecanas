@@ -11,7 +11,7 @@ export const metadata = { title: "Editar perfil" };
 export default async function ProfileEditPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;
   const s = await requirePerm("users", "read");
-  if (s.profile.role !== "superadmin") redirect("/admin/perfiles");
+  if (s.profile.role !== "superadmin") redirect("/admin/perfiles?error=permiso");
   if (key === "superadmin") redirect("/admin/perfiles");
   const supabase = await createClient();
   const [defs, { data: people }] = await Promise.all([

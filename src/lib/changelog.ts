@@ -3,8 +3,17 @@
  * Al publicar cambios: añadir una entrada arriba y subir "version" en package.json.
  * Versionado: MAYOR.MENOR.PARCHE (nueva fase o cambio grande · nueva función · arreglo).
  */
-/** quiet: no abre la ventana de novedades al actualizar (retoques sin importancia). */
-export type Release = { version: string; date: string; title: string; changes: string[]; quiet?: boolean };
+/**
+ * quiet: no abre la ventana de novedades al actualizar (retoques sin importancia).
+ * Un cambio `{ staff: "…" }` solo lo ven gestores y superadministradores (4.20.2): a los jugadores no se les
+ * cuentan cosas de pantallas que no tienen. Si una versión no tiene nada para ellos, no les sale la ventana.
+ */
+export type Change = string | { staff: string };
+export type Release = { version: string; date: string; title: string; changes: Change[]; quiet?: boolean };
+
+export const changeText = (c: Change) => (typeof c === "string" ? c : c.staff);
+/** Los cambios que ve cada uno: todo el equipo directivo, o solo los que no son de gestión para un jugador. */
+export const visibleChanges = (r: Release, staff: boolean): string[] => r.changes.filter((c) => staff || typeof c === "string").map(changeText);
 
 export const CHANGELOG: Release[] = [
   {
@@ -13,7 +22,21 @@ export const CHANGELOG: Release[] = [
     title: "Repaso de seguridad de la base de datos",
     quiet: true,
     changes: [
-      "Repaso de los avisos de seguridad y rendimiento de Supabase: se cierran tres funciones internas que se podían llamar desde fuera (ninguna dejaba hacer nada, pero no tenían por qué estar abiertas) y los permisos de lectura de varias tablas se calculan más rápido. Nadie ve ni puede hacer nada distinto.",
+      { staff: "Repaso de los avisos de seguridad y rendimiento de Supabase: se cierran tres funciones internas que se podían llamar desde fuera (ninguna dejaba hacer nada, pero no tenían por qué estar abiertas) y los permisos de lectura de varias tablas se calculan más rápido. Nadie ve ni puede hacer nada distinto." },
+    ],
+  },
+  {
+    version: "4.20.2",
+    date: "2026-11-17",
+    title: "Arreglos tras la prueba por perfiles",
+    changes: [
+      { staff: "Finanzas: al apuntar un ingreso de «Cuotas de jugadores» se elige de quién es, y cuenta como pagada en Plantilla → Cuotas y en su «Mi cuota» (antes solo contaba si se cobraba desde Cuotas). Las cuotas ya apuntadas se pueden enlazar desde «Editar»." },
+      { staff: "Igual con los patrocinios: un ingreso de «Patrocinios» se puede enlazar al plazo del acuerdo y sale cobrado en Gestión → Patrocinadores." },
+      { staff: "El acta que sale del acta en vivo trae ya marcado como portero (y titular, con lo encajado) al único portero que jugó, para que cuenten solas las porterías a cero." },
+      "Las novedades de cada versión solo cuentan lo que puedes ver con tu perfil.",
+      "Acta en vivo: si tenías Inicio abierta desde antes del pitido inicial, el marcador en directo y la pantalla ¡GOOOL! no salían hasta recargar. Ahora la portada se pone al día sola en unos segundos.",
+      "En la pantalla ¡GOOOL!, quien no tiene foto sale con su camiseta y su dorsal, como en los cromos.",
+      { staff: "En Usuarios, el «Ficha nº» va por orden de alta y ya no cambia al dar de alta a otra persona. Y si un gestor abre la edición de un perfil, se le explica que eso es cosa del superadministrador." },
     ],
   },
   {
@@ -25,8 +48,9 @@ export const CHANGELOG: Release[] = [
       "«Lo que queda» en la Clasificación: partidos por jugar y qué hace falta para subir (o para no bajar), contando con que los de arriba lo ganan todo.",
       "Rachas en la ficha del jugador: goles, victorias, sin perder, porterías a cero, «Voy» seguidos y partidos sin tarjeta, con la racha actual y la mejor de la temporada.",
       "Acta en vivo: cuando marca el Rayo, Inicio se pone roja a pantalla completa con el cromo de quien ha marcado, el marcador y la asistencia. El móvil vibra, dura 4 segundos y se cierra al tocarla. El gol del rival es solo una tira gris arriba.",
-      "Sorteos → Cuentas de vendedores: cuánto ha vendido y cobrado cada uno y cuánto ha entregado ya al club. Cada vendedor ve en Mis ventas lo que le queda por entregar.",
-      "Patrocinadores: si hay varios principales, salen todos (hasta 3) en las imágenes para compartir, en el orden que se elija en Gestión → Patrocinadores.",
+      { staff: "Sorteos → Cuentas de vendedores: cuánto ha vendido y cobrado cada uno y cuánto ha entregado ya al club." },
+      "Mis ventas: cada vendedor ve lo que le queda por entregar al club de lo que ha cobrado.",
+      { staff: "Patrocinadores: si hay varios principales, salen todos (hasta 3) en las imágenes para compartir, en el orden que se elija en Gestión → Patrocinadores." },
     ],
   },
   {
@@ -36,7 +60,7 @@ export const CHANGELOG: Release[] = [
     changes: [
       "Si una página tarda en llegar (poca cobertura, primera vez que se abre), sale al momento su silueta mientras llegan los datos, en vez de quedarse la anterior quieta. La barrita dorada de carga ya no se esconde detrás de la hora en el iPhone.",
       "Inicio abre más rápido: pide todo a la vez en lugar de una cosa detrás de otra.",
-      "Si a alguien le falla algo, queda apuntado para el superadministrador en Gestión → Uso → Fallos (la pantalla, el error y la versión; nada de lo que estuviera escribiendo).",
+      { staff: "Si a alguien le falla algo, queda apuntado para el superadministrador en Gestión → Uso → Fallos (la pantalla, el error y la versión; nada de lo que estuviera escribiendo)." },
     ],
   },
   {
@@ -80,9 +104,9 @@ export const CHANGELOG: Release[] = [
     date: "2026-11-16",
     title: "Jugadores nuevos en la liga",
     changes: [
-      "Cada mañana la app mira la plantilla del Rayo en futormes. Si aparece alguien que no está en la de la app, avisa al móvil de quien puede fichar: «🆕 Jugador nuevo en la liga».",
+      { staff: "Cada mañana la app mira la plantilla del Rayo en futormes. Si aparece alguien que no está en la de la app, avisa al móvil de quien puede fichar: «🆕 Jugador nuevo en la liga»." },
       "En Plantilla sale arriba «Nuevos en la liga» con su dorsal, su posición y sus partidos. «Añadir» lo mete en la plantilla con los datos de la liga, y al resto del equipo le sale la presentación del fichaje al entrar. «Ignorar» lo quita de la lista para siempre.",
-      "La sincronización con la liga ya no mete a nadie en la plantilla sin preguntar: los que faltan van a esa misma lista.",
+      { staff: "La sincronización con la liga ya no mete a nadie en la plantilla sin preguntar: los que faltan van a esa misma lista." },
     ],
   },
   {
@@ -90,9 +114,9 @@ export const CHANGELOG: Release[] = [
     date: "2026-11-15",
     title: "Uso de la app, para saber qué sobra",
     changes: [
-      "Nueva pestaña «Uso» en Gestión, solo para el superadministrador: qué pantallas abre el equipo y cuántas personas, quién entra y cuántos días, y las pantallas que nadie ha abierto, candidatas a quitar.",
-      "También cuenta la participación (respuestas a convocatorias, votos al MVP, notas, porra, votaciones, reacciones, felicitaciones y entrevistas), quién tiene la app instalada y quién tiene los avisos activados. Se puede ver la última semana, el último mes o los últimos tres meses.",
-      "Solo se guarda una cuenta por persona, pantalla y día, durante un año. Nada de lo que se escribe. La página de Protección de datos lo explica.",
+      { staff: "Nueva pestaña «Uso» en Gestión, solo para el superadministrador: qué pantallas abre el equipo y cuántas personas, quién entra y cuántos días, y las pantallas que nadie ha abierto, candidatas a quitar." },
+      { staff: "También cuenta la participación (respuestas a convocatorias, votos al MVP, notas, porra, votaciones, reacciones, felicitaciones y entrevistas), quién tiene la app instalada y quién tiene los avisos activados. Se puede ver la última semana, el último mes o los últimos tres meses." },
+      { staff: "Solo se guarda una cuenta por persona, pantalla y día, durante un año. Nada de lo que se escribe. La página de Protección de datos lo explica." },
     ],
   },
   {
@@ -1030,9 +1054,10 @@ export const APP_VERSION = CHANGELOG[0].version;
  * entre las que le faltan. Así una entrega sin cambios a la vista (quiet) no se come el aviso
  * de la anterior para quien aún no había abierto la app.
  */
-export function releaseToAnnounce(seen: string | null, log: Release[] = CHANGELOG): Release | null {
+export function releaseToAnnounce(seen: string | null, log: Release[] = CHANGELOG, staff = true): Release | null {
   if (!log.length || seen === log[0].version) return null;
   const at = seen ? log.findIndex((r) => r.version === seen) : -1;
   const missed = at === -1 ? log : log.slice(0, at);
-  return missed.find((r) => !r.quiet) ?? null;
+  // A un jugador, una versión sin nada para él tampoco le abre la ventana
+  return missed.find((r) => !r.quiet && visibleChanges(r, staff).length > 0) ?? null;
 }
