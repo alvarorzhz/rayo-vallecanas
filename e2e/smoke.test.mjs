@@ -38,6 +38,10 @@ async function dismissOverlays(page) {
     const el = page.locator(sel).first();
     if (await el.isVisible().catch(() => false)) await el.click().catch(() => {});
   }
+  // La pantalla de avisos sale 1,5 s después de cerrar el tutorial o las novedades: si no se cierra aquí
+  // vuelve a salir en cada carga y tapa lo que se pulse después (fallaba a veces el «Voy» en CI).
+  const later = page.locator('#rv-avisos button:has-text("Ahora no")').first();
+  if (await later.waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false)) await later.click().catch(() => {});
 }
 
 /** Abre una ruta y comprueba lo básico: responde, tiene título, no revienta y no se sale de la pantalla. */
