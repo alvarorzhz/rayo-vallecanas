@@ -26,6 +26,7 @@ import type { MatchRanks } from "@/lib/standings";
 import { Ball } from "@/components/squad/ball";
 import { LiveFeed, LiveScoreBox, LiveWaiter } from "@/components/matches/live-score";
 import type { LiveView } from "@/lib/live-queries";
+import { FlipScore } from "@/components/fx/flip-score";
 
 const darkBtn = "btn bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20";
 
@@ -111,9 +112,8 @@ export function MatchdayHero({ m, phase, greeting, form = [], next = null, weath
             <span aria-hidden className="md-impact" />
             {done ? (
               <div className="anim-score md-vs flex items-center gap-1.5 rounded-2xl bg-black/70 px-3 py-2 ring-1 ring-dorado/40 sm:px-5">
-                <span className={`sport text-5xl font-black tabular-nums leading-none sm:text-7xl ${a.us && o === "W" ? "text-dorado" : ""}`}>{a.goals}</span>
-                <span className="sport text-3xl font-black text-white/40 sm:text-5xl">-</span>
-                <span className={`sport text-5xl font-black tabular-nums leading-none sm:text-7xl ${b.us && o === "W" ? "text-dorado" : ""}`}>{b.goals}</span>
+                <FlipScore matchId={m.id} a={a.goals ?? 0} b={b.goals ?? 0} aClass={a.us && o === "W" ? "text-dorado" : ""} bClass={b.us && o === "W" ? "text-dorado" : ""}
+                  digitClass="sport text-5xl font-black tabular-nums leading-none sm:text-7xl" dashClass="sport text-3xl font-black text-white/40 sm:text-5xl" />
               </div>
             ) : phase === "live" && live ? (
               <LiveScoreBox matchId={m.id} initial={live} home={m.is_home} />

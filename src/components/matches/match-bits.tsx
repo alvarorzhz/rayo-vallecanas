@@ -8,6 +8,7 @@ import {
 import { Crest } from "@/components/matches/crest";
 import { Countdown } from "@/components/matches/countdown";
 import { ordinal, pts, type MatchRanks, type Rank } from "@/lib/standings";
+import { FlipScore } from "@/components/fx/flip-score";
 
 /** «5º · 9 pts»: posición y puntos en la liga. */
 function RankChip({ r, dark = false, className = "" }: { r: Rank; dark?: boolean; className?: string }) {
@@ -88,9 +89,8 @@ export function Scoreboard({ m, countdown = true, compact = false, ranks }: { m:
         <div className="flex shrink-0 flex-col items-center">
           {played ? (
             <div className="anim-score flex items-center gap-1.5 rounded-xl bg-black/60 px-3 py-2 ring-1 ring-white/15 sm:px-4">
-              <span className={`sport text-4xl font-black tabular-nums leading-none sm:text-6xl ${a.us && o === "W" ? "text-dorado" : ""}`}>{a.goals}</span>
-              <span className="sport text-2xl font-black text-white/40 sm:text-4xl">-</span>
-              <span className={`sport text-4xl font-black tabular-nums leading-none sm:text-6xl ${b.us && o === "W" ? "text-dorado" : ""}`}>{b.goals}</span>
+              <FlipScore matchId={m.id} a={a.goals ?? 0} b={b.goals ?? 0} aClass={a.us && o === "W" ? "text-dorado" : ""} bClass={b.us && o === "W" ? "text-dorado" : ""}
+                digitClass="sport text-4xl font-black tabular-nums leading-none sm:text-6xl" dashClass="sport text-2xl font-black text-white/40 sm:text-4xl" />
             </div>
           ) : (
             <div className="flex flex-col items-center">

@@ -17,6 +17,17 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.21.0",
+    date: "2026-11-17",
+    title: "Cuatro animaciones nuevas",
+    changes: [
+      "Al contestar «Voy» a la convocatoria, el balón se mete en la portería.",
+      "El resultado de cada partido, la primera vez que lo ves, pasa las cifras como un marcador antiguo de estadio.",
+      "Cuando un objetivo de la temporada se cumple, la barra se llena de césped y se clava un banderín de córner (la primera vez que lo ves).",
+      { staff: "Acta en vivo: al apuntar una amarilla o una roja, la tarjeta sale como si la sacara el árbitro, con el jugador y lo que supone: segunda amarilla, ciclo cumplido o cuántas lleva del ciclo." },
+    ],
+  },
+  {
     version: "4.20.4",
     date: "2026-11-17",
     title: "Usuarios por número de ficha",

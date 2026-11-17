@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check, Pencil } from "lucide-react";
 import type { GoalCard } from "@/lib/season-goals-server";
+import { GoalDone } from "@/components/fx/goal-done";
 
 /** 4.20.0 · Objetivos de la temporada con su barra (Estadísticas y la página de objetivos). */
 export function SeasonGoals({ goals, season, canEdit, editHref }: { goals: GoalCard[]; season: string; canEdit: boolean; editHref?: string }) {
@@ -29,13 +30,14 @@ export function SeasonGoals({ goals, season, canEdit, editHref }: { goals: GoalC
           </div>
           <ul className="space-y-2">
             {goals.map((g) => (
-              <li key={g.id} className={`rounded-2xl p-3 ring-1 ${g.done ? "bg-gradient-to-r from-dorado/30 to-dorado/5 ring-dorado/60" : "bg-white ring-black/10"}`}>
+              <li key={g.id} className={`relative overflow-hidden rounded-2xl p-3 ring-1 ${g.done ? "bg-gradient-to-r from-dorado/30 to-dorado/5 ring-dorado/60" : "bg-white ring-black/10"}`}>
                 <div className="flex items-baseline justify-between gap-2">
                   <b className="text-sm">{g.title}</b>
                   {g.done
                     ? <span className="inline-flex shrink-0 items-center gap-1 text-xs font-extrabold text-[#6b5410]"><Check size={14} /> ¡CONSEGUIDO!</span>
                     : <span className="shrink-0 text-xs font-extrabold tabular-nums">{g.now}</span>}
                 </div>
+                {g.done && <GoalDone id={g.id} />}
                 {!g.done && (
                   <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-black/5">
                     <div className="anim-fill h-full rounded-full bg-rojo" style={{ width: `${g.pct}%` }} />
