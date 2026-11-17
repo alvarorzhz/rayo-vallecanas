@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, ArchiveRestore, Download, Pencil, ShoppingCart, Users, Grid3x3, List, Trophy, ShieldAlert, Wallet, Globe, ExternalLink, Fingerprint } from "lucide-react";
+import { Archive, ArchiveRestore, Download, Pencil, ShoppingCart, Users, Grid3x3, List, Trophy, ShieldAlert, Wallet, Globe, ExternalLink, Fingerprint, HandCoins } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha, NUMBERING_MODE_LABEL } from "@/lib/format";
@@ -160,6 +160,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
           <Link href={`/loteria/${id}/ventas`} className="btn-ghost"><List size={16} /> Todas las ventas</Link>
           <Link href={`/loteria/${id}/participaciones`} className="btn-ghost"><Grid3x3 size={16} /> {raffle ? "Números" : "Participaciones"}</Link>
           <Link href={`/loteria/${id}/vendedores`} className="btn-ghost"><Users size={16} /> Vendedores{c.numbering_mode === "booklet" ? " y talonarios" : ""}</Link>
+          <Link href={`/loteria/${id}/cuentas`} className="btn-ghost"><HandCoins size={16} /> Cuentas de vendedores</Link>
           {s.can("lottery_admin", "update") && (
             <>
               <Link href={`/loteria/${id}/editar`} className="btn-ghost"><Pencil size={16} /> Editar</Link>

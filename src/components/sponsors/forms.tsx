@@ -265,7 +265,7 @@ export function DisplayForm({ action, display, canEdit }: { action: A; display: 
     <form action={formAction} className="space-y-3">
       <div className="grid gap-2 sm:grid-cols-2">
         {opt("show_home", display.show_home, "Al pie de Inicio", "Una línea discreta «Con el apoyo de» con los logos en gris, al final de la página.")}
-        {opt("show_result", display.show_result, "En las imágenes para compartir", "El logo del patrocinador principal, pequeño, al pie de las imágenes del partido (convocatoria, «Hoy jugamos» y resultado).")}
+        {opt("show_result", display.show_result, "En las imágenes para compartir", "Los logos de los patrocinadores principales (hasta 3), pequeños, al pie de las imágenes para compartir (convocatoria, «Hoy jugamos», resultado y resúmenes).")}
       </div>
       {canEdit && <SubmitButton className="btn-dark w-full sm:w-auto" pendingText="Guardando…">Guardar</SubmitButton>}
       <FormMessage state={state} />

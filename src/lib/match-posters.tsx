@@ -30,7 +30,8 @@ type Common = {
   home: Team;
   away: Team;
   crest: Pic;
-  sponsor: Pic | null;
+  /** Patrocinadores principales (como mucho 3), en el orden de Gestión. */
+  sponsors: Pic[];
 };
 
 export type CallupPosterData = Common & {
@@ -344,7 +345,7 @@ function renderCallup(d: CallupPosterData, format: Format) {
       <div style={{ display: "flex", flexGrow: 1, flexDirection: "column", justifyContent: "center", paddingTop: story ? 30 : 16, paddingBottom: story ? 40 : 22 }}>
         {grid}
       </div>
-      <PosterFooter sponsor={d.sponsor} venue={null} story={story} />
+      <PosterFooter sponsors={d.sponsors} venue={null} story={story} />
     </div>
   );
   return { tree, width: W, height: H };
@@ -429,7 +430,7 @@ function renderMatchday(d: MatchdayPosterData, format: Format) {
       <Duel home={d.home} away={d.away} crestSize={story ? 230 : 170} nameSize={story ? 42 : 36} vsSize={story ? 130 : 100} marginTop={story ? 70 : 26} />
       <div style={{ display: "flex", flexGrow: 1, flexDirection: "column", justifyContent: "center", paddingBottom: story ? 30 : 16 }}>{kick}</div>
       {context && <div style={{ display: "flex", flexDirection: "column", marginBottom: story ? 50 : 26 }}>{context}</div>}
-      <PosterFooter sponsor={d.sponsor} venue={null} story={story} />
+      <PosterFooter sponsors={d.sponsors} venue={null} story={story} />
     </div>
   );
   return { tree, width: W, height: H };

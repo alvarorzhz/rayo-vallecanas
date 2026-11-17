@@ -59,15 +59,20 @@ export async function rivalCrest(url: string | null, size: number): Promise<Pic 
 /** Lo que tarde algo de fuera (la web de la liga, el tiempo) no puede frenar la imagen. */
 export const within = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<null>((ok) => setTimeout(() => ok(null), ms))]);
 
+/** Como mucho se ponen 3 patrocinadores principales en el pie de una imagen. */
+export const MAX_POSTER_SPONSORS = 3;
+
 /**
- * Logo del patrocinador principal para el pie de las imágenes para compartir, si el interruptor
+ * Logos de los patrocinadores principales para el pie de las imágenes para compartir (4.20.0: todos los
+ * principales con logo, como mucho 3, en el orden de Gestión → Patrocinadores), si el interruptor
  * «En las imágenes para compartir» (sponsor_settings.show_result) está encendido.
  */
-export async function mainSponsorLogo(supabase: DB): Promise<Pic | null> {
+export async function mainSponsorLogos(supabase: DB): Promise<Pic[]> {
   const [display, showcase] = await Promise.all([fetchDisplay(supabase), supabase.rpc("sponsor_showcase")]);
-  if (!display.show_result) return null;
-  const main = ((showcase.data ?? []) as Showcase[]).find((x) => x.tier === "main" && x.logo_url);
-  return main ? embed(main.logo_url, ["sponsor-logos"], { max: 280 }) : null;
+  if (!display.show_result) return [];
+  const mains = ((showcase.data ?? []) as Showcase[]).filter((x) => x.tier === "main" && x.logo_url).slice(0, MAX_POSTER_SPONSORS);
+  const pics = await Promise.all(mains.map((m) => embed(m.logo_url, ["sponsor-logos"], { max: 280 })));
+  return pics.filter((p): p is Pic => !!p);
 }
 
 /** «LIGA · JORNADA 7» */

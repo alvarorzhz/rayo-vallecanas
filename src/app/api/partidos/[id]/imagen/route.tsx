@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchMatch, fetchReport } from "@/lib/match-queries";
 import { CLUB_NAME, COMPETITION_LABEL, byKickoff, hhmm, longDay, outcomeOf, rivalColor, rivalShort, shortDay, type MatchRow, type Outcome } from "@/lib/matches";
 import { shirtName } from "@/lib/squad";
-import { mainSponsorLogo, rivalCrest, within, embed } from "@/lib/poster-sources";
+import { mainSponsorLogos, rivalCrest, within, embed } from "@/lib/poster-sources";
 import { fetchMvpBoard } from "@/lib/mvp-server";
 import { getLeagueTable } from "@/lib/league-table";
 import { drawPoster, loadAssets, type Format, type PosterData } from "@/lib/result-image";
@@ -44,8 +44,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     ? within(getLeagueTable(league.competition), 2500).then((t) => t?.rows.find((r) => r.teamId === league.team) ?? null)
     : Promise.resolve(null);
 
-  const [sponsor, mvpPhoto, themCrest, nextCrest, row] = await Promise.all([
-    mainSponsorLogo(supabase),
+  const [sponsors, mvpPhoto, themCrest, nextCrest, row] = await Promise.all([
+    mainSponsorLogos(supabase),
     embed(report.mvp?.player.photo_url, ["player-photos"], { max: 0, photo: { w: 300, h: 310 } }),
     rivalCrest(m.rival.crest_url, format === "story" ? 240 : 200),
     next ? rivalCrest(next.rival.crest_url, 60) : null,
@@ -104,7 +104,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       when: [shortDay(next.match_date), hhmm(next.kickoff)].filter(Boolean).join(" · "),
       home: next.is_home,
     } : null,
-    sponsor,
+    sponsors,
   };
 
   const { body, type } = await drawPoster(data, format);

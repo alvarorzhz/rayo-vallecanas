@@ -15,6 +15,7 @@ import { Suspense } from "react";
 import { getLeagueTable, getLeagueTableQuick } from "@/lib/league-table";
 import { matchRanks, type MatchRanks } from "@/lib/standings";
 import { StandingsTable, type TableRival } from "@/components/matches/league-table";
+import { LeagueOutlook } from "@/components/matches/league-outlook";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const maxDuration = 60;
@@ -177,5 +178,10 @@ async function FullTable(p: TableProps) {
       </Empty>
     );
   }
-  return <StandingsTable table={table} us={p.team} rivals={rivals} />;
+  return (
+    <>
+      <StandingsTable table={table} us={p.team} rivals={rivals} />
+      <LeagueOutlook table={table} us={p.team} />
+    </>
+  );
 }

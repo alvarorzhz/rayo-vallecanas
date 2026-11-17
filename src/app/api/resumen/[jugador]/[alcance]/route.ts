@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
 import { loadAssets, type Format } from "@/lib/result-image";
-import { embed, mainSponsorLogo } from "@/lib/poster-sources";
+import { embed, mainSponsorLogos } from "@/lib/poster-sources";
 import { drawSummaryPoster } from "@/lib/summary-poster";
 import { playerSummary, teamSummary } from "@/lib/season-summary";
 import { fetchSummaryData, resolveScope } from "@/lib/season-summary-queries";
@@ -20,11 +20,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ jugador:
 
   const scope = await resolveScope(supabase, alcance, seasonOf());
   const season = scope.kind === "season" ? scope.season : scope.season ?? seasonOf();
-  const [data, { data: member }, { crest }, sponsor] = await Promise.all([
+  const [data, { data: member }, { crest }, sponsors] = await Promise.all([
     fetchSummaryData(supabase, scope),
     supabase.from("squad_members_full").select("number, position, player:players!inner(first_name, last_name, nickname, photo_url)").eq("player_id", jugador).eq("season", season).maybeSingle(),
     loadAssets(),
-    mainSponsorLogo(supabase),
+    mainSponsorLogos(supabase),
   ]);
   if (!member || !data.matches.length) return new Response("No encontrado", { status: 404 });
   const p = member.player as unknown as { first_name: string; last_name: string; nickname: string | null; photo_url: string | null };
@@ -44,7 +44,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ jugador:
       : [{ label: "Partidos", value: s.apps }, { label: "Goles", value: s.goals }, { label: "Asist.", value: s.assists }, { label: "MVP", value: s.mvps }],
     best: b ? `Su mejor partido: ${b.match.is_home ? `Rayo ${b.match.goals_for}-${b.match.goals_against} ${b.match.rival}` : `${b.match.rival} ${b.match.goals_against}-${b.match.goals_for} Rayo`}${b.goals ? ` · ${b.goals} ${b.goals === 1 ? "gol" : "goles"}` : ""}${b.mvp ? " · MVP" : ""}` : null,
     team: `El equipo: ${t.W}V ${t.D}E ${t.L}D · ${t.gf} goles a favor`,
-    sponsor,
+    sponsors,
   }, format);
   return new Response(new Uint8Array(body), { headers: { "Content-Type": type, "Cache-Control": "private, no-store" } });
 }

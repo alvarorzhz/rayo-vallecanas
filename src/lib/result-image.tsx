@@ -45,7 +45,8 @@ export type PosterData = {
   form: Outcome[];               // últimos resultados hasta este partido (el más reciente al final)
   table: { pos: number; points: number } | null;
   next: { name: string; short: string; color: string; crest: Pic | string | null; when: string; home: boolean } | null;
-  sponsor: Pic | null;
+  /** Patrocinadores principales (como mucho 3), en el orden de Gestión. */
+  sponsors: Pic[];
 };
 
 // ---------------------------------------------------------------- Imágenes (sharp)
@@ -346,22 +347,38 @@ export function PosterHeader({ crest, competition, day, story }: { crest: Pic; c
   );
 }
 
-/** Pie: patrocinador principal (o el campo), lema y campo. */
-export function PosterFooter({ sponsor, venue, story }: { sponsor: Pic | null; venue: string | null; story: boolean }) {
+/** Ancho de un logo en el pie: con uno solo, como siempre; con varios, más pequeños para que quepan todos igual de grandes. */
+export function footerLogoSize(ratio: number, count: number): { w: number; h: number } {
+  const h = count <= 1 ? 64 : 52;
+  const maxW = count <= 1 ? 220 : count === 2 ? 180 : 140;
+  return { w: Math.round(Math.min(maxW, Math.max(h, h * ratio))), h };
+}
+
+/** Pie: patrocinadores principales (o el campo), lema y campo. */
+export function PosterFooter({ sponsors, venue, story }: { sponsors: Pic[]; venue: string | null; story: boolean }) {
+  const many = sponsors.length > 1;
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `22px ${PAD}px ${story ? 90 : 28}px`, borderTop: `5px solid ${ORO}`, background: "rgba(0,0,0,0.85)" }}>
-      {sponsor ? (
+      {sponsors.length ? (
         <div style={{ display: "flex", alignItems: "center" }}>
-          <span style={{ display: "flex", flexDirection: "column", fontSize: 15, letterSpacing: 4, color: "rgba(255,255,255,0.55)", marginRight: 16 }}><span>CON EL</span><span>APOYO DE</span></span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={sponsor.src} width={Math.round(Math.min(220, Math.max(60, 64 * sponsor.ratio)))} height={64} style={{ objectFit: "contain" }} alt="" />
+          <span style={{ display: "flex", flexDirection: "column", fontSize: many ? 13 : 15, letterSpacing: many ? 3 : 4, color: "rgba(255,255,255,0.55)", marginRight: many ? 14 : 16 }}><span>CON EL</span><span>APOYO DE</span></span>
+          {sponsors.map((s, i) => {
+            const { w, h } = footerLogoSize(s.ratio, sponsors.length);
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center" }}>
+                {i > 0 && <div style={{ display: "flex", width: 2, height: 40, margin: "0 14px", background: "rgba(213,175,50,0.55)" }} />}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={s.src} width={w} height={h} style={{ objectFit: "contain" }} alt="" />
+              </div>
+            );
+          })}
         </div>
       ) : (
         <span style={{ fontSize: 22, color: "rgba(255,255,255,0.7)" }}>{venue ?? ""}</span>
       )}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-        <span style={{ display: "flex", alignItems: "center", fontFamily: "Display", fontSize: 34, letterSpacing: 3, color: ORO }}>#AÚPARAYO <div style={{ display: "flex", marginLeft: 8 }}><Bolt size={30} /></div></span>
-        {sponsor && venue && <span style={{ fontSize: 18, color: "rgba(255,255,255,0.55)" }}>{venue}</span>}
+        <span style={{ display: "flex", alignItems: "center", fontFamily: "Display", fontSize: many ? 28 : 34, letterSpacing: 3, color: ORO }}>#AÚPARAYO <div style={{ display: "flex", marginLeft: 8 }}><Bolt size={many ? 24 : 30} /></div></span>
+        {sponsors.length > 0 && venue && <span style={{ fontSize: 18, color: "rgba(255,255,255,0.55)" }}>{venue}</span>}
       </div>
     </div>
   );
@@ -536,7 +553,7 @@ function renderPoster(d: PosterData, format: Format) {
     </div>
   );
 
-  const footer = <PosterFooter sponsor={d.sponsor} venue={d.venue} story={story} />;
+  const footer = <PosterFooter sponsors={d.sponsors} venue={d.venue} story={story} />;
 
   const body = (
     <div style={{ display: "flex", flexGrow: 1, alignItems: "center", padding: `0 ${pad}px` }}>

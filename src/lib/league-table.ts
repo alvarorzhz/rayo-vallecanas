@@ -4,6 +4,7 @@ import type { createClient } from "@/lib/supabase/server";
 import { openSession } from "@/lib/league-sync";
 import { parseCalendar, parseCompetitionName, parseTable } from "@/lib/league-parse";
 import { teamGames } from "@/lib/standings";
+import { remainingByTeam } from "@/lib/league-outlook";
 import type { StandingRow } from "@/lib/league-parse";
 
 export type { StandingRow } from "@/lib/league-parse";
@@ -13,7 +14,7 @@ export type { StandingRow } from "@/lib/league-parse";
  * la base de datos. Se guarda en caché media hora y se refresca al sincronizar.
  */
 
-export type LeagueTable = { competition: string | null; rows: StandingRow[]; round: string | null; fetchedAt: string };
+export type LeagueTable = { competition: string | null; rows: StandingRow[]; round: string | null; fetchedAt: string; /** 4.20.0 · si se pudo leer el calendario (para «Lo que queda») */ withCalendar?: boolean };
 
 const TABLE_TAG = "league-table";
 
@@ -24,17 +25,20 @@ async function load(competition: string): Promise<LeagueTable> {
   if (!base.length) throw new Error("No se ha encontrado la clasificación en la web de la liga.");
 
   // Racha y últimos partidos de cada equipo, y última jornada jugada, desde el calendario
-  const { byTeam, round } = teamGames(parseCalendar(calendar));
+  const games = parseCalendar(calendar);
+  const { byTeam, round } = teamGames(games);
+  const left = remainingByTeam(games);
   const comp = parseCompetitionName(sess.situation);
   return {
     competition: comp,
     round,
-    rows: base.map((r) => ({ ...r, form: byTeam.get(r.teamId)?.form ?? [], last: byTeam.get(r.teamId)?.last ?? [] })),
+    rows: base.map((r) => ({ ...r, form: byTeam.get(r.teamId)?.form ?? [], last: byTeam.get(r.teamId)?.last ?? [], left: left.get(r.teamId) ?? 0 })),
     fetchedAt: new Date().toISOString(),
+    withCalendar: games.length > 0,
   };
 }
 
-const cached = unstable_cache(load, ["league-table-v2"], { revalidate: 1800, tags: [TABLE_TAG] });
+const cached = unstable_cache(load, ["league-table-v3"], { revalidate: 1800, tags: [TABLE_TAG] });
 
 /** Clasificación de la competición, o null si la web de la liga no responde. */
 export async function getLeagueTable(competition: string): Promise<LeagueTable | null> {

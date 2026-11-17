@@ -179,6 +179,7 @@ export type StandingRow = {
   zone: { label: string; color: string } | null;
   form: Outcome[];           // últimos 5, del más antiguo al más reciente
   last?: TeamGame[];         // últimos 3 partidos, del más reciente al más antiguo
+  left?: number;             // 4.20.0 · partidos que le quedan (del calendario)
 };
 
 /** Un partido de un equipo visto desde su lado. */

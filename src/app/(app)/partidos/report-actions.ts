@@ -1,6 +1,8 @@
 "use server";
 import { teamKey } from "@/lib/league-plan";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { checkSeasonGoals } from "@/lib/season-goals-server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/session";
@@ -88,6 +90,9 @@ export async function saveReport(matchId: string, _: ReportState, f: FormData): 
   } catch (e) {
     return { error: errMsg(e) };
   }
+
+  // 4.20.0 · ¿Con este acta se cumple algún objetivo de la temporada? (por detrás)
+  after(() => checkSeasonGoals());
 
   // Se abre la votación del MVP (o, si ya estaba abierta, se ponen al día los candidatos)
   const closes = mvpClosesAt();

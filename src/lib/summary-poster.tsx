@@ -11,7 +11,8 @@ export type SummaryPosterData = {
   stats: { label: string; value: number }[];
   best: string | null;           // «Su mejor partido: Rayo 4-0 Charros · 3 goles»
   team: string;                  // «El equipo: 3V 1E 1D · 12 goles»
-  sponsor: Pic | null;
+  /** Patrocinadores principales (como mucho 3), en el orden de Gestión. */
+  sponsors: Pic[];
 };
 
 export async function drawSummaryPoster(d: SummaryPosterData, format: Format) {
@@ -42,7 +43,7 @@ export async function drawSummaryPoster(d: SummaryPosterData, format: Format) {
         {d.best && <span style={{ fontSize: story ? 30 : 25, color: ORO, textAlign: "center" }}>{d.best}</span>}
         <span style={{ fontSize: story ? 26 : 22, color: "rgba(255,255,255,0.7)", marginTop: 8, textAlign: "center" }}>{d.team}</span>
       </div>
-      <PosterFooter sponsor={d.sponsor} venue={null} story={story} />
+      <PosterFooter sponsors={d.sponsors} venue={null} story={story} />
     </div>
   );
   return drawTree(tree, W, H);

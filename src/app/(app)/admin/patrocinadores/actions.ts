@@ -285,3 +285,21 @@ export async function saveDisplay(_: SponsorState, f: FormData): Promise<Sponsor
   revalidatePath("/partidos", "layout");
   return { ok: "Guardado" };
 }
+
+// ---------------------------------------------------------------- Orden de los principales (4.20.0)
+
+/** Sube o baja un patrocinador principal en el orden de las imágenes para compartir. */
+export async function moveMainSponsor(id: string, dir: -1 | 1): Promise<void> {
+  const s = await getSession();
+  if (!s.can("sponsors", "update")) return;
+  const supabase = await createClient();
+  const { data } = await supabase.from("sponsors").select("id").eq("active", true).eq("tier", "main").order("sort").order("name");
+  const ids = (data ?? []).map((r) => r.id as string);
+  const i = ids.indexOf(id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= ids.length) return;
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  await Promise.all(ids.map((sid, k) => supabase.from("sponsors").update({ sort: (k + 1) * 10 }).eq("id", sid)));
+  refresh();
+  revalidatePath("/partidos", "layout");
+}

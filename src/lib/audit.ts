@@ -37,6 +37,7 @@ export const TABLE_GROUPS: { label: string; tables: Record<string, string> }[] =
       lottery_shares: "Participación",
       buyers: "Comprador",
       notifications: "Justificante",
+      lottery_handovers: "Entrega de vendedor",
     },
   },
   {
@@ -68,6 +69,7 @@ export const TABLE_GROUPS: { label: string; tables: Record<string, string> }[] =
       match_goals: "Acta · gol",
       mvp_polls: "Votación MVP",
       league_sync: "Sincronización de liga",
+      season_goals: "Objetivo de temporada",
     },
   },
   {
