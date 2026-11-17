@@ -15,12 +15,14 @@ export default async function UsersPage() {
   const s = await requirePerm("users", "read");
   const supabase = await createClient();
   const [{ data: users }, defs] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, email, phone, role, custom_role_id, active, avatar_url, created_at").order("full_name"),
+    supabase.from("profiles").select("id, full_name, email, phone, role, custom_role_id, active, avatar_url, created_at"),
     fetchProfileDefs(supabase),
   ]);
   const byKey = new Map(defs.map((d) => [d.key, d]));
   // 4.20.2 · Nº de ficha por orden de alta: no cambia al dar de alta a otra persona
-  const fileNo = new Map([...(users ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)).map((u, i) => [u.id, i + 1]));
+  // 4.20.4 · Y la lista sale en ese mismo orden, de la ficha 001 en adelante
+  const ordered = [...(users ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  const fileNo = new Map(ordered.map((u, i) => [u.id, i + 1]));
   const profiles = defs.filter((d) => d.key !== "superadmin" || s.profile.role === "superadmin")
     .map(({ key, name, base, perms }) => ({ key, name, base, perms }));
 
@@ -40,7 +42,7 @@ export default async function UsersPage() {
       )}
       {/* Fichero de carnets del club: uno por persona */}
       <ul className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {(users ?? []).map((u) => {
+        {ordered.map((u) => {
           const def = byKey.get(profileKey(u));
           return (
             <li key={u.id}>

@@ -17,6 +17,15 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.20.4",
+    date: "2026-11-17",
+    title: "Usuarios por número de ficha",
+    quiet: true,
+    changes: [
+      { staff: "En Gestión → Usuarios, los carnets salen ordenados por «Ficha nº», de menor a mayor (antes iban por nombre)." },
+    ],
+  },
+  {
     version: "4.20.3",
     date: "2026-11-17",
     title: "Repaso de seguridad de la base de datos",
