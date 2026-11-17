@@ -17,6 +17,15 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.20.3",
+    date: "2026-11-17",
+    title: "Repaso de seguridad de la base de datos",
+    quiet: true,
+    changes: [
+      { staff: "Repaso de los avisos de seguridad y rendimiento de Supabase: se cierran tres funciones internas que se podían llamar desde fuera (ninguna dejaba hacer nada, pero no tenían por qué estar abiertas) y los permisos de lectura de varias tablas se calculan más rápido. Nadie ve ni puede hacer nada distinto." },
+    ],
+  },
+  {
     version: "4.20.2",
     date: "2026-11-17",
     title: "Arreglos tras la prueba por perfiles",
