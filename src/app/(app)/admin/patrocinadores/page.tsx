@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarClock, Gift, Handshake, Plus } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, CalendarClock, Gift, Handshake, Plus } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf, today as todayMadrid } from "@/lib/finance";
@@ -10,7 +10,8 @@ import {
 import { Empty, PageHeader } from "@/components/ui";
 import { SponsorLogo } from "@/components/sponsors/logo";
 import { DisplayForm } from "@/components/sponsors/forms";
-import { saveDisplay } from "./actions";
+import { moveMainSponsor, saveDisplay } from "./actions";
+import { MAX_POSTER_SPONSORS } from "@/lib/poster-sources";
 
 export const metadata = { title: "Patrocinadores" };
 
@@ -44,6 +45,9 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
   const pct = totals.agreed ? Math.min(100, Math.round((totals.paid / totals.agreed) * 100)) : 0;
   const activeSponsors = sponsors.filter((x) => x.active);
   const former = sponsors.filter((x) => !x.active);
+  // 4.20.0 · Principales en las imágenes para compartir, en su orden
+  const mains = activeSponsors.filter((x) => x.tier === "main").sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name, "es"));
+  const canOrder = s.can("sponsors", "update");
 
   const card = (sp: Sponsor, i: number) => {
     const ags = bySponsor.get(sp.id) ?? [];
@@ -158,6 +162,39 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
         <h2 className="mb-1">Dónde se muestran los logos</h2>
         <p className="mb-3 text-xs text-negro/65">Solo salen los patrocinadores actuales que tienen logo. Nunca se enseñan importes.</p>
         <DisplayForm action={saveDisplay} display={display} canEdit={s.can("sponsors", "update")} />
+        <div className="mt-4 border-t border-black/5 pt-3">
+          <h3 className="text-sm font-bold">Principales en las imágenes para compartir</h3>
+          {mains.length < 2 ? (
+            <p className="mt-1 text-xs text-negro/65">
+              {mains.length ? <>Ahora sale <b>{mains[0].name}</b>. </> : null}
+              Si marcas más de un patrocinador como «Principal», salen todos igual de grandes en el pie de las imágenes (como mucho {MAX_POSTER_SPONSORS}) y aquí eliges el orden.
+            </p>
+          ) : (
+            <>
+              <p className="mt-1 text-xs text-negro/65">Salen todos igual de grandes, en este orden{mains.length > MAX_POSTER_SPONSORS ? ` (solo los ${MAX_POSTER_SPONSORS} primeros)` : ""}. Los que no tienen logo no salen.</p>
+              <ol className="mt-2 space-y-1.5">
+                {mains.map((m, i) => (
+                  <li key={m.id} className={`flex items-center gap-2 rounded-xl bg-black/[0.03] px-2.5 py-1.5 text-sm ${i >= MAX_POSTER_SPONSORS ? "opacity-55" : ""}`}>
+                    <span className="sport w-5 text-center font-black text-negro/60">{i + 1}</span>
+                    <span className="flex h-8 w-14 shrink-0 items-center justify-center rounded-lg bg-white p-1 ring-1 ring-black/10"><SponsorLogo sponsor={m} className="max-h-6" /></span>
+                    <b className="min-w-0 flex-1 truncate">{m.name}</b>
+                    {!m.logo_url && <span className="text-xs text-negro/55">sin logo</span>}
+                    {canOrder && (
+                      <span className="flex gap-1">
+                        <form action={moveMainSponsor.bind(null, m.id, -1)}>
+                          <button disabled={i === 0} aria-label={`Subir ${m.name}`} className="rounded-lg p-2 text-negro/70 ring-1 ring-black/10 hover:text-rojo disabled:opacity-30"><ArrowUp size={16} /></button>
+                        </form>
+                        <form action={moveMainSponsor.bind(null, m.id, 1)}>
+                          <button disabled={i === mains.length - 1} aria-label={`Bajar ${m.name}`} className="rounded-lg p-2 text-negro/70 ring-1 ring-black/10 hover:text-rojo disabled:opacity-30"><ArrowDown size={16} /></button>
+                        </form>
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+        </div>
       </section>
 
       <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-negro/65"><Handshake size={14} /> Los jugadores no ven los importes ni los contratos: solo los logos.</p>

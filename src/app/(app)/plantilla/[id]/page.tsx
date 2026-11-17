@@ -27,6 +27,8 @@ import { CountUp } from "@/components/squad/count-up";
 import { SigningReplay } from "@/components/squad/signing-reveal";
 import { Achievements } from "@/components/squad/achievements";
 import { achievements } from "@/lib/achievements";
+import { streaks } from "@/lib/streaks";
+import { Streaks } from "@/components/squad/streaks";
 import { fetchDiscipline } from "@/lib/discipline-queries";
 import { CardCycle } from "@/components/squad/card-cycle";
 import { FoldCard } from "@/components/squad/fold-card";
@@ -92,6 +94,12 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
   const perMatch = new Map<string, number>();
   for (const g of careerGoals ?? []) perMatch.set(g.match_id, (perMatch.get(g.match_id) ?? 0) + 1);
   const ach = achievements({ seasons, goalsPerMatch: [...perMatch.values()], line });
+  // 4.20.0 · Rachas de la temporada (partidos y convocatorias, del más reciente al más antiguo)
+  const streakList = streaks(
+    log.map((a) => ({ goals: gOf(a.match_id), yellows: a.yellows, red: a.red, goalkeeper: a.goalkeeper, conceded: a.conceded ?? 0, gf: a.match.goals_for, ga: a.match.goals_against })),
+    callupLog.filter((c) => c.match.status === "played").map((c) => c.reply),
+    line === "GK",
+  );
   // Ciclo de amarillas de la liga actual (solo en la temporada en curso)
   const disc = member && season === seasonOf() && s.can("matches") ? await fetchDiscipline(supabase, [id]) : null;
   const cycle = disc?.byPlayer.get(id) ?? null;
@@ -211,6 +219,7 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
       )}
 
       <Achievements badges={ach.badges} next={ach.next} isMe={isMe} />
+      <Streaks items={streakList} season={season} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">

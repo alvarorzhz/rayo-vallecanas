@@ -96,3 +96,39 @@ export function DeleteCampaignForm({ action, name, sales }: { action: A; name: s
     </form>
   );
 }
+
+/** 4.20.0 · Apuntar lo que un vendedor entrega al club (se abre debajo de su fila). */
+export function HandoverForm({ action, owed, name }: { action: A; owed: number; name: string }) {
+  const [state, formAction] = useActionState(action, undefined);
+  const [open, setOpen] = useState(false);
+  if (!open)
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="btn-primary min-h-11 flex-1">Apuntar entrega</button>
+    );
+  return (
+    <form action={formAction} className="w-full space-y-2 rounded-xl bg-gris p-3">
+      <p className="text-sm font-bold">¿Cuánto entrega {name}?</p>
+      <div className="flex flex-wrap gap-2">
+        <label className="sr-only" htmlFor={`amount-${name}`}>Cantidad en euros</label>
+        <input id={`amount-${name}`} name="amount" inputMode="decimal" required defaultValue={owed > 0 ? (owed / 100).toFixed(2).replace(".", ",") : ""}
+          className="input w-32 font-mono" placeholder="0,00 €" autoFocus />
+        <label className="sr-only" htmlFor={`method-${name}`}>Cómo</label>
+        <select id={`method-${name}`} name="method" className="input w-auto" defaultValue="cash">
+          <option value="cash">Efectivo</option>
+          <option value="bizum">Bizum</option>
+          <option value="transfer">Transferencia</option>
+          <option value="other">Otro</option>
+        </select>
+      </div>
+      <label className="sr-only" htmlFor={`notes-${name}`}>Nota</label>
+      <input id={`notes-${name}`} name="notes" maxLength={300} className="input" placeholder="Nota (opcional)" />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <FormMessage state={state} />
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setOpen(false)} className="btn-ghost">Cancelar</button>
+          <SubmitButton className="btn-dark" pendingText="Guardando…">Guardar</SubmitButton>
+        </div>
+      </div>
+    </form>
+  );
+}

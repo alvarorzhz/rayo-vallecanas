@@ -29,6 +29,9 @@ import { fetchLiveView } from "@/lib/live-queries";
 import { birthdays, whenLabel, type BirthdayRow } from "@/lib/birthdays";
 import { BirthdayCard, type BirthdayToday } from "@/components/squad/birthday-card";
 import { todayMadrid } from "@/lib/matches";
+import { after } from "next/server";
+import { goalTitle, type SeasonGoal } from "@/lib/season-goals";
+import { checkSeasonGoals } from "@/lib/season-goals-server";
 
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -44,7 +47,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const canSquad = s.can("squad");
 
   // 4.19.0 · Inicio más rápido: todo lo que no depende de nada se pide a la vez (antes iba una consulta detrás de otra)
-  const [campaign, roster, bdayRows, [matchday, focus], [display, showcase, board], [news, newsCount, pendingChronicle], ended, myInterviews, myPlayerId] = await Promise.all([
+  const [campaign, roster, bdayRows, [matchday, focus], [display, showcase, board], [news, newsCount, pendingChronicle], ended, myInterviews, myPlayerId, goalsWon] = await Promise.all([
     // Campaña activa más reciente visible para el usuario (solo mientras está abierta)
     (async (): Promise<Campaign | null> => {
       if (isAdmin) {
@@ -79,7 +82,15 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     // Entrevistas que me ha mandado la redacción y aún no he entregado
     fetchMyPendingInterviews(supabase, s.user.id),
     canMatches ? fetchMyPlayerId(supabase, s.user.id) : Promise.resolve(null),
+    // 4.20.0 · Objetivos de temporada cumplidos en los últimos 3 días
+    canMatches
+      ? supabase.from("season_goals").select("id, season, kind, target, sort, achieved_at").eq("season", season)
+          .gte("achieved_at", new Date(Date.now() - 3 * 86_400_000).toISOString()).order("achieved_at", { ascending: false }).returns<SeasonGoal[]>()
+          .then((r) => r.data ?? [])
+      : Promise.resolve([] as SeasonGoal[]),
   ]);
+  // Revisa si se ha cumplido algún objetivo (por detrás, sin frenar Inicio)
+  if (canMatches) after(() => checkSeasonGoals());
 
   const squad = roster.filter((r) => r.status !== "left");
   const me = roster.find((r) => r.player.user_id === s.user.id) ?? null;
@@ -259,6 +270,19 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <span className="block text-sm text-white/75">Tus partidos, goles, MVP y tu mejor partido, en una imagen para compartir.</span>
           </span>
           <span className="relative shrink-0 text-sm font-bold text-dorado transition group-hover:translate-x-0.5">→</span>
+        </Link>
+      )}
+
+      {/* 4.20.0 · Objetivo de temporada cumplido (3 días) */}
+      {goalsWon.length > 0 && (
+        <Link href="/partidos/estadisticas#objetivos" prefetch className="group relative mb-6 flex items-center gap-4 overflow-hidden rounded-2xl bg-gradient-to-r from-dorado/35 to-dorado/10 p-4 ring-1 ring-dorado/60 transition hover:shadow-lg">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-negro text-2xl" aria-hidden>🎯</span>
+          <span className="min-w-0 flex-1">
+            <span className="sport block text-xs font-black tracking-[0.2em] text-[#6b5410]">¡OBJETIVO CUMPLIDO!</span>
+            <span className="sport block text-2xl font-black leading-tight">{goalTitle(goalsWon[0].kind, goalsWon[0].target)}</span>
+            {goalsWon.length > 1 && <span className="block text-sm text-negro/70">Y {goalsWon.length - 1} más estos días.</span>}
+          </span>
+          <span className="shrink-0 text-sm font-bold text-[#6b5410] transition group-hover:translate-x-0.5">→</span>
         </Link>
       )}
 

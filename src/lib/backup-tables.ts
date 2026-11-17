@@ -54,6 +54,8 @@ export const BACKUP_TABLES: [string, string][] = [
   ["user_activity", "Auditoría · última conexión"],
   ["session_activity", "Auditoría · sesiones"],
   ["usage_daily", "Uso de la app"],
+  ["lottery_handovers", "Sorteos · entregas de los vendedores"],
+  ["season_goals", "Partidos · objetivos de temporada"],
   ["app_errors", "Uso de la app · fallos"],
 ];
 

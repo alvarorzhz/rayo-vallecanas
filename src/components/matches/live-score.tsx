@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { useRouter } from "next/navigation";
 import { clockLabel, KIND_ICON, liveClock } from "@/lib/live";
 import type { LiveView } from "@/lib/live-queries";
+import { GoalBurst, OUR_SHORT, type Burst } from "@/components/matches/goal-burst";
 
 /**
  * Marcador en directo en Inicio (v4.12.0). Un solo «vigilante» por partido consulta lo apuntado
@@ -58,17 +59,28 @@ function useLive(matchId: string, initial: LiveView) {
 export function LiveScoreBox({ matchId, initial, home }: { matchId: string; initial: LiveView; home: boolean }) {
   const v = useLive(matchId, initial);
   const router = useRouter();
-  const lastGf = useRef(v.gf);
+  const last = useRef({ gf: v.gf, ga: v.ga });
   const [goal, setGoal] = useState(false);
+  const [burst, setBurst] = useState<Burst | null>(null);
+  const closeBurst = useCallback(() => setBurst(null), []);
   useEffect(() => {
-    if (v.gf > lastGf.current) {
-      setGoal(true);
-      const t = setTimeout(() => setGoal(false), 3500);
-      lastGf.current = v.gf;
-      return () => clearTimeout(t);
-    }
-    lastGf.current = v.gf;
-  }, [v.gf]);
+    const prev = last.current;
+    last.current = { gf: v.gf, ga: v.ga };
+    if (v.played || (v.gf <= prev.gf && v.ga <= prev.ga)) return;
+    const us = v.gf > prev.gf;
+    // La última jugada de gol apuntada (la nuestra o la del rival)
+    const ev = [...v.events].reverse().find((e) => e.kind === (us ? "goal" : "goal_against")) ?? null;
+    const rival = (v.rival ?? "Rival").toUpperCase();
+    const [h, a] = home ? [v.gf, v.ga] : [v.ga, v.gf];
+    setBurst({
+      us, minute: ev ? clockLabel(ev) || null : null, who: us ? ev?.who ?? null : null,
+      home: h, away: a, homeName: home ? OUR_SHORT : rival, awayName: home ? rival : OUR_SHORT,
+    });
+    if (!us) return;
+    setGoal(true);
+    const t = setTimeout(() => setGoal(false), 3500);
+    return () => clearTimeout(t);
+  }, [v.gf, v.ga, v.played, v.events, v.rival, home]);
   // Al pitido final la portada pasa sola a «Final»
   useEffect(() => { if (v.played) router.refresh(); }, [v.played, router]);
   const [a, b] = home ? [v.gf, v.ga] : [v.ga, v.gf];
@@ -82,6 +94,7 @@ export function LiveScoreBox({ matchId, initial, home }: { matchId: string; init
       {goal && (
         <span aria-hidden className="live-goal sport pointer-events-none absolute inset-x-[-3rem] -top-3 text-center text-4xl font-black italic text-dorado drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-6xl">¡GOOOL!</span>
       )}
+      {burst && <GoalBurst burst={burst} onClose={closeBurst} />}
     </div>
   );
 }

@@ -399,3 +399,32 @@ export async function openWhatsAppManual(saleId: string): Promise<{ url?: string
   // la redirección de wa.me vuelve a codificar el texto y rompe los emojis (salen como �).
   return { url: `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(receiptText(r.data))}` };
 }
+
+// ---------------------------------------------------------------- Cuentas de vendedores (4.20.0)
+const HANDOVER_METHODS = ["cash", "bizum", "transfer", "card", "other"];
+
+/** Apunta lo que un vendedor entrega al club de lo que ha cobrado. */
+export async function addHandover(campaignId: string, sellerId: string, _: ActionState, f: FormData): Promise<ActionState> {
+  try {
+    const amount = parseEuros(f.get("amount"));
+    if (amount <= 0) throw new Error("Pon cuánto ha entregado");
+    const method = HANDOVER_METHODS.includes(str(f, "method")) ? str(f, "method") : "cash";
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("lottery_add_handover", {
+      p_campaign_id: campaignId, p_seller_id: sellerId, p_amount_cents: amount, p_method: method, p_notes: str(f, "notes") || null,
+    });
+    if (error) throw error;
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+  revalidatePath(`/loteria/${campaignId}/cuentas`);
+  revalidatePath("/mis-ventas");
+  return { ok: "Entrega apuntada" };
+}
+
+export async function voidHandover(campaignId: string, id: string): Promise<void> {
+  const supabase = await createClient();
+  await supabase.rpc("lottery_void_handover", { p_id: id });
+  revalidatePath(`/loteria/${campaignId}/cuentas`);
+  revalidatePath("/mis-ventas");
+}

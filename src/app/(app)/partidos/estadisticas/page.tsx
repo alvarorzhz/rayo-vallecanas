@@ -15,6 +15,8 @@ import { Jersey } from "@/components/squad/jersey";
 import { Ball } from "@/components/squad/ball";
 import { CountUp } from "@/components/squad/count-up";
 import { FormStrip } from "@/components/matches/match-bits";
+import { fetchGoalsBoard } from "@/lib/season-goals-server";
+import { SeasonGoals } from "@/components/matches/season-goals";
 
 export const maxDuration = 60;
 export const metadata = { title: "Estadísticas" };
@@ -24,18 +26,20 @@ const byNumber = (a: Row, b: Row) => (a.number ?? 99) - (b.number ?? 99);
 
 export default async function StatsPage({ searchParams }: { searchParams: Promise<{ temporada?: string }> }) {
   const sp = await searchParams;
-  await requirePerm("matches", "read");
+  const sess = await requirePerm("matches", "read");
   const supabase = await createClient();
   const season = seasonFromSlug(sp.temporada) ?? seasonOf();
   const current = season === seasonOf();
   // Puesto en la liga (solo la temporada actual y sin esperar más de 2,5 s a la web de la liga)
   const rankP = current ? leagueRank(supabase).catch(() => null) : Promise.resolve(null);
-  const [{ data: rosterData }, { data: allMatches }, seasons, rank, { data: ratingData }] = await Promise.all([
+  const [{ data: rosterData }, { data: allMatches }, seasons, rank, { data: ratingData }, goals] = await Promise.all([
     supabase.from("squad_members_full").select("*, player:players!inner(*)").eq("season", season).returns<Row[]>(),
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("status", "played").order("match_date").returns<MatchRow[]>(),
     fetchMatchSeasons(supabase),
     rankP,
     supabase.rpc("rating_season", { p_season: season }),
+    // 4.20.0 · Objetivos de la temporada
+    fetchGoalsBoard(supabase, season),
   ]);
   const roster = sortRoster(rosterData ?? []) as Row[];
   const played = (allMatches ?? []).filter((m) => m.season === season);
@@ -85,6 +89,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
       <div className="lg:grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start lg:gap-x-6">
         <div className="lg:col-start-1 lg:row-start-1">
           {played.length > 0 && <Balance rec={rec} rank={rank} last={last} />}
+          {goals && <SeasonGoals goals={goals} season={season} canEdit={current && sess.can("matches", "update")} editHref={`/partidos/objetivos?temporada=${ss}`} />}
           {history.length > 0 && <div className="hidden lg:block"><Seasons history={history} season={season} /></div>}
         </div>
 

@@ -6,7 +6,7 @@ import { fetchMatchWeather, skyOf } from "@/lib/weather";
 import { gapLabel } from "@/lib/standings";
 import { loadAssets, type Format } from "@/lib/result-image";
 import { drawMatchdayPoster, type Sky } from "@/lib/match-posters";
-import { competitionLabel, mainSponsorLogo, posterDay, posterTeams, within } from "@/lib/poster-sources";
+import { competitionLabel, mainSponsorLogos, posterDay, posterTeams, within } from "@/lib/poster-sources";
 
 export const runtime = "nodejs";
 
@@ -44,9 +44,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const soon = m.match_date >= today && m.match_date <= addDays(today, 10);
   const { crest } = await loadAssets();
   // Todo a la vez: lo que tarden el tiempo y la web de la liga no se suma
-  const [{ home, away, ranks }, sponsor, season, weather] = await Promise.all([
+  const [{ home, away, ranks }, sponsors, season, weather] = await Promise.all([
     posterTeams(supabase, m, crest, format === "story" ? 260 : 200),
-    mainSponsorLogo(supabase),
+    mainSponsorLogos(supabase),
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("season", m.season).eq("status", "played").returns<MatchRow[]>().then((r) => r.data ?? []),
     soon ? within(fetchMatchWeather(m.match_date, m.kickoff), 3000) : null,
   ]);
@@ -64,7 +64,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     home,
     away,
     crest,
-    sponsor,
+    sponsors,
     form,
     gap: ranks ? gapLabel(ranks.us, ranks.rival) : null,
     weather: weather && sky ? { temp: Math.round(weather.temp), text: sky.text, kind: skyKind(weather.code) } : null,

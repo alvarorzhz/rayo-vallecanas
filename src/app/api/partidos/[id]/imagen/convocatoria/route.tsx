@@ -4,7 +4,7 @@ import { hhmm } from "@/lib/matches";
 import { lineOf, shirtName } from "@/lib/squad";
 import { loadAssets, type Format } from "@/lib/result-image";
 import { PHOTO_BOX, drawCallupPoster } from "@/lib/match-posters";
-import { competitionLabel, embed, mainSponsorLogo, posterDay, posterTeams } from "@/lib/poster-sources";
+import { competitionLabel, embed, mainSponsorLogos, posterDay, posterTeams } from "@/lib/poster-sources";
 
 export const runtime = "nodejs";
 
@@ -24,7 +24,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const m = await fetchMatch(supabase, id);
   if (!m || !m.callup_published_at) return new Response("No encontrado", { status: 404 });
-  const [all, { crest }, sponsor] = await Promise.all([fetchCallups(supabase, m), loadAssets(), mainSponsorLogo(supabase)]);
+  const [all, { crest }, sponsors] = await Promise.all([fetchCallups(supabase, m), loadAssets(), mainSponsorLogos(supabase)]);
   const rows = all.filter((r) => r.reply === "yes");
   if (!rows.length) return new Response("No encontrado", { status: 404 });
   // Fotos de los cromos (v4.18.0), recortadas al hueco del cromo; sin foto sale la camiseta
@@ -42,7 +42,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     home,
     away,
     crest,
-    sponsor,
+    sponsors,
     players: rows.map((r, i) => ({ name: shirtName(r.player), number: r.number, line: lineOf(r.position), photo: photos[i] })),
   }, format);
   return new Response(new Uint8Array(body), { headers: { "Content-Type": type, "Cache-Control": "private, max-age=60" } });

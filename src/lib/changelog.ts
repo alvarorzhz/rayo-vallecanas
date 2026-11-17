@@ -8,6 +8,19 @@ export type Release = { version: string; date: string; title: string; changes: s
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.20.0",
+    date: "2026-11-17",
+    title: "Objetivos, rachas y ¡GOOOL!",
+    changes: [
+      "Objetivos de temporada: en Partidos → Estadísticas, los gestores eligen de una lista (puesto final, goles, victorias, rachas, porterías a cero, que juegue toda la plantilla) y la app los mide sola con las actas. Cuando se cumple uno llega un aviso y sale una tarjeta en Inicio.",
+      "«Lo que queda» en la Clasificación: partidos por jugar y qué hace falta para subir (o para no bajar), contando con que los de arriba lo ganan todo.",
+      "Rachas en la ficha del jugador: goles, victorias, sin perder, porterías a cero, «Voy» seguidos y partidos sin tarjeta, con la racha actual y la mejor de la temporada.",
+      "Acta en vivo: cuando marca el Rayo, Inicio se pone roja a pantalla completa con el cromo de quien ha marcado, el marcador y la asistencia. El móvil vibra, dura 4 segundos y se cierra al tocarla. El gol del rival es solo una tira gris arriba.",
+      "Sorteos → Cuentas de vendedores: cuánto ha vendido y cobrado cada uno y cuánto ha entregado ya al club. Cada vendedor ve en Mis ventas lo que le queda por entregar.",
+      "Patrocinadores: si hay varios principales, salen todos (hasta 3) en las imágenes para compartir, en el orden que se elija en Gestión → Patrocinadores.",
+    ],
+  },
+  {
     version: "4.19.0",
     date: "2026-11-17",
     title: "La app, más ágil",

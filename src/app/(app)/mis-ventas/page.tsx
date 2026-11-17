@@ -17,14 +17,18 @@ export default async function MySalesPage({ searchParams }: { searchParams: Prom
   const s = await getSession();
   const supabase = await createClient();
   const page = Math.max(1, Number(sp.p) || 1);
-  const [{ rows, count }, { data: totals }, { data: active }] = await Promise.all([
+  const [{ rows, count }, { data: totals }, { data: active }, { data: handed }] = await Promise.all([
     fetchSales(supabase, { sellerId: s.user.id, status: sp.estado, limit: PAGE, offset: (page - 1) * PAGE }),
     supabase.from("lottery_sales").select("quantity, total_cents, paid_cents").eq("seller_id", s.user.id).is("cancelled_at", null),
     supabase.from("lottery_campaign_sellers").select("campaign:lottery_campaigns!inner(id, name, status, kind, price_cents)").eq("user_id", s.user.id).eq("campaign.status", "active"),
+    // 4.20.0 · Lo que ya he entregado al club
+    supabase.from("lottery_handovers").select("amount_cents").eq("seller_id", s.user.id).is("voided_at", null),
   ]);
+  const handedTotal = (handed ?? []).reduce((n, r) => n + r.amount_cents, 0);
   const t = (totals ?? []).reduce((a, r) => ({ q: a.q + r.quantity, total: a.total + r.total_cents, paid: a.paid + r.paid_cents }), { q: 0, total: 0, paid: 0 });
   const campaigns = (active ?? []).map((a) => a.campaign as unknown as { id: string; name: string; kind: "lottery" | "raffle"; price_cents: number });
   const owed = t.total - t.paid;
+  const toHand = Math.max(0, t.paid - handedTotal);
 
   return (
     <>
@@ -61,6 +65,11 @@ export default async function MySalesPage({ searchParams }: { searchParams: Prom
           </div>
         </dl>
         {owed > 0 && <p className="border-t border-black/5 px-4 py-2 text-center text-xs text-negro/60">Cuando te paguen, entra en la venta y apunta el cobro.</p>}
+        {t.paid > 0 && (
+          <p className={`border-t border-black/5 px-4 py-2.5 text-center text-sm ${toHand > 0 ? "bg-dorado/15 font-semibold text-[#6b5410]" : "text-green-800"}`}>
+            {toHand > 0 ? <>Tienes <b>{euros(toHand)}</b> cobrados que entregar al club.</> : <>Has entregado al club todo lo cobrado ✓</>}
+          </p>
+        )}
       </div>
 
       <div className="mb-3 flex gap-2 overflow-x-auto text-sm">
