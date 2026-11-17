@@ -10,7 +10,7 @@ import { ACTS, allows, fetchProfileDefs, profileKey } from "@/lib/roles";
 
 export const metadata = { title: "Perfiles y permisos" };
 
-export default async function ProfilesGuide({ searchParams }: { searchParams: Promise<{ guardado?: string; borrado?: string }> }) {
+export default async function ProfilesGuide({ searchParams }: { searchParams: Promise<{ guardado?: string; borrado?: string; error?: string }> }) {
   const s = await requirePerm("users", "read");
   const sp = await searchParams;
   const isSuper = s.profile.role === "superadmin";
@@ -33,6 +33,7 @@ export default async function ProfilesGuide({ searchParams }: { searchParams: Pr
         actions={isSuper && <Link href="/admin/perfiles/nuevo" prefetch className="btn-primary"><Plus size={18} /> Nuevo perfil</Link>}
       />
       {sp.guardado && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Perfil guardado. Los cambios ya se aplican a todas sus personas.</p>}
+      {sp.error === "permiso" && <p className="mb-4 rounded-lg bg-rojo/10 px-3 py-2 text-sm font-medium text-rojo">Solo el superadministrador puede cambiar o crear perfiles. Aquí puedes ver qué hace cada uno.</p>}
       {sp.borrado && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Perfil eliminado. Sus personas han vuelto a su perfil base.</p>}
 
       <div className="mb-6 rounded-2xl bg-dorado/15 p-4 text-sm text-negro/80">

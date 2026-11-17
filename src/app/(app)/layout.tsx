@@ -92,7 +92,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <BottomNav items={items} />
       {/* El tutorial de bienvenida ya enseña la app: las novedades salen a partir de la siguiente versión */}
-      <WhatsNew skip={s.tutorialSeen < TOUR_VERSION} />
+      <WhatsNew skip={s.tutorialSeen < TOUR_VERSION} staff={s.profile.role !== "player"} />
       <Tour steps={buildTour(s)} version={TOUR_VERSION} seen={s.tutorialSeen} />
       {s.can("squad") && (
         <SigningsOnEnter entries={signings} init={!s.signingsSeen} now={new Date().toISOString()} me={s.user.id} />
