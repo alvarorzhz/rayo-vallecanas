@@ -105,12 +105,14 @@ npm run dev
 ### Pruebas
 ```bash
 npm test             # lógica de cada módulo (node --test), sin base de datos
+npm run test:db      # contra el Supabase local (supabase start): sorteos, Finanzas, convocatorias
+                     # y la sincronización con la liga (con la web de la liga simulada)
 npm run test:live    # la web de la liga de verdad: comprueba que se sigue leyendo bien
 npm run build && npm start &
 npm run test:e2e     # prueba de humo: entra como superadministrador y como jugador y recorre la app
 npx tsc --noEmit && npm run lint
 ```
-En cada PR, GitHub Actions pasa las pruebas de lógica, los tipos, el lint y la prueba de humo contra un Supabase local.
+En cada PR, GitHub Actions pasa las pruebas de lógica, los tipos, el lint, las pruebas contra la base de datos y la prueba de humo contra un Supabase local. `test:db` se niega a correr si la dirección de Supabase no es localhost: escribe datos de prueba.
 
 ### 5. Despliegue
 Cada cambio que entra en `main` se despliega en Vercel. Si un cambio trae SQL nuevo, se ejecuta primero en el *SQL Editor* de Supabase y después se fusiona.

@@ -40,6 +40,16 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: "4.20.1",
+    date: "2026-11-17",
+    title: "Pruebas automáticas y dos arreglos",
+    changes: [
+      { staff: "Ahora la app se prueba sola cada vez que se cambia algo: más de cuarenta comprobaciones contra una base de datos de prueba repasan los sorteos (números, ventas, cobros, anulaciones, cuentas de vendedores y el sorteo de la rifa), Finanzas, las convocatorias y la lectura de la liga con los jugadores nuevos." },
+      { staff: "Arreglado: dos sorteos del mismo año con el mismo prefijo de referencia (el «RV» que viene puesto) chocaban, y la primera venta del segundo daba un error raro. Ahora cada venta coge la siguiente referencia libre." },
+      { staff: "Arreglado: no se podía eliminar un sorteo cuya recaudación ya se había pasado a Finanzas. Ahora se elimina y sus movimientos se quedan en Finanzas, como estaba previsto." },
+    ],
+  },
+  {
     version: "4.20.0",
     date: "2026-11-17",
     title: "Objetivos, rachas y ¡GOOOL!",

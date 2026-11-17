@@ -19,7 +19,7 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run lint
 
-  # Prueba de humo: la app entera contra un Supabase local con los datos de ejemplo
+  # Pruebas contra la base de datos y prueba de humo: la app entera contra un Supabase local con los datos de ejemplo
   # (supabase/seed.sql). No toca producción ni necesita ninguna clave.
   e2e:
     runs-on: ubuntu-latest
@@ -46,6 +46,9 @@ jobs:
             echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
             echo "NEXT_PUBLIC_SITE_URL=http://localhost:3000"
           } > .env.local
+      # Sorteos, Finanzas, convocatorias y la lectura de la liga contra ese Supabase (tests/db)
+      - name: Pruebas contra la base de datos
+        run: npm run test:db
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - name: Arrancar la app
