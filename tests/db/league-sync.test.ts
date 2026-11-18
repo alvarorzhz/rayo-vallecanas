@@ -67,18 +67,25 @@ before(() => {
 after(() => { globalThis.fetch = realFetch; });
 
 // ---------------------------------------------------------------- Preparación de la base de datos
-before(async () => {
-  // La liga configurada como en producción
-  ok(await admin.from("league_sync").upsert({ id: 1, competition: COMPETITION, team: TEAM, last_summary: null, last_synced_at: null }));
-  // Empezar de cero con esta competición (por si se repite la prueba en local)
+/** Partidos de esta competición y fichajes que crea la prueba (se borran antes y después). */
+async function cleanLeagueData() {
   const ids = (ok(await admin.from("matches").select("id").eq("league_competition", COMPETITION)) as { id: string }[]).map((m) => m.id);
   if (ids.length) ok(await admin.from("matches").delete().in("id", ids));
-  // Y sin los fichajes que hiciera una ejecución anterior de esta prueba
   const old = (ok(await admin.from("players").select("id").eq("first_name", "Nuevo").like("last_name", "Fichaje %")) as { id: string }[]).map((p) => p.id);
   if (old.length) {
     ok(await admin.from("squad_members").delete().in("player_id", old));
     ok(await admin.from("players").delete().in("id", old));
   }
+}
+// Al acabar se deja la base de datos como estaba: en la CI la prueba de humo va después y usa los mismos datos.
+// Los partidos de esta prueba tienen fechas fijas; el día que una coincidía con el próximo partido de los datos
+// de ejemplo (p. ej. el 22-11-2026), pasaba a ser «el próximo partido», sin convocatoria, y el «Voy» de Inicio no salía.
+after(cleanLeagueData);
+before(async () => {
+  // La liga configurada como en producción
+  ok(await admin.from("league_sync").upsert({ id: 1, competition: COMPETITION, team: TEAM, last_summary: null, last_synced_at: null }));
+  // Empezar de cero con esta competición y sin fichajes de una ejecución anterior (por si se repite en local)
+  await cleanLeagueData();
   // Dani y Javi en la plantilla de la temporada de esa liga (los datos de ejemplo usan la temporada actual)
   const players = ok(await admin.from("players").select("id, first_name").in("first_name", ["Dani", "Javi"])) as { id: string; first_name: string }[];
   for (const p of players) {
