@@ -39,34 +39,42 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function MatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ nuevo?: string; guardado?: string; convocatoria?: string; acta?: string }> }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
-  const s = await requirePerm("matches", "read");
   const supabase = await createClient();
-  const m = await fetchMatch(supabase, id);
+  // El partido se pide a la vez que se comprueban los permisos (la base de datos también los comprueba)
+  const [s, m] = await Promise.all([requirePerm("matches", "read"), fetchMatch(supabase, id)]);
   if (!m) notFound();
 
-  // Historial contra este rival
-  // La votación del MVP primero: si ya toca, hace el recuento y el MVP sale al día en el acta
-  const mvp = m.status === "played" ? await fetchMvpBoard(supabase, m.id) : null;
-  if (mvp?.winner_id && m.mvp_player_id !== mvp.winner_id) m.mvp_player_id = mvp.winner_id;
   // Posición y puntos de los dos equipos (solo partidos de liga de esta temporada aún sin jugar)
   const rankable = m.competition === "league" && m.season === seasonOf() && m.status !== "played" && m.status !== "cancelled";
-  const [{ data: h2hData }, callups, myPlayerId, report, standings, ratings] = await Promise.all([
+  const played = m.status === "played";
+  // 4.21.1 · Todo a la vez: votación del MVP (y el cromo del ganador), acta, historial, convocatoria…
+  const mvpP = played ? fetchMvpBoard(supabase, m.id) : Promise.resolve(null);
+  const [mvp, galaEntry, reportFirst, { data: h2hData }, callups, myPlayerId, standings, ratingsAll] = await Promise.all([
+    mvpP,
+    // Gala del MVP: el cromo del ganador
+    mvpP.then((b) => (b?.winner_id ? fetchRosterEntry(supabase, m.season, b.winner_id) : null)),
+    played ? fetchReport(supabase, m) : null,
+    // Historial contra este rival
     supabase.from("matches").select("*, rival:rivals!inner(*)").eq("rival_id", m.rival_id).neq("id", m.id)
       .order("match_date", { ascending: false }).limit(20).returns<MatchRow[]>(),
     fetchCallups(supabase, m),
     fetchMyPlayerId(supabase, s.user.id),
-    m.status === "played" ? fetchReport(supabase, m) : null,
     rankable ? getStandings(supabase) : null,
-    mvp ? fetchRatingBoard(supabase, m.id) : null,
+    played ? fetchRatingBoard(supabase, m.id) : null,
   ]);
+  // Si al abrir la ficha se acaba de hacer el recuento, el acta se vuelve a pedir con el MVP al día
+  let report = reportFirst;
+  if (mvp?.winner_id && m.mvp_player_id !== mvp.winner_id) {
+    m.mvp_player_id = mvp.winner_id;
+    report = await fetchReport(supabase, m);
+  }
+  const ratings = mvp ? ratingsAll : null;
   const ranks = standings ? matchRanks(standings.table.rows, standings.us, [m], m.season).get(m.id) ?? null : null;
   const h2h = h2hData ?? [];
+  const h2hRec = record(h2h);
   const mvpPool = report && mvp && mvp.candidates.some((id) => !report.pool.some((p) => p.player_id === id))
     ? await fetchReportPool(supabase, m.season, mvp.candidates)
     : report?.pool ?? [];
-  const h2hRec = record(h2h);
-  // Gala del MVP: el cromo del ganador
-  const galaEntry = mvp?.winner_id ? await fetchRosterEntry(supabase, m.season, mvp.winner_id) : null;
   const gala = galaEntry && mvp
     ? { entry: galaEntry, me: s.user.id, rival: `${m.is_home ? "vs" : "en"} ${m.rival.name}`, auto: galaFresh(mvp) }
     : null;

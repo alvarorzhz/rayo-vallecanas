@@ -41,58 +41,79 @@ type Own = { birth_date: string | null; phone: string | null; email: string | nu
 
 export default async function PlayerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ temporada?: string; ok?: string }> }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
-  const s = await requirePerm("squad", "read");
   const supabase = await createClient();
+  // La ficha y su historial se piden a la vez que se comprueban los permisos (la base de datos también los comprueba)
+  const [s, { data: player }, { data: history }] = await Promise.all([
+    requirePerm("squad", "read"),
+    supabase.from("players").select("*").eq("id", id).maybeSingle<Player>(),
+    supabase.from("squad_members_full").select("*").eq("player_id", id).order("season", { ascending: false }).returns<Membership[]>(),
+  ]);
   const isManager = s.can("squad", "update");
   const canPrivate = s.can("squad_private", "read");
   const canFees = s.can("finances", "read");
-
-  const [{ data: player }, { data: history }, { data: priv }] = await Promise.all([
-    supabase.from("players").select("*").eq("id", id).maybeSingle<Player>(),
-    supabase.from("squad_members_full").select("*").eq("player_id", id).order("season", { ascending: false }).returns<Membership[]>(),
-    canPrivate ? supabase.from("player_private").select("*").eq("player_id", id).maybeSingle<PlayerPrivate>() : Promise.resolve({ data: null }),
-  ]);
   if (!player) notFound();
   const isMe = player.user_id === s.user.id;
   const showDocs = canPrivate || isMe;
-  const { data: docs } = showDocs
-    ? await supabase.from("player_documents").select("*").eq("player_id", id).order("created_at", { ascending: false }).returns<PlayerDocument[]>()
-    : { data: [] as PlayerDocument[] };
-  const deletable = (docs ?? []).filter((d) => s.can("squad_private", "delete") || (isMe && d.uploaded_by === s.user.id)).map((d) => d.id);
-  const own = isMe ? ((await supabase.rpc("squad_my_private")).data as Own | null) : null;
-  const contact: Own | null = priv ?? own;
 
   const wanted = seasonFromSlug(sp.temporada) ?? seasonOf();
   const seasons = history ?? [];
   const member = seasons.find((m) => m.season === wanted) ?? seasons[0] ?? null;
   const season = member?.season ?? wanted;
   const line = member ? lineOf(member.position) : null;
-  const age = ageOf(contact?.birth_date);
   const back = `/plantilla?temporada=${seasonSlug(season)}`;
   const total = sumStats(seasons);
   const today = new Date().toISOString().slice(0, 10);
-  const fees = canFees && member ? await fetchFees(supabase, season, id) : null;
-  // Partidos de la temporada según las actas
-  const { data: appsData } = await supabase.from("match_appearances").select("*, match:matches!inner(*, rival:rivals!inner(*))")
-    .eq("player_id", id).eq("match.season", season).eq("match.status", "played").returns<(Appearance & { match: MatchRow })[]>();
-  const log = (appsData ?? []).sort((a, b) => b.match.match_date.localeCompare(a.match.match_date));
-  const { data: myGoals } = log.length
-    ? await supabase.from("match_goals").select("match_id, scorer_id, assist_id").in("match_id", log.map((a) => a.match_id)).or(`scorer_id.eq.${id},assist_id.eq.${id}`)
-    : { data: [] as { match_id: string; scorer_id: string | null; assist_id: string | null }[] };
-  const gOf = (mid: string) => (myGoals ?? []).filter((g) => g.match_id === mid && g.scorer_id === id).length;
-  const aOf = (mid: string) => (myGoals ?? []).filter((g) => g.match_id === mid && g.assist_id === id).length;
-  // Historial de convocatorias de la temporada (partidos ya jugados o suspendidos)
-  const { data: callupData } = await supabase.from("match_callups").select("id, match_id, reply, reply_note, match:matches!inner(*, rival:rivals!inner(*))")
-    .eq("player_id", id).eq("match.season", season).in("match.status", ["played", "cancelled"]).not("match.callup_published_at", "is", null)
-    .returns<(Pick<Callup, "id" | "match_id" | "reply" | "reply_note"> & { match: MatchRow })[]>();
+  // Usuario vinculado y usuarios libres para vincular (solo gestores con acceso a Usuarios)
+  const canUsers = s.can("users", "read") && isManager;
+
+  // 4.21.1 · Todo lo demás se pide a la vez (antes iba de una en una: ~9 viajes seguidos a la base de datos)
+  type GoalRow = { match_id: string; scorer_id: string | null; assist_id: string | null };
+  const [{ data: priv }, docsRes, ownRes, fees, appsRes, goalsRes, callupRes, careerRes, disc, usersRes] = await Promise.all([
+    canPrivate ? supabase.from("player_private").select("*").eq("player_id", id).maybeSingle<PlayerPrivate>() : Promise.resolve({ data: null }),
+    showDocs
+      ? supabase.from("player_documents").select("*").eq("player_id", id).order("created_at", { ascending: false }).returns<PlayerDocument[]>()
+      : Promise.resolve({ data: [] as PlayerDocument[] }),
+    isMe ? supabase.rpc("squad_my_private") : Promise.resolve({ data: null }),
+    canFees && member ? fetchFees(supabase, season, id) : Promise.resolve(null),
+    // Partidos de la temporada según las actas
+    supabase.from("match_appearances").select("*, match:matches!inner(*, rival:rivals!inner(*))")
+      .eq("player_id", id).eq("match.season", season).eq("match.status", "played").returns<(Appearance & { match: MatchRow })[]>(),
+    // Sus goles y asistencias de la temporada (abajo se quedan solo los de partidos en los que jugó)
+    supabase.from("match_goals").select("match_id, scorer_id, assist_id, match:matches!inner(season, status)")
+      .eq("match.season", season).eq("match.status", "played").or(`scorer_id.eq.${id},assist_id.eq.${id}`).returns<GoalRow[]>(),
+    // Historial de convocatorias de la temporada (partidos ya jugados o suspendidos)
+    supabase.from("match_callups").select("id, match_id, reply, reply_note, match:matches!inner(*, rival:rivals!inner(*))")
+      .eq("player_id", id).eq("match.season", season).in("match.status", ["played", "cancelled"]).not("match.callup_published_at", "is", null)
+      .returns<(Pick<Callup, "id" | "match_id" | "reply" | "reply_note"> & { match: MatchRow })[]>(),
+    // Logros: goles por partido en toda su trayectoria (para el doblete y el hat-trick)
+    supabase.from("match_goals").select("match_id").eq("scorer_id", id).limit(2000),
+    // Ciclo de amarillas de la liga actual (solo en la temporada en curso)
+    member && season === seasonOf() && s.can("matches") ? fetchDiscipline(supabase, [id]) : Promise.resolve(null),
+    canUsers
+      ? Promise.all([
+          player.user_id ? supabase.from("profiles").select("id, full_name, email, avatar_url, active").eq("id", player.user_id).maybeSingle() : Promise.resolve({ data: null }),
+          supabase.from("profiles").select("id, full_name, email").eq("active", true).order("full_name"),
+          supabase.from("players").select("user_id").not("user_id", "is", null),
+        ])
+      : Promise.resolve(null),
+  ]);
+
+  const docs = docsRes.data;
+  const deletable = (docs ?? []).filter((d) => s.can("squad_private", "delete") || (isMe && d.uploaded_by === s.user.id)).map((d) => d.id);
+  const own = isMe ? (ownRes.data as Own | null) : null;
+  const contact: Own | null = priv ?? own;
+  const age = ageOf(contact?.birth_date);
+
+  const log = (appsRes.data ?? []).sort((a, b) => b.match.match_date.localeCompare(a.match.match_date));
   const playedIds = new Set(log.map((a) => a.match_id));
-  const callupLog = (callupData ?? []).sort((a, b) => b.match.match_date.localeCompare(a.match.match_date))
+  const myGoals = (goalsRes.data ?? []).filter((g) => playedIds.has(g.match_id));
+  const gOf = (mid: string) => myGoals.filter((g) => g.match_id === mid && g.scorer_id === id).length;
+  const aOf = (mid: string) => myGoals.filter((g) => g.match_id === mid && g.assist_id === id).length;
+  const callupLog = (callupRes.data ?? []).sort((a, b) => b.match.match_date.localeCompare(a.match.match_date))
     .map((c) => ({ ...c, played: c.match.status === "played" && c.match.report_saved_at ? playedIds.has(c.match_id) : null }));
   const cRec = callupRecord(callupLog.filter((c) => c.match.status === "played"));
-  // Logros: goles por partido en toda su trayectoria (para el doblete y el hat-trick)
-  const { data: careerGoals } = await supabase.from("match_goals").select("match_id").eq("scorer_id", id).limit(2000);
   const perMatch = new Map<string, number>();
-  for (const g of careerGoals ?? []) perMatch.set(g.match_id, (perMatch.get(g.match_id) ?? 0) + 1);
+  for (const g of careerRes.data ?? []) perMatch.set(g.match_id, (perMatch.get(g.match_id) ?? 0) + 1);
   const ach = achievements({ seasons, goalsPerMatch: [...perMatch.values()], line });
   // 4.20.0 · Rachas de la temporada (partidos y convocatorias, del más reciente al más antiguo)
   const streakList = streaks(
@@ -100,22 +121,14 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
     callupLog.filter((c) => c.match.status === "played").map((c) => c.reply),
     line === "GK",
   );
-  // Ciclo de amarillas de la liga actual (solo en la temporada en curso)
-  const disc = member && season === seasonOf() && s.can("matches") ? await fetchDiscipline(supabase, [id]) : null;
   const cycle = disc?.byPlayer.get(id) ?? null;
   const feeDue = fees ? feeOf(fees.plan, fees.overrides.get(id)) : null;
   const feePaid = fees?.paid.get(id) ?? 0;
 
-  // Usuario vinculado y usuarios libres para vincular (solo gestores con acceso a Usuarios)
-  const canUsers = s.can("users", "read") && isManager;
   let linked: { id: string; full_name: string; email: string | null; avatar_url: string | null; active: boolean } | null = null;
   let free: { id: string; full_name: string; email: string | null }[] = [];
-  if (canUsers) {
-    const [{ data: lk }, { data: all }, { data: taken }] = await Promise.all([
-      player.user_id ? supabase.from("profiles").select("id, full_name, email, avatar_url, active").eq("id", player.user_id).maybeSingle() : Promise.resolve({ data: null }),
-      supabase.from("profiles").select("id, full_name, email").eq("active", true).order("full_name"),
-      supabase.from("players").select("user_id").not("user_id", "is", null),
-    ]);
+  if (usersRes) {
+    const [{ data: lk }, { data: all }, { data: taken }] = usersRes;
     linked = lk;
     const used = new Set((taken ?? []).map((t) => t.user_id));
     free = (all ?? []).filter((u) => !used.has(u.id));

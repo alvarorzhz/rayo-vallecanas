@@ -13,11 +13,15 @@ export const metadata = { title: "Nueva venta" };
 
 export default async function SellPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const s = await getSession();
-  const isAdmin = s.can("lottery_admin", "create");
   const supabase = await createClient();
-  const { data: c } = await supabase.from("lottery_campaigns").select("*").eq("id", id).single<Campaign>();
+  // 4.21.1 · Sesión, campaña y vendedores asignados a la vez
+  const [s, { data: c }, { data: assigned }] = await Promise.all([
+    getSession(),
+    supabase.from("lottery_campaigns").select("*").eq("id", id).single<Campaign>(),
+    supabase.from("lottery_campaign_sellers").select("user_id").eq("campaign_id", id),
+  ]);
   if (!c) notFound();
+  const isAdmin = s.can("lottery_admin", "create");
 
   const back = { href: `/loteria/${id}`, label: c.name };
   if (c.status !== "active") {
@@ -29,7 +33,6 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const { data: assigned } = await supabase.from("lottery_campaign_sellers").select("user_id").eq("campaign_id", id);
   const assignedIds = (assigned ?? []).map((a) => a.user_id as string);
   if (!isAdmin && !assignedIds.includes(s.user.id)) {
     return (
@@ -40,34 +43,34 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  // Disponibilidad
-  let available = 0;
+  // Disponibilidad y lista de vendedores, todo a la vez
+  const booklet = c.numbering_mode === "booklet";
+  const free = supabase.from("lottery_shares").select("id", { count: "exact", head: true }).eq("status", "available");
+  const [bookletsRes, countRes, numbersRes, sellersRes] = await Promise.all([
+    booklet ? supabase.from("lottery_booklets").select("id").eq("campaign_id", id).eq("seller_id", s.user.id) : Promise.resolve(null),
+    booklet
+      // Libres en los talonarios de este vendedor
+      ? supabase.from("lottery_shares").select("id, booklet:lottery_booklets!inner(seller_id)", { count: "exact", head: true })
+          .eq("campaign_id", id).eq("status", "available").eq("booklet.seller_id", s.user.id)
+      : free.eq("campaign_id", id),
+    c.numbering_mode === "manual"
+      ? supabase.from("lottery_shares").select("share_number").eq("campaign_id", id).eq("status", "available").order("share_number").range(0, 999)
+      : Promise.resolve(null),
+    isAdmin && assignedIds.length
+      ? supabase.from("member_directory").select("id, full_name").in("id", [...new Set([...assignedIds, s.user.id])]).order("full_name")
+      : Promise.resolve(null),
+  ]);
+
+  const available = countRes.count ?? 0;
   let hint: string | undefined;
   let freeNumbers: number[] | undefined;
-  if (c.numbering_mode === "booklet") {
-    const { data: booklets } = await supabase.from("lottery_booklets").select("id").eq("campaign_id", id).eq("seller_id", s.user.id);
-    const ids = (booklets ?? []).map((b) => b.id);
-    if (ids.length) {
-      const { count } = await supabase.from("lottery_shares").select("id", { count: "exact", head: true }).in("booklet_id", ids).eq("status", "available");
-      available = count ?? 0;
-    }
-    if (!ids.length) hint = "No tienes talonario asignado.";
-  } else {
-    const { count } = await supabase.from("lottery_shares").select("id", { count: "exact", head: true }).eq("campaign_id", id).eq("status", "available");
-    available = count ?? 0;
-    if (c.numbering_mode === "manual") {
-      const { data } = await supabase.from("lottery_shares").select("share_number").eq("campaign_id", id).eq("status", "available").order("share_number").range(0, 999);
-      const nums = (data ?? []).map((d) => d.share_number as number);
-      freeNumbers = nums;
-      hint = nums.length ? `Libres: ${ranges(nums)}${available > nums.length ? "…" : ""}` : "No quedan libres.";
-    }
+  if (booklet && !(bookletsRes?.data ?? []).length) hint = "No tienes talonario asignado.";
+  if (numbersRes) {
+    const nums = (numbersRes.data ?? []).map((d) => d.share_number as number);
+    freeNumbers = nums;
+    hint = nums.length ? `Libres: ${ranges(nums)}${available > nums.length ? "…" : ""}` : "No quedan libres.";
   }
-
-  let sellers: { id: string; full_name: string }[] | undefined;
-  if (isAdmin && assignedIds.length) {
-    const { data } = await supabase.from("member_directory").select("id, full_name").in("id", [...new Set([...assignedIds, s.user.id])]).order("full_name");
-    sellers = data ?? [];
-  }
+  const sellers: { id: string; full_name: string }[] | undefined = sellersRes ? (sellersRes.data ?? []) : undefined;
 
   return (
     <>

@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.21.1",
+    date: "2026-11-18",
+    title: "La app va más rápida",
+    changes: [
+      "Todas las pantallas cargan antes: la base de datos ya no repasa tus permisos fila a fila, sino una sola vez por consulta.",
+      "La ficha del jugador y la del partido piden sus datos a la vez en vez de uno detrás de otro.",
+      { staff: "Sorteos: la pantalla de vender se abre casi en la mitad de tiempo." },
+    ],
+  },
+  {
     version: "4.21.0",
     date: "2026-11-17",
     title: "Cuatro animaciones nuevas",
