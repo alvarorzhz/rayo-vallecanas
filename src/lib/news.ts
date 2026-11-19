@@ -25,6 +25,11 @@ export type Article = {
   is_public?: boolean;
   public_slug?: string | null;
   public_at?: string | null;
+  /** 4.27.0 · La rueda de prensa de Don Rayo (solo crónicas). */
+  press_text?: string | null;
+  press_audio_url?: string | null;
+  press_cues?: unknown;
+  press_at?: string | null;
   status: NewsStatus;
   published_at: string | null;
   notified_at: string | null;
@@ -196,7 +201,7 @@ export function scoreLine(m: Pick<MatchFacts, "home" | "rival" | "goalsFor" | "g
   return m.home ? `${club} ${m.goalsFor}-${m.goalsAgainst} ${m.rival}` : `${m.rival} ${m.goalsAgainst}-${m.goalsFor} ${club}`;
 }
 
-function matchLines(m: MatchFacts, club: string): string[] {
+export function matchLines(m: MatchFacts, club: string): string[] {
   const l: string[] = [];
   l.push(`- Partido: ${m.home ? `${club} (local) contra ${m.rival}` : `${m.rival} (local) contra ${club} (visitante)`}.`);
   l.push(`- Competición: ${m.competition}${m.round ? `, ${m.round}` : ""}. Fútbol 7 amateur.`);

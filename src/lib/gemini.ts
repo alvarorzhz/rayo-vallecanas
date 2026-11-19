@@ -144,3 +144,58 @@ export async function askGemini(prompt: string, opts: { temperature?: number; ma
     : "La IA no ha podido redactarlo.";
   return { error: trail.length ? `${head} (Detalle: ${trail.join(" · ")})` : head };
 }
+
+// ------------------------------------------------------------------ Voz (4.27.0, Don Rayo)
+/**
+ * Voces de Gemini (plan gratis, en pruebas). Probado el 19-11-2026 con una clave gratis real:
+ *  · 3.1 Flash TTS hace caso a las notas de dirección del guion y da ~26 s de voz en ~10 s.
+ *  · 3.8 Flash TTS lee en voz alta también las instrucciones: no sirve con este guion.
+ * El plan gratis da pocas voces al día (unas 15): se crea una vez por rueda de prensa y se guarda.
+ */
+export const TTS_MODELS = () => ["gemini-3.1-flash-tts-preview", process.env.GEMINI_TTS_MODEL?.trim(), "gemini-2.5-flash-preview-tts"].filter((m): m is string => !!m);
+/** Voz grave y con poso (la del vídeo de ejemplo que eligió Alvaro). */
+export const TTS_VOICE = "Algenib";
+
+export type SpeechResult = { pcm: Uint8Array; mime: string; error?: undefined } | { pcm?: undefined; error: string };
+
+export async function speakWithGemini(script: string): Promise<SpeechResult> {
+  const key = cleanKey(process.env.GEMINI_API_KEY);
+  if (!key) return { error: "Falta la clave de Gemini en Vercel (GEMINI_API_KEY)." };
+  const start = Date.now();
+  const trail: string[] = [];
+  let quota = false;
+  for (const model of [...new Set(TTS_MODELS())]) {
+    const left = 50_000 - (Date.now() - start);
+    if (left < 10_000) break;
+    try {
+      const res = await fetch(`${process.env.GEMINI_BASE_URL?.trim() || "https://generativelanguage.googleapis.com"}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: script }] }],
+          generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } } },
+        }),
+        signal: AbortSignal.timeout(Math.min(left, 40_000)),
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        const detail = await why(res);
+        console.error(`[gemini-tts] ${model}: ${detail}`);
+        trail.push(`${model}: ${detail}`);
+        if (res.status === 429) quota = true;
+        if (res.status === 401 || /API key (not valid|expired)|API_KEY_INVALID/i.test(detail)) return { error: "Google no acepta la clave de Gemini. Revisa GEMINI_API_KEY en Vercel." };
+        continue;
+      }
+      const data = (await res.json().catch(() => null)) as { candidates?: { content?: { parts?: { inlineData?: { mimeType?: string; data?: string } }[] } }[] } | null;
+      const part = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)?.inlineData;
+      if (part?.data) return { pcm: new Uint8Array(Buffer.from(part.data, "base64")), mime: part.mimeType ?? "audio/L16;rate=24000" };
+      trail.push(`${model}: sin audio`);
+    } catch (e) {
+      const err = e as Error;
+      console.error(`[gemini-tts] ${model}: ${err.name} ${err.message}`);
+      trail.push(`${model}: ${err.name === "TimeoutError" ? "sin respuesta a tiempo" : "sin conexión"}`);
+    }
+  }
+  const head = quota ? "Se han gastado las voces gratis de hoy. Mañana se puede volver a crear; mientras, Don Rayo habla con la voz del móvil." : "No se ha podido crear la voz de Don Rayo. Mientras, habla con la voz del móvil.";
+  return { error: trail.length ? `${head} (Detalle: ${trail.join(" · ")})` : head };
+}
