@@ -5,7 +5,8 @@ import { openSession } from "@/lib/league-sync";
 import { parseCalendar, parseCompetitionName, parseTable } from "@/lib/league-parse";
 import { teamGames } from "@/lib/standings";
 import { remainingByTeam } from "@/lib/league-outlook";
-import type { StandingRow } from "@/lib/league-parse";
+import type { LeagueRow, StandingRow } from "@/lib/league-parse";
+import { leagueForecast, type Forecast } from "@/lib/league-forecast";
 
 export type { StandingRow } from "@/lib/league-parse";
 
@@ -14,7 +15,7 @@ export type { StandingRow } from "@/lib/league-parse";
  * la base de datos. Se guarda en caché media hora y se refresca al sincronizar.
  */
 
-export type LeagueTable = { competition: string | null; rows: StandingRow[]; round: string | null; fetchedAt: string; /** 4.20.0 · si se pudo leer el calendario (para «Lo que queda») */ withCalendar?: boolean };
+export type LeagueTable = { competition: string | null; rows: StandingRow[]; round: string | null; fetchedAt: string; /** 4.20.0 · si se pudo leer el calendario (para «Lo que queda») */ withCalendar?: boolean; /** 4.25.0 · partidos de la liga (jugados y por jugar), para la previsión */ games?: LeagueRow[] };
 
 const TABLE_TAG = "league-table";
 
@@ -35,10 +36,40 @@ async function load(competition: string): Promise<LeagueTable> {
     rows: base.map((r) => ({ ...r, form: byTeam.get(r.teamId)?.form ?? [], last: byTeam.get(r.teamId)?.last ?? [], left: left.get(r.teamId) ?? 0 })),
     fetchedAt: new Date().toISOString(),
     withCalendar: games.length > 0,
+    games,
   };
 }
 
-const cached = unstable_cache(load, ["league-table-v3"], { revalidate: 1800, tags: [TABLE_TAG] });
+const cached = unstable_cache(load, ["league-table-v4"], { revalidate: 1800, tags: [TABLE_TAG] });
+
+/**
+ * 4.25.0 · «¿Subimos?»: el resto de la liga simulado 10.000 veces. Se calcula en el servidor una
+ * vez por clasificación (misma caché que la tabla, así que se rehace tras cada resultado).
+ */
+const forecastCached = unstable_cache(
+  async (competition: string, team: string) => {
+    const t = await cached(competition);
+    return t.games?.length ? leagueForecast(t.rows, t.games, team) : null;
+  },
+  ["league-forecast-v1"],
+  { revalidate: 1800, tags: [TABLE_TAG] },
+);
+
+/** Previsión de la liga para nuestro equipo, o null si no hay datos o la web de la liga no responde. */
+export async function getForecast(competition: string, team: string): Promise<Forecast | null> {
+  if (!/^\d{1,9}$/.test(competition) || !/^\d{1,12}$/.test(team)) return null;
+  try {
+    return await forecastCached(competition, team);
+  } catch (e) {
+    console.error("No se ha podido calcular la previsión de la liga:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+/** Como getForecast, pero si tarda más de `ms` devuelve null. */
+export function getForecastQuick(competition: string, team: string, ms = 2500): Promise<Forecast | null> {
+  return within(getForecast(competition, team), ms);
+}
 
 /** Clasificación de la competición, o null si la web de la liga no responde. */
 export async function getLeagueTable(competition: string): Promise<LeagueTable | null> {
