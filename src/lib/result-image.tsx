@@ -180,7 +180,7 @@ export function Backdrop({ w, h, glow, glowY }: { w: number; h: number; glow: st
 export const Bolt = ({ size = 34, color = ORO }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" fill={color} /></svg>
 );
-const BallIcon = ({ size = 30 }: { size?: number }) => (
+export const BallIcon = ({ size = 30 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="11" fill="#ffffff" stroke="#111" strokeWidth="1.2" />
     <path d="M12 6.5l3.6 2.6-1.4 4.2H9.8L8.4 9.1z" fill="#111" />

@@ -262,12 +262,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
       {/* Se acabó la liga: el resumen de cada uno */}
       {ended && (
-        <Link href={`/partidos/resumen?de=c${ended.competition}`} prefetch className="group franja relative mb-6 flex items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:shadow-xl">
+        <Link href={myPlayerId ? `/partidos/resumen/historias?de=c${ended.competition}` : `/partidos/resumen?de=c${ended.competition}`} prefetch className="group franja relative mb-6 flex items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:shadow-xl">
           <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full bg-dorado/15 ring-2 ring-dorado"><Award size={24} className="text-dorado" /></span>
           <span className="relative min-w-0 flex-1">
             <span className="sport block text-xs font-black tracking-[0.2em] text-dorado">¡SE ACABÓ EL {ended.name.toUpperCase()}!</span>
-            <span className="sport block text-2xl font-black leading-tight">Mira tu resumen</span>
-            <span className="block text-sm text-white/75">Tus partidos, goles, MVP y tu mejor partido, en una imagen para compartir.</span>
+            <span className="sport block text-2xl font-black leading-tight">{myPlayerId ? <>Tu Rayo <span className="text-dorado">Wrapped</span></> : "Mira el resumen"}</span>
+            <span className="block text-sm text-white/75">{myPlayerId ? "Tu temporada en historias: partidos, goles, tu socio de gol, tu mejor partido y tu título." : "Partidos, goles, MVP y el mejor partido de cada uno."}</span>
           </span>
           <span className="relative shrink-0 text-sm font-bold text-dorado transition group-hover:translate-x-0.5">→</span>
         </Link>
