@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.22.0",
+    date: "2026-11-19",
+    title: "Los goles, con voz de locutor",
+    changes: [
+      "Partido en directo: cuando marca el Rayo, un locutor de radio canta el gol con la grada rugiendo de fondo («¡Gol, gol, gol! ¡Gol de …!»), con quién lo ha marcado, la asistencia y cómo va el marcador. Usa la voz de tu propio móvil, sin coste.",
+      "Debajo del marcador en directo tienes el botón «Locutor» para silenciarlo o volver a activarlo (se acuerda en tu móvil). También puedes callarlo en plena celebración con «Silenciar locutor».",
+      "El navegador solo deja sonar algo después de tocar la pantalla: si ves «Toca para oír al locutor», dale una vez y listo.",
+    ],
+  },
+  {
     version: "4.21.1",
     date: "2026-11-18",
     title: "La app va más rápida",

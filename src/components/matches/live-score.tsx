@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { clockLabel, KIND_ICON, liveClock } from "@/lib/live";
 import type { LiveView } from "@/lib/live-queries";
 import { GoalBurst, OUR_SHORT, type Burst } from "@/components/matches/goal-burst";
+import { goalCall } from "@/lib/commentator";
+import { LocutorToggle } from "@/components/matches/locutor-toggle";
 
 /**
  * Marcador en directo en Inicio (v4.12.0). Un solo «vigilante» por partido consulta lo apuntado
@@ -82,8 +84,11 @@ export function LiveScoreBox({ matchId, initial, home }: { matchId: string; init
     const ev = [...v.events].reverse().find((e) => e.kind === (us ? "goal" : "goal_against")) ?? null;
     const rival = (v.rival ?? "Rival").toUpperCase();
     const [h, a] = home ? [v.gf, v.ga] : [v.ga, v.gf];
+    const who = us ? ev?.who ?? null : null;
     setBurst({
-      us, minute: ev ? clockLabel(ev) || null : null, who: us ? ev?.who ?? null : null,
+      // 4.22.0 · Lo que canta el locutor (solo los goles del Rayo)
+      speech: us ? goalCall({ scorer: who?.name ?? null, assist: who?.assist ?? null, goalsToday: who?.goalsToday ?? 0, gf: v.gf, ga: v.ga, rival: v.rival ?? null }) : undefined,
+      us, minute: ev ? clockLabel(ev) || null : null, who,
       home: h, away: a, homeName: home ? OUR_SHORT : rival, awayName: home ? rival : OUR_SHORT,
     });
     if (!us) return;
@@ -125,6 +130,7 @@ export function LiveFeed({ matchId, initial }: { matchId: string; initial: LiveV
       <p className="sport flex items-center gap-2 text-2xl font-black text-white">
         <span className="md-live-dot" aria-hidden /> {clock ? `En directo · ${clock.half === 2 ? "2ª parte" : "1ª parte"} · ${clock.minute}'` : "Partido en juego · ¡vamos Rayo!"}
       </p>
+      {!v.played && <LocutorToggle />}
       {shown.length > 0 && (
         <ol className="w-full space-y-1 rounded-2xl bg-white/[0.08] p-2 text-left text-sm ring-1 ring-white/15" aria-label="Jugadas del partido">
           {shown.map((e) => (
