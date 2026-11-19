@@ -17,6 +17,17 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.23.0",
+    date: "2026-11-19",
+    title: "Rayo Wrapped: tu temporada en historias",
+    changes: [
+      "Al acabar la liga, cada jugador tiene su Rayo Wrapped: la temporada contada en historias, como las de Instagram. Se pasa tocando la pantalla.",
+      "Salen tus partidos (con el calendario del equipo), tus goles y asistencias, tu socio de gol, tu mejor partido, tus MVP y tu nota media, cómo le fue al equipo contigo y sin ti, y tu título con tu cromo.",
+      "Cada historia tiene su imagen para compartir, en formato historia o publicación.",
+      "Se abre desde Inicio cuando termina la liga y desde el Resumen de temporada, donde también puedes ver el de tus compañeros.",
+    ],
+  },
+  {
     version: "4.22.0",
     date: "2026-11-19",
     title: "Los goles, con voz de locutor",

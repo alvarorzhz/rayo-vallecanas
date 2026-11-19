@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Award, CalendarCheck, Target, Trophy } from "lucide-react";
+import { Award, CalendarCheck, Play, Target, Trophy } from "lucide-react";
 import { getSession, requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
@@ -112,6 +112,8 @@ export default async function SummaryPage({ searchParams }: { searchParams: Prom
               ))}
             </div>
             <div className="relative mt-4 flex flex-wrap gap-2">
+              <Link href={`/partidos/resumen/historias?${new URLSearchParams({ de: slug, jugador: who.player_id })}`} prefetch
+                className="btn-primary px-3 py-1.5 text-sm"><Play size={15} className="fill-current" /> {who.player.user_id === s.user.id ? "Ver mi Rayo Wrapped" : "Ver su Rayo Wrapped"}</Link>
               <ShareImageButton url={`/api/resumen/${who.player_id}/${slug}`} name={`resumen-${shirtName(who.player).toLowerCase().replace(/\s+/g, "-")}.jpg`} title="Imagen del resumen" />
             </div>
           </section>

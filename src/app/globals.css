@@ -1067,3 +1067,38 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
 @media (prefers-reduced-motion: reduce) {
   .voy-shot, .voy-shot *, .flip-face, .card-flash-card, .goal-done * { animation: none !important; }
 }
+
+/* ---------------------------------------------------------------- Rayo Wrapped (4.23.0) */
+.wr-stage { touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.wr-negro { background: radial-gradient(ellipse at 50% 38%, rgb(213 175 50 / 0.22), transparent 60%), linear-gradient(160deg, #15080a, #070707 55%, #050505); color: #fff; }
+.wr-rojo { background: radial-gradient(ellipse at 50% 35%, rgb(255 255 255 / 0.14), transparent 55%), linear-gradient(160deg, #e3141e, #a80a12 55%, #5c050a); color: #fff; }
+.wr-oro { background: radial-gradient(ellipse at 50% 35%, rgb(255 255 255 / 0.45), transparent 55%), linear-gradient(160deg, #f6e08a, #d5af32 50%, #8a6610); color: var(--color-negro); }
+/* La franja de la camiseta cruzando cada historia */
+.wr-franja { position: absolute; inset: -20% -40%; pointer-events: none; transform: rotate(-58deg); }
+.wr-franja::before, .wr-franja::after { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; }
+.wr-franja::before { width: 18%; margin-left: -9%; background: linear-gradient(90deg, rgb(210 13 23 / 0.75), rgb(122 6 12 / 0.85)); }
+.wr-franja::after { width: 2.2%; margin-left: 10%; background: linear-gradient(90deg, #f3d774, #d5af32); opacity: 0.8; }
+.wr-rojo .wr-franja::before { background: linear-gradient(90deg, rgb(8 8 8 / 0.55), rgb(8 8 8 / 0.75)); }
+.wr-oro .wr-franja::before { background: linear-gradient(90deg, rgb(210 13 23 / 0.85), rgb(168 10 18 / 0.9)); }
+.wr-oro .wr-franja::after { background: #080808; opacity: 0.6; }
+.wr-franja { animation: wr-franja 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes wr-franja { from { opacity: 0; transform: rotate(-58deg) translateY(-30%); } to { opacity: 0.55; transform: rotate(-58deg); } }
+.wr-ghost { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-8deg); font-size: min(44vh, 120vw); line-height: 1; opacity: 0.06; pointer-events: none; white-space: nowrap; }
+.wr-in { animation: rv-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--d, 0ms); }
+.wr-slam { animation: wr-slam 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: var(--d, 0ms); }
+@keyframes wr-slam { 0% { opacity: 0; transform: scale(2.2) skewX(-10deg); filter: blur(6px); } 60% { opacity: 1; transform: scale(0.96) skewX(-7deg); filter: none; } 100% { opacity: 1; transform: skewX(-7deg); } }
+.wr-pop { animation: wr-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: var(--d, 0ms); }
+@keyframes wr-pop { from { opacity: 0; transform: scale(0.3) rotate(-12deg); } to { opacity: 1; transform: none; } }
+.wr-drop { animation: wr-drop 0.7s cubic-bezier(0.5, 0.05, 0.5, 1.4) both; animation-delay: var(--d, 0ms); }
+@keyframes wr-drop { 0% { opacity: 0; transform: translateY(-70px) rotate(-200deg); } 100% { opacity: 1; transform: none; } }
+.wr-bar { transform-origin: left; animation: rv-fill 1.2s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--d, 0ms); }
+/* El balón que va y viene entre los dos socios */
+.wr-pass { animation: wr-pass 1.6s cubic-bezier(0.45, 0, 0.55, 1) 0.9s infinite alternate both; }
+@keyframes wr-pass { 0% { left: 0; transform: translateY(0) rotate(0); } 50% { transform: translateY(-34px) rotate(200deg); } 100% { left: calc(100% - 2rem); transform: translateY(0) rotate(400deg); } }
+.wr-glow { animation: fc-glow 2.6s ease-in-out 0.9s infinite alternate; }
+.wr-card { animation: wr-card 1s cubic-bezier(0.3, 0.1, 0.25, 1) 0.2s both; }
+@keyframes wr-card { 0% { opacity: 0; transform: perspective(900px) rotateY(-540deg) scale(0.4); } 70% { opacity: 1; transform: perspective(900px) rotateY(12deg) scale(1.05); } 100% { transform: none; } }
+.wr-progress { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .wr-pass, .wr-glow { animation: none !important; }
+}

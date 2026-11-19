@@ -25,7 +25,7 @@ const FORMATS: { key: Format; label: string }[] = [
  * Desde la 4.18.3, en cuanto está lista una se prepara la otra de fondo, así cambiar de formato es
  * al momento, y cada una se guarda un minuto por si se vuelve a abrir.
  */
-function useShareImage(url: string, name: string, title: string) {
+export function useShareImage(url: string, name: string, title: string) {
   const [busy, setBusy] = useState<Format | null>(null);
   const [ready, setReady] = useState<Ready | null>(null);
   const [error, setError] = useState(false);
