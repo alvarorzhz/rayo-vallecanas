@@ -1,5 +1,5 @@
 -- =====================================================================
--- v4.24.0 · La cápsula del tiempo de la temporada
+-- v4.26.0 · La cápsula del tiempo de la temporada
 -- · Un gestor (quien puede preparar la temporada) crea la cápsula de una
 --   temporada: hasta cuándo se puede escribir y el día de la gala.
 -- · Cada persona activa de la app guarda sus predicciones (máximo goleador,

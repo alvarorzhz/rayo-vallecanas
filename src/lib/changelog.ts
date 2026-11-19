@@ -17,7 +17,7 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
-    version: "4.24.0",
+    version: "4.26.0",
     date: "2026-11-19",
     title: "La cápsula del tiempo",
     changes: [
@@ -26,6 +26,17 @@ export const CHANGELOG: Release[] = [
       "El día de la gala, después del último partido, se abre sola para todos a la vez: el cofre se abre, las predicciones se comparan con lo que pasó de verdad, se corona al pitoniso de la temporada y se leen los mensajes uno a uno. Llega un aviso al móvil.",
       "La encontrarás también en Inicio (mientras se puede escribir y cuando se abre) y al final de tu Rayo Wrapped.",
       { staff: "Los gestores la crean desde Preparar temporada o desde Partidos → Cápsula: eligen hasta cuándo se puede escribir y el día de la gala. Tres días antes de cerrarse, la app recuerda escribir a quien no lo ha hecho." },
+    ],
+  },
+  {
+    version: "4.25.0",
+    date: "2026-11-19",
+    title: "¿Subimos? ¿Ganamos?",
+    changes: [
+      "Partidos → Clasificación: debajo de la tabla sale nuestra probabilidad de ascenso (por ejemplo, «Ascenso 63 % ▲12») y cuánto ha cambiado tras nuestra última jornada.",
+      "Al tocarla se abre el detalle: probabilidad de subir y de bajar, el puesto más probable y cómo quedaría todo si ganamos, empatamos o perdemos el próximo partido.",
+      "«¿Ganamos?»: en el próximo partido de liga (en Partidos y en la ficha del partido) sale la probabilidad de victoria, empate y derrota.",
+      "Sale de jugar el resto de la liga 10.000 veces con la fuerza de cada equipo: sus goles a favor y en contra y cómo llega en los últimos partidos. Se rehace sola con cada resultado.",
     ],
   },
   {

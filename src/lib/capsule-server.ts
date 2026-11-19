@@ -24,7 +24,7 @@ export type CapsuleState = {
 /** La cápsula de una temporada con su momento (o null si no hay). */
 export async function fetchCapsule(supabase: DB, season: string): Promise<CapsuleState | null> {
   const { data: capsule, error } = await supabase.from("time_capsules").select("season, write_until, opens_on, final_position").eq("season", season).maybeSingle<Capsule>();
-  if (error || !capsule) return null; // sin cápsula (o falta el SQL de la 4.24.0)
+  if (error || !capsule) return null; // sin cápsula (o falta el SQL de la 4.26.0)
   const [{ data: opensAt }, { data: counts }] = await Promise.all([
     supabase.rpc("capsule_opens_at", { p_season: season }),
     supabase.rpc("capsule_counts", { p_season: season }),

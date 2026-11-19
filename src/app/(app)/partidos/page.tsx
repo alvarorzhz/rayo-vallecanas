@@ -12,8 +12,10 @@ import { Ball } from "@/components/squad/ball";
 import { LeagueProblem } from "@/components/matches/league-problem";
 import type { StoredSummary } from "@/lib/league-status";
 import { Suspense } from "react";
-import { getLeagueTable, getLeagueTableQuick } from "@/lib/league-table";
-import { matchRanks, type MatchRanks } from "@/lib/standings";
+import { getForecast, getForecastQuick, getLeagueTable, getLeagueTableQuick } from "@/lib/league-table";
+import { matchRanks, rivalRow, type MatchRanks } from "@/lib/standings";
+import { oddsFor } from "@/lib/league-forecast";
+import { ForecastLine, MatchOdds } from "@/components/matches/league-forecast";
 import { StandingsTable, type TableRival } from "@/components/matches/league-table";
 import { LeagueOutlook } from "@/components/matches/league-outlook";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -33,11 +35,14 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const leagueP = supabase.from("league_sync").select("competition, team, last_summary").eq("id", 1).maybeSingle<{ competition: string; team: string; last_summary: StoredSummary }>().then((r) => r.data);
   // Clasificación para la posición y los puntos de cada rival (sin esperar más de 2,5 s a la web de la liga)
   const standingsP = leagueP.then((l) => (l?.competition && l.team && current ? getLeagueTableQuick(l.competition) : null));
-  const [matches, seasons, league, standings] = await Promise.all([
+  // 4.25.0 · Previsión de la liga (para el «¿Ganamos?» del próximo partido)
+  const forecastP = leagueP.then((l) => (l?.competition && l.team && current ? getForecastQuick(l.competition, l.team) : null));
+  const [matches, seasons, league, standings, forecast] = await Promise.all([
     fetchMatches(supabase, season),
     fetchMatchSeasons(supabase),
     leagueP,
     standingsP,
+    forecastP,
   ]);
   const ranks = standings && league ? matchRanks(standings.rows, league.team, matches, season) : new Map<string, MatchRanks>();
 
@@ -68,6 +73,9 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const tableView = view === "clasificacion" && withTable;
   const canCreate = s.can("matches", "create");
   const hero = current ? next ?? last : last;
+  const heroOdds = hero && hero === next && hero.competition === "league" && standings
+    ? oddsFor(forecast, rivalRow(standings.rows, hero.rival)?.teamId, hero.match_date)
+    : null;
 
   return (
     <>
@@ -104,6 +112,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         <section className="mb-6">
           <h2 className="sport mb-2 text-xl font-black">{hero === next ? "Próximo partido" : "Último resultado"}</h2>
           <Link href={`/partidos/${hero.id}`} prefetch className="block transition hover:-translate-y-0.5"><Scoreboard m={hero} ranks={ranks.get(hero.id)} /></Link>
+          {heroOdds && <MatchOdds odds={heroOdds} className="mt-2" />}
         </section>
       )}
 
@@ -161,16 +170,17 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
 
 type TableProps = { supabase: SupabaseClient; competition: string; team: string };
 
-async function tableData({ supabase, competition }: TableProps) {
-  const [table, rivals] = await Promise.all([
+async function tableData({ supabase, competition, team }: TableProps) {
+  const [table, forecast, rivals] = await Promise.all([
     getLeagueTable(competition),
+    getForecast(competition, team),
     supabase.from("rivals").select("name, short_name, color, crest_url, ext_id").not("ext_id", "is", null).returns<TableRival[]>().then((r) => r.data ?? []),
   ]);
-  return { table, rivals };
+  return { table, forecast, rivals };
 }
 
 async function FullTable(p: TableProps) {
-  const { table, rivals } = await tableData(p);
+  const { table, forecast, rivals } = await tableData(p);
   if (!table) {
     return (
       <Empty>
@@ -182,6 +192,7 @@ async function FullTable(p: TableProps) {
   return (
     <>
       <StandingsTable table={table} us={p.team} rivals={rivals} />
+      {forecast && <ForecastLine f={forecast} />}
       <LeagueOutlook table={table} us={p.team} />
     </>
   );

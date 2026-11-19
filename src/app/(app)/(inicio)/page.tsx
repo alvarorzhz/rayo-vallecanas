@@ -49,7 +49,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const canMatches = s.can("matches");
   const canSquad = s.can("squad");
 
-  // 4.24.0 · Cápsula del tiempo: la gala recién abierta o la invitación a escribir
+  // 4.26.0 · Cápsula del tiempo: la gala recién abierta o la invitación a escribir
   const capsuleP = canMatches ? fetchCapsuleHome(supabase, s.user.id).catch(() => null) : Promise.resolve(null);
   // 4.19.0 · Inicio más rápido: todo lo que no depende de nada se pide a la vez (antes iba una consulta detrás de otra)
   const [campaign, roster, bdayRows, [matchday, focus], [display, showcase, board], [news, newsCount, pendingChronicle], ended, myInterviews, myPlayerId, goalsWon] = await Promise.all([
@@ -281,7 +281,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </Link>
       )}
 
-      {/* 4.24.0 · Cápsula del tiempo */}
+      {/* 4.26.0 · Cápsula del tiempo */}
       {capsule && (
         <Link href={capsule.stage === "open" ? `/partidos/capsula/gala?temporada=${capsule.season.replace("/", "-")}` : `/partidos/capsula?temporada=${capsule.season.replace("/", "-")}`} prefetch
           className="group franja relative mb-6 flex items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:shadow-xl">

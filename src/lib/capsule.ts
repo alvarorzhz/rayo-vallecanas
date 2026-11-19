@@ -1,5 +1,5 @@
 /**
- * La cápsula del tiempo de la temporada (4.24.0). Sin dependencias, para poder probarlo:
+ * La cápsula del tiempo de la temporada (4.26.0). Sin dependencias, para poder probarlo:
  * preguntas, fechas, la realidad de la temporada y los puntos de cada predicción.
  */
 

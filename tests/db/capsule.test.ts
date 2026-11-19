@@ -1,5 +1,5 @@
 /**
- * 4.24.0 · La cápsula del tiempo contra la base de datos de verdad: lo de cada uno queda bajo llave
+ * 4.26.0 · La cápsula del tiempo contra la base de datos de verdad: lo de cada uno queda bajo llave
  * (ni gestores ni superadministradores lo leen) hasta que se abre, y se abre para todos a la vez.
  */
 import { before, describe, test } from "node:test";

@@ -63,7 +63,7 @@ export const BACKUP_TABLES: [string, string][] = [
 ];
 
 /**
- * 4.24.0 · Tablas bajo llave: la copia solo se lleva las filas de las cápsulas ya abiertas
+ * 4.26.0 · Tablas bajo llave: la copia solo se lleva las filas de las cápsulas ya abiertas
  * (si no, el superadministrador podría leer en el Excel lo que aún no se puede leer en la app).
  */
 export const BACKUP_SEALED = ["capsule_predictions", "capsule_messages"];

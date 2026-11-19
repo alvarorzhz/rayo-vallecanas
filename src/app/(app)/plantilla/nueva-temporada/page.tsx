@@ -19,7 +19,7 @@ export default async function PrepareSeasonPage({ searchParams }: { searchParams
   const [{ data: rows }, { data: target }, { data: capsule }] = await Promise.all([
     supabase.from("squad_members").select("*, player:players!inner(*)").lte("season", from).order("season", { ascending: false }).returns<(Membership & { player: Player })[]>(),
     supabase.from("squad_members").select("player_id").eq("season", to),
-    // 4.24.0 · ¿Ya hay cápsula del tiempo para la temporada nueva?
+    // 4.26.0 · ¿Ya hay cápsula del tiempo para la temporada nueva?
     supabase.from("time_capsules").select("season").eq("season", to).maybeSingle(),
   ]);
   const already = new Set((target ?? []).map((r) => r.player_id));

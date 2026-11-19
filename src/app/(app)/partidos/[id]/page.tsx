@@ -25,8 +25,10 @@ import { CallupHistory } from "@/components/matches/callup-history";
 import { ShareImages } from "@/components/matches/share-images";
 import { callupClosed } from "@/lib/callups";
 import { seasonOf } from "@/lib/finance";
-import { getStandings } from "@/lib/league-table";
-import { matchRanks } from "@/lib/standings";
+import { getForecastQuick, getStandings } from "@/lib/league-table";
+import { matchRanks, rivalRow } from "@/lib/standings";
+import { oddsFor } from "@/lib/league-forecast";
+import { MatchOdds } from "@/components/matches/league-forecast";
 import { RankDuel } from "@/components/matches/league-table";
 import { deleteMatch, saveResult, setMatchStatus } from "../actions";
 
@@ -59,7 +61,8 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
       .order("match_date", { ascending: false }).limit(20).returns<MatchRow[]>(),
     fetchCallups(supabase, m),
     fetchMyPlayerId(supabase, s.user.id),
-    rankable ? getStandings(supabase) : null,
+    // 4.25.0 · con la clasificación, la previsión de la liga (para el «¿Ganamos?»)
+    rankable ? getStandings(supabase).then(async (st) => (st ? { ...st, forecast: await getForecastQuick(st.competition, st.us) } : null)) : null,
     played ? fetchRatingBoard(supabase, m.id) : null,
   ]);
   // Si al abrir la ficha se acaba de hacer el recuento, el acta se vuelve a pedir con el MVP al día
@@ -70,6 +73,7 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
   }
   const ratings = mvp ? ratingsAll : null;
   const ranks = standings ? matchRanks(standings.table.rows, standings.us, [m], m.season).get(m.id) ?? null : null;
+  const odds = standings ? oddsFor(standings.forecast, rivalRow(standings.table.rows, m.rival)?.teamId, m.match_date) : null;
   const h2h = h2hData ?? [];
   const h2hRec = record(h2h);
   const mvpPool = report && mvp && mvp.candidates.some((id) => !report.pool.some((p) => p.player_id === id))
@@ -103,6 +107,8 @@ export default async function MatchPage({ params, searchParams }: { params: Prom
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-6">
           <Scoreboard m={m} ranks={ranks} />
+
+          {odds && <MatchOdds odds={odds} />}
 
           {ranks && <RankDuel ranks={ranks} rival={m.rival} href={`/partidos?ver=clasificacion`} />}
 

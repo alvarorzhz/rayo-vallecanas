@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Cápsula del tiempo (v4.24.0). La lanza Vercel Cron cada noche (vercel.json), después de los partidos:
+ * Cápsula del tiempo (v4.26.0). La lanza Vercel Cron cada noche (vercel.json), después de los partidos:
  * avisa al equipo cuando se abre una cápsula y, tres días antes de cerrarse, recuerda escribir
  * a quien aún no lo ha hecho. Nunca lee lo que hay dentro.
  */

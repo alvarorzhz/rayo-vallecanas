@@ -33,7 +33,7 @@ export function WrappedStories({ slides, entry, imgBase, fileBase, backHref, sco
   totals: { label: string; value: number }[];
   /** Es el Wrapped del que mira. */
   you: boolean;
-  /** 4.24.0 · La cápsula del tiempo de esa temporada, si ya se ha abierto. */
+  /** 4.26.0 · La cápsula del tiempo de esa temporada, si ya se ha abierto. */
   capsuleHref?: string | null;
 }) {
   const router = useRouter();

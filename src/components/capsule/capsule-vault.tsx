@@ -1,5 +1,5 @@
 /**
- * 4.24.0 · La cápsula: un cofre negro con aros dorados, el escudo y un candado.
+ * 4.26.0 · La cápsula: un cofre negro con aros dorados, el escudo y un candado.
  * state: "sealed" (cerrada, el candado respira), "unlock" (tiembla y salta el candado), "open" (se abre la tapa y sale la luz).
  */
 export function CapsuleVault({ state = "sealed", size = 150, className = "" }: { state?: "sealed" | "unlock" | "open"; size?: number; className?: string }) {

@@ -1103,7 +1103,7 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
   .wr-pass, .wr-glow { animation: none !important; }
 }
 
-/* ── 4.24.0 · Cápsula del tiempo ─────────────────────────────────────────── */
+/* ── 4.26.0 · Cápsula del tiempo ─────────────────────────────────────────── */
 .cap-vault { display: inline-block; flex-shrink: 0; }
 .cap-vault > span { position: absolute; display: block; }
 .cap-body {
