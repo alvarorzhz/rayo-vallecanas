@@ -17,6 +17,18 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.26.0",
+    date: "2026-11-19",
+    title: "La cápsula del tiempo",
+    changes: [
+      "Nueva cápsula del tiempo de la temporada (Partidos → Cápsula): al empezar la temporada cada uno deja sus predicciones (pichichi, rey de las asistencias, más veces MVP, el fijo, el más tarjetero, puesto final, goles y victorias) y mensajes para todo el equipo, para un compañero o para sí mismo.",
+      "Todo queda bajo llave: nadie puede leer lo de los demás hasta el final de la temporada, ni siquiera los gestores. Cada uno ve y puede cambiar lo suyo mientras la cápsula esté abierta para escribir.",
+      "El día de la gala, después del último partido, se abre sola para todos a la vez: el cofre se abre, las predicciones se comparan con lo que pasó de verdad, se corona al pitoniso de la temporada y se leen los mensajes uno a uno. Llega un aviso al móvil.",
+      "La encontrarás también en Inicio (mientras se puede escribir y cuando se abre) y al final de tu Rayo Wrapped.",
+      { staff: "Los gestores la crean desde Preparar temporada o desde Partidos → Cápsula: eligen hasta cuándo se puede escribir y el día de la gala. Tres días antes de cerrarse, la app recuerda escribir a quien no lo ha hecho." },
+    ],
+  },
+  {
     version: "4.25.0",
     date: "2026-11-19",
     title: "¿Subimos? ¿Ganamos?",

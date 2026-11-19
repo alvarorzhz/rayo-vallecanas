@@ -2,7 +2,7 @@ import "server-only";
 import { gzipSync } from "node:zlib";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BACKUP_TABLES } from "@/lib/backup-tables";
+import { BACKUP_SEALED, BACKUP_TABLES } from "@/lib/backup-tables";
 import { APP_VERSION } from "@/lib/changelog";
 
 /**
@@ -31,6 +31,14 @@ export async function readTables(db: SupabaseClient) {
     }
     data[table] = rows;
   }
+  // Lo que sigue bajo llave en la cápsula del tiempo no sale de la base de datos
+  const seasons = [...new Set(BACKUP_SEALED.flatMap((t) => (data[t] ?? []).map((r) => String(r.season))))];
+  const open = new Set<string>();
+  for (const season of seasons) {
+    const { data: isOpen } = await db.rpc("capsule_is_open", { p_season: season });
+    if (isOpen === true) open.add(season);
+  }
+  for (const t of BACKUP_SEALED) if (data[t]) data[t] = data[t].filter((r) => open.has(String(r.season)));
   return data;
 }
 

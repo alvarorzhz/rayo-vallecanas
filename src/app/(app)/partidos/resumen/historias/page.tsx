@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchMyPlayerId } from "@/lib/match-queries";
 import { loadWrapped } from "@/lib/wrapped-server";
 import { WrappedStories } from "@/components/matches/wrapped-stories";
+import { fetchCapsule } from "@/lib/capsule-server";
+import { seasonSlug } from "@/lib/squad";
 
 export const metadata = { title: "Rayo Wrapped" };
 
@@ -18,6 +20,7 @@ export default async function WrappedPage({ searchParams }: { searchParams: Prom
   const w = await loadWrapped(supabase, playerId, sp.de, s.user.id);
   if (!w) redirect(back(sp.de, playerId));
 
+  const capsule = await fetchCapsule(supabase, w.season);
   const m = w.summary;
   const totals = w.gk
     ? [{ label: "Partidos", value: m.apps }, { label: "A cero", value: m.cleanSheets }, { label: "Encajados", value: m.conceded }, { label: "MVP", value: m.mvps }]
@@ -33,6 +36,7 @@ export default async function WrappedPage({ searchParams }: { searchParams: Prom
       scope={w.scopeLabel[0].toUpperCase() + w.scopeLabel.slice(1)}
       totals={totals}
       you={w.entry.player.user_id === s.user.id}
+      capsuleHref={capsule?.stage === "open" ? `/partidos/capsula/gala?temporada=${seasonSlug(w.season)}` : null}
     />
   );
 }

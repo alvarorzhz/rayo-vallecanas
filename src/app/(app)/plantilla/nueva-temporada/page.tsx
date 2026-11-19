@@ -2,7 +2,9 @@ import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
 import { POSITION_LABEL, fullName, nextSeason, seasonFromSlug, seasonSlug, type Membership, type Player } from "@/lib/squad";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui";
+import { CapsuleVault } from "@/components/capsule/capsule-vault";
 import { PrepareSeasonForm, type Candidate } from "@/components/squad/prepare-season-form";
 import { prepareSeason } from "../actions";
 
@@ -14,9 +16,11 @@ export default async function PrepareSeasonPage({ searchParams }: { searchParams
   const from = seasonFromSlug(sp.desde) ?? seasonOf();
   const to = nextSeason(from);
   const supabase = await createClient();
-  const [{ data: rows }, { data: target }] = await Promise.all([
+  const [{ data: rows }, { data: target }, { data: capsule }] = await Promise.all([
     supabase.from("squad_members").select("*, player:players!inner(*)").lte("season", from).order("season", { ascending: false }).returns<(Membership & { player: Player })[]>(),
     supabase.from("squad_members").select("player_id").eq("season", to),
+    // 4.26.0 · ¿Ya hay cápsula del tiempo para la temporada nueva?
+    supabase.from("time_capsules").select("season").eq("season", to).maybeSingle(),
   ]);
   const already = new Set((target ?? []).map((r) => r.player_id));
   const seen = new Set<string>();
@@ -48,6 +52,16 @@ export default async function PrepareSeasonPage({ searchParams }: { searchParams
       ) : (
         <p className="text-sm text-negro/60">No hay jugadores que copiar.</p>
       )}
+      <Link href={`/partidos/capsula?temporada=${seasonSlug(to)}${capsule ? "" : "&nueva=1"}`} prefetch
+        className="group franja relative mx-auto mt-6 flex max-w-2xl items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:shadow-xl">
+        <CapsuleVault size={56} className="relative" />
+        <span className="relative min-w-0 flex-1">
+          <span className="sport block text-xs font-black tracking-[0.2em] text-dorado">CÁPSULA DEL TIEMPO {to}</span>
+          <span className="sport block text-xl font-black leading-tight">{capsule ? "Ya está creada" : "Créala para la temporada nueva"}</span>
+          <span className="block text-sm text-white/75">Predicciones y mensajes de todo el equipo, bajo llave hasta el último partido.</span>
+        </span>
+        <span className="relative shrink-0 text-sm font-bold text-dorado transition group-hover:translate-x-0.5">→</span>
+      </Link>
     </>
   );
 }

@@ -1102,3 +1102,66 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
 @media (prefers-reduced-motion: reduce) {
   .wr-pass, .wr-glow { animation: none !important; }
 }
+
+/* ── 4.26.0 · Cápsula del tiempo ─────────────────────────────────────────── */
+.cap-vault { display: inline-block; flex-shrink: 0; }
+.cap-vault > span { position: absolute; display: block; }
+.cap-body {
+  left: 6%; right: 6%; top: 34%; bottom: 0; border-radius: 12% 12% 18% 18% / 14% 14% 22% 22%;
+  background: linear-gradient(90deg, #050505 0%, #2a2a2a 22%, #111 48%, #303030 74%, #060606 100%);
+  box-shadow: inset 0 -10px 18px rgb(0 0 0 / 0.6), 0 14px 30px rgb(0 0 0 / 0.45);
+}
+.cap-lid {
+  left: 3%; right: 3%; top: 14%; height: 24%; border-radius: 40% 40% 8% 8% / 70% 70% 10% 10%; z-index: 2;
+  background: linear-gradient(90deg, #0a0a0a 0%, #3a3a3a 24%, #151515 50%, #3a3a3a 76%, #0a0a0a 100%);
+  box-shadow: inset 0 3px 0 rgb(255 255 255 / 0.12), 0 4px 10px rgb(0 0 0 / 0.5);
+  transform-origin: 50% 100%;
+}
+.cap-ring { position: absolute; left: 0; right: 0; bottom: 8%; height: 18%; background: linear-gradient(90deg, #7a5f12, #f3d77a 30%, #b48d22 55%, #f3d77a 78%, #7a5f12); }
+.cap-ring-b { top: 10%; bottom: auto; height: 7%; }
+.cap-crest { position: absolute; left: 50%; top: 30%; width: 34%; transform: translateX(-50%); filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.6)); }
+.cap-lock { left: 50%; top: 31%; width: 22%; height: 19%; margin-left: -11%; z-index: 3; border-radius: 18%;
+  background: linear-gradient(160deg, #fbe7a1, #d5af32 45%, #8a6a15); box-shadow: 0 3px 8px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.6); }
+.cap-shackle { position: absolute; left: 18%; right: 18%; bottom: 82%; height: 80%; border: 0.32em solid #c9a22b; border-bottom: 0; border-radius: 999px 999px 0 0; }
+.cap-vault { font-size: 10px; }
+.cap-keyhole { position: absolute; left: 50%; top: 34%; width: 18%; height: 40%; margin-left: -9%; border-radius: 50% 50% 20% 20%; background: #3b2c06; }
+.cap-glow { inset: -20%; border-radius: 50%; background: radial-gradient(circle, rgb(213 175 50 / 0.35), transparent 62%); opacity: 0.6; }
+.cap-rays { left: 50%; top: 26%; width: 260%; height: 260%; margin: -130% 0 0 -130%; opacity: 0; border-radius: 50%;
+  background: repeating-conic-gradient(rgb(255 226 140 / 0.38) 0 7deg, transparent 7deg 22deg); -webkit-mask: radial-gradient(circle, #000 18%, transparent 62%); mask: radial-gradient(circle, #000 18%, transparent 62%); }
+.cap-sealed .cap-lock { animation: cap-breathe 2.4s ease-in-out infinite; }
+.cap-sealed .cap-glow { animation: cap-pulse 2.4s ease-in-out infinite; }
+.cap-unlock .cap-lock { animation: cap-shake 0.5s ease-in-out 2; }
+.cap-unlock .cap-shackle { animation: cap-pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) 0.85s both; }
+.cap-open .cap-shackle { transform: translateY(-40%); }
+.cap-open .cap-lock { animation: cap-drop 0.7s cubic-bezier(0.5, 0, 0.75, 0) both; }
+.cap-open .cap-lid { animation: cap-lid 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.25s both; }
+.cap-open .cap-rays { animation: cap-rays-in 0.6s ease-out 0.45s both, anim-rays 14s linear 1s infinite; }
+.cap-open .cap-glow { animation: cap-flash 1.2s ease-out 0.4s both; }
+@keyframes cap-breathe { 50% { transform: translateY(-2px); filter: brightness(1.15); } }
+@keyframes cap-pulse { 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes cap-shake { 0%, 100% { transform: none; } 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+@keyframes cap-pop { to { transform: translateY(-40%); } }
+@keyframes cap-drop { 0% { transform: none; opacity: 1; } 100% { transform: translateY(160%) rotate(38deg); opacity: 0; } }
+@keyframes cap-lid { to { transform: translateY(-38%) rotateX(62deg) rotate(-14deg); } }
+@keyframes cap-rays-in { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
+@keyframes anim-rays { to { rotate: 360deg; } }
+@keyframes cap-flash { 0% { opacity: 0.6; } 30% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0.85; transform: scale(1.25); } }
+
+/* Notas escritas (mis mensajes y los de la gala) */
+.capsule-note { background: #fffdf5 repeating-linear-gradient(transparent 0 23px, rgb(8 8 8 / 0.06) 23px 24px); }
+.cap-stamp { display: inline-block; border: 3px double currentColor; border-radius: 6px; padding: 2px 10px; transform: rotate(-8deg); font-weight: 900; letter-spacing: 0.18em; animation: stamp-in 0.5s ease-out both; }
+
+/* Gala: cada pantalla entra, y los aciertos se van marcando */
+.cap-slide { animation: reveal-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.cap-truth { animation: fc-slam 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.cap-pick { animation: rv-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.cap-verdict { animation: md-vs 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.cap-letter { animation: cap-letter 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.1) both; transform-origin: 50% 100%; }
+@keyframes cap-letter { from { opacity: 0; transform: translateY(40px) rotate(-6deg) scale(0.92); } to { opacity: 1; transform: rotate(-1.2deg); } }
+.cap-bar { height: 3px; flex: 1; border-radius: 2px; background: rgb(255 255 255 / 0.25); overflow: hidden; }
+.cap-bar > i { display: block; height: 100%; background: var(--color-dorado); }
+@media (prefers-reduced-motion: reduce) {
+  .cap-vault *, .cap-slide, .cap-truth, .cap-pick, .cap-verdict, .cap-letter, .cap-stamp { animation: none !important; }
+  .cap-open .cap-lock { opacity: 0; }
+  .cap-open .cap-rays { opacity: 1; }
+}
