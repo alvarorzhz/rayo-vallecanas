@@ -17,6 +17,17 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.25.0",
+    date: "2026-11-19",
+    title: "¿Subimos? ¿Ganamos?",
+    changes: [
+      "Partidos → Clasificación: debajo de la tabla sale nuestra probabilidad de ascenso (por ejemplo, «Ascenso 63 % ▲12») y cuánto ha cambiado tras nuestra última jornada.",
+      "Al tocarla se abre el detalle: probabilidad de subir y de bajar, el puesto más probable y cómo quedaría todo si ganamos, empatamos o perdemos el próximo partido.",
+      "«¿Ganamos?»: en el próximo partido de liga (en Partidos y en la ficha del partido) sale la probabilidad de victoria, empate y derrota.",
+      "Sale de jugar el resto de la liga 10.000 veces con la fuerza de cada equipo: sus goles a favor y en contra y cómo llega en los últimos partidos. Se rehace sola con cada resultado.",
+    ],
+  },
+  {
     version: "4.23.0",
     date: "2026-11-19",
     title: "Rayo Wrapped: tu temporada en historias",
