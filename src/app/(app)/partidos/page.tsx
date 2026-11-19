@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Target, CalendarDays, Plus, Shield, Trophy } from "lucide-react";
+import { BarChart3, Target, CalendarDays, Lock, Plus, Shield, Trophy } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
@@ -89,6 +89,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
         {([
           [`/partidos/estadisticas?temporada=${seasonSlug(season)}`, <BarChart3 key="i" size={15} />, "Estadísticas", true],
           [`/partidos/porra?temporada=${seasonSlug(season)}`, <Target key="i" size={15} />, "Porra", true],
+          ["/partidos/capsula", <Lock key="i" size={15} />, "Cápsula", true],
           ["/partidos/rivales", <Shield key="i" size={15} />, "Rivales", s.can("matches", "update")],
           ["/partidos/liga", <Trophy key="i" size={15} />, "Liga", s.can("matches", "update")],
         ] as const).filter((x) => x[3]).map(([href, icon, label]) => (

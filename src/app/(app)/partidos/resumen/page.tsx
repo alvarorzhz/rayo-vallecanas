@@ -14,6 +14,7 @@ import { Empty, PageHeader } from "@/components/ui";
 import { Jersey } from "@/components/squad/jersey";
 import { CountUp } from "@/components/squad/count-up";
 import { ShareImageButton } from "@/components/matches/share-image";
+import { fetchCapsule } from "@/lib/capsule-server";
 
 export const metadata = { title: "Resumen de temporada" };
 
@@ -25,11 +26,12 @@ export default async function SummaryPage({ searchParams }: { searchParams: Prom
   const [s, supabase] = await Promise.all([getSession(), createClient()]);
   const scope = await resolveScope(supabase, sp.de, seasonOf());
   const season = scope.kind === "season" ? scope.season : scope.season ?? seasonOf();
-  const [data, roster, comps, seasons] = await Promise.all([
+  const [data, roster, comps, seasons, capsule] = await Promise.all([
     fetchSummaryData(supabase, scope),
     fetchRoster(supabase, season),
     fetchCompetitions(supabase),
     fetchMatchSeasons(supabase),
+    fetchCapsule(supabase, season),
   ]);
   const team = teamSummary(data.matches);
   // Jugadores con algún partido en el acta (y el propio usuario aunque no haya jugado)
@@ -114,6 +116,10 @@ export default async function SummaryPage({ searchParams }: { searchParams: Prom
             <div className="relative mt-4 flex flex-wrap gap-2">
               <Link href={`/partidos/resumen/historias?${new URLSearchParams({ de: slug, jugador: who.player_id })}`} prefetch
                 className="btn-primary px-3 py-1.5 text-sm"><Play size={15} className="fill-current" /> {who.player.user_id === s.user.id ? "Ver mi Rayo Wrapped" : "Ver su Rayo Wrapped"}</Link>
+              {capsule?.stage === "open" && (
+                <Link href={`/partidos/capsula/gala?temporada=${seasonSlug(season)}`} prefetch
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-sm font-bold text-dorado ring-1 ring-dorado/60 hover:bg-white/15">🔓 Cápsula del tiempo</Link>
+              )}
               <ShareImageButton url={`/api/resumen/${who.player_id}/${slug}`} name={`resumen-${shirtName(who.player).toLowerCase().replace(/\s+/g, "-")}.jpg`} title="Imagen del resumen" />
             </div>
           </section>

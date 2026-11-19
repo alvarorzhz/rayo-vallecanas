@@ -32,6 +32,9 @@ import { todayMadrid } from "@/lib/matches";
 import { after } from "next/server";
 import { goalTitle, type SeasonGoal } from "@/lib/season-goals";
 import { checkSeasonGoals } from "@/lib/season-goals-server";
+import { capsuleTick, fetchCapsuleHome } from "@/lib/capsule-server";
+import { untilLabel } from "@/lib/capsule";
+import { CapsuleVault } from "@/components/capsule/capsule-vault";
 
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -46,6 +49,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const canMatches = s.can("matches");
   const canSquad = s.can("squad");
 
+  // 4.24.0 · Cápsula del tiempo: la gala recién abierta o la invitación a escribir
+  const capsuleP = canMatches ? fetchCapsuleHome(supabase, s.user.id).catch(() => null) : Promise.resolve(null);
   // 4.19.0 · Inicio más rápido: todo lo que no depende de nada se pide a la vez (antes iba una consulta detrás de otra)
   const [campaign, roster, bdayRows, [matchday, focus], [display, showcase, board], [news, newsCount, pendingChronicle], ended, myInterviews, myPlayerId, goalsWon] = await Promise.all([
     // Campaña activa más reciente visible para el usuario (solo mientras está abierta)
@@ -91,6 +96,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   ]);
   // Revisa si se ha cumplido algún objetivo (por detrás, sin frenar Inicio)
   if (canMatches) after(() => checkSeasonGoals());
+  const capsule = await capsuleP;
+  // Si se acaba de abrir la cápsula, avisa al equipo (por detrás; solo una vez)
+  if (capsule?.stage === "open") after(() => capsuleTick());
 
   const squad = roster.filter((r) => r.status !== "left");
   const me = roster.find((r) => r.player.user_id === s.user.id) ?? null;
@@ -268,6 +276,22 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <span className="sport block text-xs font-black tracking-[0.2em] text-dorado">¡SE ACABÓ EL {ended.name.toUpperCase()}!</span>
             <span className="sport block text-2xl font-black leading-tight">{myPlayerId ? <>Tu Rayo <span className="text-dorado">Wrapped</span></> : "Mira el resumen"}</span>
             <span className="block text-sm text-white/75">{myPlayerId ? "Tu temporada en historias: partidos, goles, tu socio de gol, tu mejor partido y tu título." : "Partidos, goles, MVP y el mejor partido de cada uno."}</span>
+          </span>
+          <span className="relative shrink-0 text-sm font-bold text-dorado transition group-hover:translate-x-0.5">→</span>
+        </Link>
+      )}
+
+      {/* 4.24.0 · Cápsula del tiempo */}
+      {capsule && (
+        <Link href={capsule.stage === "open" ? `/partidos/capsula/gala?temporada=${capsule.season.replace("/", "-")}` : `/partidos/capsula?temporada=${capsule.season.replace("/", "-")}`} prefetch
+          className="group franja relative mb-6 flex items-center gap-4 overflow-hidden rounded-2xl bg-negro p-4 text-white shadow-lg transition hover:shadow-xl">
+          <CapsuleVault state={capsule.stage === "open" ? "open" : "sealed"} size={56} className="relative" />
+          <span className="relative min-w-0 flex-1">
+            <span className="sport block text-xs font-black tracking-[0.2em] text-dorado">CÁPSULA DEL TIEMPO {capsule.season}</span>
+            <span className="sport block text-2xl font-black leading-tight">{capsule.stage === "open" ? "¡Se ha abierto!" : "Deja tu mensaje"}</span>
+            <span className="block text-sm text-white/75">{capsule.stage === "open"
+              ? "Las predicciones y los mensajes de principio de temporada, por fin a la luz."
+              : `Tus predicciones y un mensaje bajo llave hasta final de temporada. Se cierra: ${untilLabel(capsule.writeUntil)}.`}</span>
           </span>
           <span className="relative shrink-0 text-sm font-bold text-dorado transition group-hover:translate-x-0.5">→</span>
         </Link>

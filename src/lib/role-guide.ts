@@ -12,7 +12,7 @@ export const ROLE_INFO: Record<string, { summary: string; who: string }> = {
   },
   player: {
     who: "Jugadores del equipo.",
-    summary: "Vende lotería y rifas en las campañas en las que está asignado y ve solo sus propias ventas. Ve la plantilla, los partidos y La Voz del Rayo; contesta convocatorias, juega la porra, vota al MVP, pone notas, contesta sus entrevistas y ve su propia cuota. Corrige sus propios datos y documentos. No puede ver Finanzas, los patrocinios ni los datos personales de otros.",
+    summary: "Vende lotería y rifas en las campañas en las que está asignado y ve solo sus propias ventas. Ve la plantilla, los partidos y La Voz del Rayo; contesta convocatorias, juega la porra, escribe en la cápsula del tiempo, vota al MVP, pone notas, contesta sus entrevistas y ve su propia cuota. Corrige sus propios datos y documentos. No puede ver Finanzas, los patrocinios ni los datos personales de otros.",
   },
 };
 
@@ -76,7 +76,7 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
   matches: {
     title: "Partidos",
     acts: {
-      read: "Ver el calendario, los resultados, la clasificación y el historial contra cada rival, contestar a su convocatoria (Voy, No voy o Duda), jugar la porra, votar al MVP, poner notas a los compañeros y ver las actas, las estadísticas y los resúmenes de temporada.",
+      read: "Ver el calendario, los resultados, la clasificación y el historial contra cada rival, contestar a su convocatoria (Voy, No voy o Duda), jugar la porra, escribir en la cápsula del tiempo, votar al MVP, poner notas a los compañeros y ver las actas, las estadísticas y los resúmenes de temporada.",
       create: "Añadir partidos al calendario.",
       update: "Editar partidos y rivales, sincronizar con la liga, poner el resultado, aplazar o suspender (con aviso al equipo), preparar y publicar las convocatorias con la alineación, llevar el acta en vivo desde la banda, rellenar el acta y sacar las imágenes para compartir.",
       delete: "Eliminar partidos y rivales creados por error.",

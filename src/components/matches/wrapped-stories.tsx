@@ -22,7 +22,7 @@ const RESULT_TONE = { W: "bg-dorado", D: "bg-white/60", L: "bg-negro" } as const
  * Instagram. Toca a la derecha para avanzar, a la izquierda para volver y mantén pulsado para parar.
  * Cada historia tiene su imagen para compartir; la última es el título con el cromo.
  */
-export function WrappedStories({ slides, entry, imgBase, fileBase, backHref, scope, totals, you }: {
+export function WrappedStories({ slides, entry, imgBase, fileBase, backHref, scope, totals, you, capsuleHref }: {
   slides: Slide[];
   entry: RosterEntry;
   /** /api/resumen/{jugador}/{alcance}: cada historia es {imgBase}/{clave}. */
@@ -33,6 +33,8 @@ export function WrappedStories({ slides, entry, imgBase, fileBase, backHref, sco
   totals: { label: string; value: number }[];
   /** Es el Wrapped del que mira. */
   you: boolean;
+  /** 4.24.0 · La cápsula del tiempo de esa temporada, si ya se ha abierto. */
+  capsuleHref?: string | null;
 }) {
   const router = useRouter();
   const [idx, setIdx] = useState(0);
@@ -167,6 +169,11 @@ export function WrappedStories({ slides, entry, imgBase, fileBase, backHref, sco
                 <button type="button" onClick={() => setIdx(0)} className="inline-flex items-center gap-1.5 underline-offset-4 hover:underline"><RotateCcw size={15} /> Ver otra vez</button>
                 <Link href={backHref} className="underline-offset-4 hover:underline">Ver el resumen</Link>
               </div>
+              {capsuleHref && (
+                <Link href={capsuleHref} className="wr-in block rounded-xl bg-negro px-3 py-2.5 text-center text-sm font-black text-dorado ring-1 ring-dorado/60" style={{ "--d": "1300ms" } as React.CSSProperties}>
+                  🔓 Y ahora… la cápsula del tiempo →
+                </Link>
+              )}
             </div>
           ) : slide.key !== "intro" ? (
             <div className="flex justify-center">

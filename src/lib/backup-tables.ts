@@ -57,7 +57,16 @@ export const BACKUP_TABLES: [string, string][] = [
   ["lottery_handovers", "Sorteos · entregas de los vendedores"],
   ["season_goals", "Partidos · objetivos de temporada"],
   ["app_errors", "Uso de la app · fallos"],
+  ["time_capsules", "Cápsula del tiempo"],
+  ["capsule_predictions", "Cápsula · predicciones"],
+  ["capsule_messages", "Cápsula · mensajes"],
 ];
+
+/**
+ * 4.24.0 · Tablas bajo llave: la copia solo se lleva las filas de las cápsulas ya abiertas
+ * (si no, el superadministrador podría leer en el Excel lo que aún no se puede leer en la app).
+ */
+export const BACKUP_SEALED = ["capsule_predictions", "capsule_messages"];
 
 /** Tablas que NO se copian a propósito: claves privadas del servidor y los dispositivos de los avisos. */
 export const BACKUP_SKIPPED = ["app_secrets", "push_subscriptions"];

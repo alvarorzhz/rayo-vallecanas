@@ -48,6 +48,10 @@ export const NOTICE_CATALOG: NoticeKind[] = [
   { area: "matches", title: "⚽ ¡Hoy jugamos!", when: "La mañana del partido, con la hora y el sitio de quedada.", who: "Los convocados que van o dudan.", how: "auto" },
   { area: "matches", title: "⚽ Hoy jugamos: ¿vas?", when: "La mañana del partido, con la hora y el sitio de quedada. Con botones «Voy» y «No voy».", who: "Los convocados que aún no han contestado.", how: "auto" },
 
+  { area: "matches", title: "🔒 Cápsula del tiempo", when: "Al crear la cápsula de una temporada, si se deja marcado «Avisar al equipo».", who: "Todo el equipo (menos quien la crea).", how: "opt" },
+  { area: "matches", title: "⏳ La cápsula del tiempo se cierra pronto", when: "Tres días antes de que se cierre la cápsula para escribir (una sola vez).", who: "Los que aún no han escrito nada.", how: "auto" },
+  { area: "matches", title: "🔓 ¡Se abre la cápsula del tiempo!", when: "Cuando se abre la cápsula: el día de la gala, después del último partido de la temporada (una sola vez).", who: "Todo el equipo.", how: "auto" },
+
   { area: "squad", title: "🎂 Hoy cumple…", when: "La mañana del cumpleaños de un jugador de la plantilla (con su fecha de nacimiento en la ficha), a las 9:00 (10:00 en verano). Una vez al año.", who: "Todo el equipo menos el que cumple.", how: "auto" },
   { area: "squad", title: "🎂 ¡Feliz cumpleaños!", when: "La misma mañana de su cumpleaños.", who: "El jugador que cumple años.", how: "auto" },
 
