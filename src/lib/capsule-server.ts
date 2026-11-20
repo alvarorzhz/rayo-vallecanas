@@ -89,13 +89,18 @@ async function fetchReality(supabase: DB, c: Capsule): Promise<Reality> {
       ])
     : [{ data: [] }, { data: [] }];
   let position = c.final_position;
-  // El puesto se apunta una vez, con la clasificación de la liga, si la cápsula es de la temporada en curso
+  // El puesto se apunta una vez, con la clasificación de la liga, si la cápsula es de la temporada en curso.
+  // 4.27.2 · Solo se guarda cuando la web de la liga ya no nos da partidos pendientes: la gala se abre 2 h
+  // después del último partido y a esa hora la liga aún no suele tener el resultado, así que el puesto
+  // se quedaba congelado con la jornada anterior. Mientras tanto se enseña el de ese momento, sin guardarlo.
   if (!position && c.season === seasonOf()) {
     const st = await getStandings(supabase, 3000).catch(() => null);
     const me = st?.table.rows.find((r) => r.teamId === st.us);
     if (me?.pos) {
       position = me.pos;
-      await createAdminClient().from("time_capsules").update({ final_position: me.pos }).eq("season", c.season).is("final_position", null);
+      if (st?.table.withCalendar && me.left === 0) {
+        await createAdminClient().from("time_capsules").update({ final_position: me.pos }).eq("season", c.season).is("final_position", null);
+      }
     }
   }
   return computeReality({ matches: (ms ?? []) as never, apps: (apps ?? []) as never, goals: (goals ?? []) as never }, position);

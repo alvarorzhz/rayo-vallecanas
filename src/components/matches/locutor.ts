@@ -37,8 +37,12 @@ export function subscribeLocutor(cb: () => void) {
 // ── Desbloqueo con el primer toque ──
 let unlocked = false;
 let ctx: AudioContext | null = null;
-export const hasTouched = () =>
-  unlocked || !!(typeof navigator !== "undefined" && (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive);
+/**
+ * 4.27.2 · Solo cuenta un toque con el marcador ya en pantalla (el que desbloquea la voz y el rugido).
+ * Antes valía cualquier toque anterior (al llegar a Inicio desde otra pantalla): el botón decía «Locutor»
+ * como si ya sonara, pero en iPhone la voz seguía bloqueada y en ningún móvil se oía la grada.
+ */
+export const hasTouched = () => unlocked;
 
 export function unlockLocutor() {
   if (unlocked) return;
