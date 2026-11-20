@@ -99,6 +99,26 @@ export async function getStandings(
   return table ? { table, us: l.team, competition: l.competition } : null;
 }
 
+/**
+ * 4.28.0 · Clasificación de una competición concreta (la actual o una anterior de la temporada,
+ * p. ej. el Apertura cuando ya se juega la Clausura), con el número de nuestro equipo en ella.
+ */
+export async function getCompetitionStandings(
+  supabase: Pick<Awaited<ReturnType<typeof createClient>>, "from">,
+  competition: string,
+  ms = 2500,
+): Promise<{ table: LeagueTable; us: string; competition: string } | null> {
+  if (!/^\d{1,9}$/.test(competition)) return null;
+  const [{ data: cur }, { data: past }] = await Promise.all([
+    supabase.from("league_sync").select("competition, team").eq("id", 1).maybeSingle<{ competition: string | null; team: string | null }>(),
+    supabase.from("league_competitions").select("team").eq("competition", competition).maybeSingle<{ team: string | null }>(),
+  ]);
+  const us = cur?.competition === competition && cur.team ? cur.team : past?.team;
+  if (!us) return null;
+  const table = await getLeagueTableQuick(competition, ms);
+  return table ? { table, us, competition } : null;
+}
+
 /** Como getLeagueTable, pero si la web de la liga tarda más de `ms` devuelve null. */
 export function getLeagueTableQuick(competition: string, ms = 2500): Promise<LeagueTable | null> {
   return within(getLeagueTable(competition), ms);

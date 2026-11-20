@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { requirePerm } from "@/lib/session";
+import { seasonSlug } from "@/lib/squad";
 import { createClient } from "@/lib/supabase/server";
 import { fecha } from "@/lib/format";
 import { CalendarCheck, Flag, History, Info, Trophy } from "lucide-react";
@@ -128,6 +130,11 @@ export default async function LeaguePage() {
                     <span className="block text-xs text-negro/65">
                       {[c.season && `Temporada ${c.season}`, `${n} ${n === 1 ? "partido" : "partidos"}`, c.last_synced_at && `leída el ${fecha(c.last_synced_at)}`].filter(Boolean).join(" · ")}
                     </span>
+                    {c.season && (
+                      <Link href={`/partidos?temporada=${seasonSlug(c.season)}&ver=clasificacion&liga=${c.competition}`} prefetch={false} className="text-xs font-semibold text-rojo">
+                        {current ? "Ver clasificación →" : "Ver clasificación final →"}
+                      </Link>
+                    )}
                   </span>
                   <span className={`badge shrink-0 ${current ? "bg-green-100 text-green-800" : "bg-black/10 text-negro/70"}`}>{current ? (c.finished ? "Actual · terminada" : "Actual") : c.finished ? "Terminada" : "Anterior"}</span>
                 </li>

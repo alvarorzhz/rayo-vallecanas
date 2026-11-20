@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/session";
 import { GOAL_KINDS, type GoalKind } from "@/lib/season-goals";
 import { checkSeasonGoals } from "@/lib/season-goals-server";
+import { seasonOf } from "@/lib/finance";
 
 export type GoalState = { error?: string; ok?: string } | undefined;
 
@@ -24,8 +25,10 @@ export async function addSeasonGoal(season: string, _: GoalState, f: FormData): 
   const supabase = await createClient();
   const { count } = await supabase.from("season_goals").select("id", { count: "exact", head: true }).eq("season", season);
   if ((count ?? 0) >= 8) return { error: "Como mucho 8 objetivos por temporada" };
-  const { error } = await supabase.from("season_goals").insert({ season, kind, target, sort: ((count ?? 0) + 1) * 10 });
-  if (error) return { error: /season_goals_season_kind_target|duplicate/.test(error.message) ? "Ese objetivo ya está puesto" : error.message };
+  // 4.28.0 · El objetivo de puesto es de la liga que se juega ahora (Apertura, Clausura…)
+  const { data: league } = kind === "position" && season === seasonOf() ? await supabase.from("league_sync").select("competition").eq("id", 1).maybeSingle<{ competition: string | null }>() : { data: null };
+  const { error } = await supabase.from("season_goals").insert({ season, kind, target, sort: ((count ?? 0) + 1) * 10, ...(league?.competition ? { league_competition: league.competition } : {}) });
+  if (error) return { error: /season_goals_season_kind_target|season_goals_unique|duplicate/.test(error.message) ? (kind === "position" ? "Ese objetivo ya está puesto para esta liga" : "Ese objetivo ya está puesto") : error.message };
   // Si ya estaba cumplido, se marca sin avisar a nadie
   await checkSeasonGoals({ notify: false });
   refresh();

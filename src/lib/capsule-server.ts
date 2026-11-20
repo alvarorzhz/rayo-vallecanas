@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { seasonOf } from "@/lib/finance";
 import { shirtName, type Player } from "@/lib/squad";
 import { porraNames } from "@/lib/porra-queries";
-import { getStandings } from "@/lib/league-table";
+import { getCompetitionStandings, getStandings } from "@/lib/league-table";
 import { sendPush } from "@/lib/push";
 import { fecha } from "@/lib/format";
 import {
@@ -89,12 +89,11 @@ async function fetchReality(supabase: DB, c: Capsule): Promise<Reality> {
       ])
     : [{ data: [] }, { data: [] }];
   let position = c.final_position;
-  // El puesto se apunta una vez, con la clasificación de la liga, si la cápsula es de la temporada en curso.
-  // 4.27.2 · Solo se guarda cuando la web de la liga ya no nos da partidos pendientes: la gala se abre 2 h
-  // después del último partido y a esa hora la liga aún no suele tener el resultado, así que el puesto
-  // se quedaba congelado con la jornada anterior. Mientras tanto se enseña el de ese momento, sin guardarlo.
+  // 4.28.0 · El puesto es el del Apertura (la primera liga de la temporada), que es en la que se pensó al
+  // predecir: la Clausura se juega en otra división. Se apunta solo al terminar el Apertura (ver
+  // captureApertura, en el cron de cada noche); mientras tanto se enseña el de ese momento, sin guardarlo.
   if (!position && c.season === seasonOf()) {
-    const st = await getStandings(supabase, 3000).catch(() => null);
+    const st = await aperturaStandings(supabase, c.season, 3000);
     const me = st?.table.rows.find((r) => r.teamId === st.us);
     if (me?.pos) {
       position = me.pos;
@@ -104,6 +103,36 @@ async function fetchReality(supabase: DB, c: Capsule): Promise<Reality> {
     }
   }
   return computeReality({ matches: (ms ?? []) as never, apps: (apps ?? []) as never, goals: (goals ?? []) as never }, position);
+}
+
+/** Clasificación de la primera liga de la temporada (el Apertura), aunque ya se juegue la Clausura. */
+async function aperturaStandings(supabase: Pick<DB, "from">, season: string, ms: number) {
+  const { data: first } = await supabase.from("league_competitions").select("competition").eq("season", season)
+    .order("created_at").limit(1).maybeSingle<{ competition: string }>();
+  if (first) return getCompetitionStandings(supabase, first.competition, ms).catch(() => null);
+  return getStandings(supabase as DB, ms).catch(() => null);
+}
+
+/**
+ * 4.28.0 · Apunta en la cápsula de la temporada el puesto final del Apertura en cuanto termina
+ * (enero), sin esperar a la gala de junio: para entonces la web de la liga podría ya no enseñarlo.
+ * Lo llama el cron de cada noche. Nunca lanza error.
+ */
+async function captureApertura(): Promise<number | null> {
+  try {
+    const admin = createAdminClient();
+    const season = seasonOf();
+    const { data: cap } = await admin.from("time_capsules").select("final_position").eq("season", season).maybeSingle<{ final_position: number | null }>();
+    if (!cap || cap.final_position) return null;
+    const st = await aperturaStandings(admin, season, 8000);
+    const me = st?.table.rows.find((r) => r.teamId === st.us);
+    if (!me?.pos || !st?.table.withCalendar || me.left !== 0) return null;
+    await admin.from("time_capsules").update({ final_position: me.pos }).eq("season", season).is("final_position", null);
+    return me.pos;
+  } catch (e) {
+    console.error("No se ha podido apuntar el puesto del Apertura en la cápsula:", e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 export type GalaPick = { user: string; name: string; avatar: string | null; me: boolean; answer: string; verdict: Verdict; closest: boolean };
@@ -192,8 +221,8 @@ export async function fetchCapsuleHome(supabase: DB, userId: string): Promise<Ca
  * - 3 días antes de cerrarse: recordatorio a quien aún no ha escrito nada (una sola vez).
  * Solo cuenta quién ha escrito, nunca lee lo que pone.
  */
-export async function capsuleTick(): Promise<{ opened: string[]; reminded: string[] }> {
-  const out = { opened: [] as string[], reminded: [] as string[] };
+export async function capsuleTick(): Promise<{ opened: string[]; reminded: string[]; apertura?: number | null }> {
+  const out = { opened: [] as string[], reminded: [] as string[], apertura: await captureApertura() };
   try {
     const admin = createAdminClient();
     const { data } = await admin.from("time_capsules").select("season, write_until, opened_notified, reminded").or("opened_notified.eq.false,reminded.eq.false");

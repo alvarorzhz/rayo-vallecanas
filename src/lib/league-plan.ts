@@ -84,6 +84,22 @@ export function leagueFinished(rows: LeagueRow[], team: string, today: string, g
   return addDays(last, graceDays) < today;
 }
 
+/**
+ * 4.28.0 · Lo mismo, pero con los partidos que la app ya tiene guardados de esa competición
+ * (sin leer la web de la liga). Sirve para buscar la liga siguiente cada día sin esperar a la
+ * revisión de los lunes. Un partido suspendido no cuenta como pendiente.
+ */
+export function storedLeagueDone(ms: { status: string; match_date: string }[], today: string, graceDays = 5): boolean {
+  const live = ms.filter((m) => m.status !== "cancelled");
+  if (!live.length) return false;
+  if (live.some((m) => m.status === "scheduled" || m.status === "postponed")) return false;
+  const last = live.map((m) => m.match_date).sort().at(-1)!;
+  return addDays(last, graceDays) < today;
+}
+
+/** 4.28.0 · Al cambiar de liga, la anterior se da por terminada si no le queda ningún partido pendiente. */
+export const nothingPending = (ms: { status: string }[]) => !ms.some((m) => m.status === "scheduled" || m.status === "postponed");
+
 // ---------------------------------------------------------------- Totales por competición
 
 export type LeagueStats = { apps: number; goals: number; conceded: number; yellows: number; reds: number };
