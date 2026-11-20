@@ -17,6 +17,17 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.27.2",
+    date: "2026-11-20",
+    title: "Repaso a lo último",
+    changes: [
+      "Locutor: el botón bajo el marcador en directo ya no dice «Locutor» antes de tiempo. Hasta que no tocas la pantalla con el marcador a la vista pone «Toca para oír al locutor», porque el móvil no deja sonar nada antes (en iPhone se quedaba mudo y en ningún móvil se oía la grada).",
+      "Marcador en directo: el «¡GOOOL!» dorado encima del marcador se podía quedar fijo si la app se ponía al día justo después del gol. Ahora se apaga siempre a los pocos segundos.",
+      "Cápsula del tiempo: el puesto final en la liga ya no se apunta con la clasificación de antes del último partido. Se guarda cuando la web de la liga ya tiene todos nuestros partidos; hasta entonces se ve el puesto de ese momento.",
+      { staff: "Don Rayo: si falta la clave de Gemini, el aviso ya no manda a «Copiar instrucciones para la IA», que solo está en el editor." },
+    ],
+  },
+  {
     version: "4.27.1",
     date: "2026-11-20",
     title: "Don Rayo, más picantón",
@@ -58,6 +69,15 @@ export const CHANGELOG: Release[] = [
       "Al tocarla se abre el detalle: probabilidad de subir y de bajar, el puesto más probable y cómo quedaría todo si ganamos, empatamos o perdemos el próximo partido.",
       "«¿Ganamos?»: en el próximo partido de liga (en Partidos y en la ficha del partido) sale la probabilidad de victoria, empate y derrota.",
       "Sale de jugar el resto de la liga 10.000 veces con la fuerza de cada equipo: sus goles a favor y en contra y cómo llega en los últimos partidos. Se rehace sola con cada resultado.",
+    ],
+  },
+  {
+    version: "4.24.0",
+    date: "2026-11-19",
+    title: "Número sin usar",
+    quiet: true,
+    changes: [
+      { staff: "La 4.24.0 se reservó para la cápsula del tiempo, que al final salió como 4.26.0 (detrás de ¿Subimos? ¿Ganamos?). No hay versión 4.24.0: no falta nada." },
     ],
   },
   {

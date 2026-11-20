@@ -40,7 +40,7 @@ async function dismissOverlays(page) {
   }
   // La pantalla de avisos sale 1,5 s después de cerrar el tutorial o las novedades: si no se cierra aquí
   // vuelve a salir en cada carga y tapa lo que se pulse después (fallaba a veces el «Voy» en CI).
-  const later = page.locator('#rv-avisos button:has-text("Ahora no")').first();
+  const later = page.locator('#rv-avisos button:is(:text("Ahora no"), :text("Entendido"))').first();
   if (await later.waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false)) await later.click().catch(() => {});
 }
 

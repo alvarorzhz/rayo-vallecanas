@@ -63,7 +63,7 @@ export function LiveScoreBox({ matchId, initial, home }: { matchId: string; init
   const v = useLive(matchId, initial);
   const router = useRouter();
   const last = useRef({ gf: v.gf, ga: v.ga });
-  const [goal, setGoal] = useState(false);
+  const [goal, setGoal] = useState(0);
   const [burst, setBurst] = useState<Burst | null>(null);
   const closeBurst = useCallback(() => setBurst(null), []);
   // 4.20.2 · Si la portada se acaba de poner al día desde LiveWaiter, se celebra lo que marcó el Rayo mientras tanto
@@ -91,11 +91,15 @@ export function LiveScoreBox({ matchId, initial, home }: { matchId: string; init
       us, minute: ev ? clockLabel(ev) || null : null, who,
       home: h, away: a, homeName: home ? OUR_SHORT : rival, awayName: home ? rival : OUR_SHORT,
     });
-    if (!us) return;
-    setGoal(true);
-    const t = setTimeout(() => setGoal(false), 3500);
-    return () => clearTimeout(t);
+    if (us) setGoal((n) => n + 1);
   }, [v.gf, v.ga, v.played, v.events, v.rival, home]);
+  // 4.27.2 · El «¡GOOOL!» del marcador se apaga en su propio temporizador: antes lo cancelaba cualquier
+  // consulta nueva que llegase en esos 3,5 s (al volver a la app, por ejemplo) y se quedaba fijo encima.
+  useEffect(() => {
+    if (!goal) return;
+    const t = setTimeout(() => setGoal(0), 3500);
+    return () => clearTimeout(t);
+  }, [goal]);
   // Al pitido final la portada pasa sola a «Final»
   useEffect(() => { if (v.played) router.refresh(); }, [v.played, router]);
   const [a, b] = home ? [v.gf, v.ga] : [v.ga, v.gf];
@@ -106,8 +110,8 @@ export function LiveScoreBox({ matchId, initial, home }: { matchId: string; init
         <span className="sport text-3xl font-black text-white/40 sm:text-5xl">-</span>
         <span key={`b${b}`} className="anim-score sport text-5xl font-black tabular-nums leading-none sm:text-7xl">{b}</span>
       </div>
-      {goal && (
-        <span aria-hidden className="live-goal sport pointer-events-none absolute inset-x-[-3rem] -top-3 text-center text-4xl font-black italic text-dorado drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-6xl">¡GOOOL!</span>
+      {goal > 0 && (
+        <span key={goal} aria-hidden className="live-goal sport pointer-events-none absolute inset-x-[-3rem] -top-3 text-center text-4xl font-black italic text-dorado drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-6xl">¡GOOOL!</span>
       )}
       {burst && <GoalBurst burst={burst} onClose={closeBurst} />}
     </div>

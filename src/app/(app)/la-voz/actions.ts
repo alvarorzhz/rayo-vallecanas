@@ -318,7 +318,8 @@ export async function writePress(id: string): Promise<PressState> {
   const sheet = await fetchMatchSheet(p.supabase, p.a.match_id!);
   if (!sheet?.facts.played) return { error: "El partido aún no tiene resultado" };
   const r = await askGemini(buildPressPrompt(sheet.facts), { maxTokens: 1024 });
-  if (!r.text) return { error: r.error };
+  // 4.27.2 · El aviso de «falta la clave» manda a «Copiar instrucciones para la IA», que solo existe en el editor
+  if (!r.text) return { error: (r.error ?? "La IA no ha podido escribirlo.").replace(/\s*Mientras, usa «Copiar instrucciones para la IA»\./, " Sin ella Don Rayo no puede hablar.") };
   const text = parsePress(r.text);
   if (!text) return { error: "La IA no ha devuelto nada que Don Rayo pueda decir. Prueba otra vez." };
   const { error } = await p.supabase.from("news_articles").update({ ...NO_PRESS, press_text: text, press_at: new Date().toISOString() }).eq("id", id);
