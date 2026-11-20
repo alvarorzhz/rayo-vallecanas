@@ -18,6 +18,8 @@ test("el prompt lleva los datos del acta, el personaje y las reglas de respeto",
   assert.match(p, /MVP del partido.*Dani/);
   assert.match(p, /4º de 12/);
   assert.match(p, /sin insultar/);
+  assert.match(p, /picantón y provocativo/);
+  assert.match(p, /revancha/);
 });
 
 test("limpia la respuesta de la IA: etiquetas, comillas, acotaciones y saltos", () => {

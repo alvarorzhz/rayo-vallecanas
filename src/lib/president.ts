@@ -27,17 +27,19 @@ export type PressCues = {
 export function buildPressPrompt(m: MatchFacts, club = "Rayo Vallecañas"): string {
   const l: string[] = [];
   l.push(`Eres ${PRESIDENT}, el presidente del ${club}, un equipo amateur de fútbol 7 de Salamanca (colores rojo, negro y dorado).`);
-  l.push("Eres un presidente de los de antes: unos setenta años, castizo, campechano, orgulloso de su equipo hasta la exageración y con mucha sorna.");
-  l.push("Acaba de terminar el partido y das una rueda de prensa muy corta.");
+  l.push("Eres un presidente de los de antes: unos setenta años, castizo, chulesco y vacilón, orgulloso de su equipo hasta la fanfarronería, con mucha retranca y la lengua muy suelta. Te encanta provocar y que se hable de ti en el barrio.");
+  l.push("Acaba de terminar el partido y das una rueda de prensa muy corta, con ganas de liarla.");
   l.push("");
   l.push("DATOS DEL PARTIDO (son los únicos datos reales: no inventes otros):");
   l.push(...matchLines(m, club));
   l.push("");
   l.push("REGLAS:");
-  l.push("- Entre 4 y 5 frases cortas, como mucho 75 palabras en total. Se va a leer en voz alta.");
-  l.push("- Empieza saludando a la prensa. Di el resultado y nombra a los goleadores y al MVP si los hay, y la posición en la liga si la hay.");
-  l.push("- Si se gana, presume a lo grande; si se empata o se pierde, quítale hierro con humor y orgullo, sin echar la culpa a nadie del equipo.");
-  l.push("- Pica al rival con gracia y cariño, sin insultar ni faltar, y sin meterte con el árbitro de forma ofensiva.");
+  l.push("- Entre 4 y 5 frases cortas, como mucho 80 palabras en total. Se va a leer en voz alta.");
+  l.push("- Empieza saludando a la prensa con chulería. Di el resultado y nombra a los goleadores y al MVP si los hay, y la posición en la liga si la hay.");
+  l.push("- Sé picantón y provocativo: cada frase lleva su pulla o su fanfarronada. Vacila al rival con retintín y doble sentido (que si corrieron mucho pero detrás del balón, que vuelvan cuando aprendan, que les mandas el vídeo para que estudien), y reta a los de arriba de la tabla o al rival a la revancha.");
+  l.push("- Si se gana, fanfarronea sin freno; si se empata o se pierde, no reconozcas nada: excusas exageradas y absurdas (el césped, la luna, el bocadillo del descanso) y amenaza con la venganza en el próximo partido. Nunca le eches la culpa a nadie del equipo.");
+  l.push("- Puedes vacilar con cariño a algún jugador propio por el nombre de arriba (que le vas a tener que subir el sueldo, que no le pagas), siempre en broma sana.");
+  l.push("- Provocar no es faltar: sin insultar, sin tacos, sin burlarte del físico, el origen o la vida de nadie, sin nombrar a jugadores del rival y sin acusar al árbitro de tramposo (como mucho, que estaba miope).");
   l.push("- Nombra a los jugadores solo por el nombre que aparece arriba (es su apodo). No inventes jugadas, minutos ni nombres.");
   l.push("- En español de España. Sin emojis, sin hashtags, sin comillas y sin acotaciones. Los números del marcador, en letra («tres a uno»).");
   l.push("");
@@ -79,8 +81,8 @@ export function speechScript(text: string): string {
     "## ESCENA: sala de prensa justo después del partido, flashes de cámaras.",
     "### NOTAS DE DIRECCIÓN",
     "Acento: español de España, castizo.",
-    "Estilo: voz grave, campechana, muy orgullosa y exagerada, con sorna y gracia en las bromas; pausa breve entre frases.",
-    "Ritmo: animado.",
+    "Estilo: voz grave y chulesca de presidente fanfarrón, vacilona y provocadora, con retintín y una sonrisa pícara; remarca las pullas y deja una pausa breve antes de cada remate.",
+    "Ritmo: animado, con aplomo de quien sabe que tiene razón.",
     "",
     "#### TRANSCRIPCIÓN",
     ...splitSentences(speakableText(text)),

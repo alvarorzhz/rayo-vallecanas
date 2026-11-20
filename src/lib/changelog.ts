@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.27.1",
+    date: "2026-11-20",
+    title: "Don Rayo, más picantón",
+    changes: [
+      "Don Rayo se suelta: más chulería, más pullas al rival y retos a los de arriba de la tabla. Si se pierde, excusas absurdas y promesa de venganza. Provoca, pero sin faltar.",
+      "Su voz también suena más vacilona y con retintín.",
+      { staff: "Para que una crónica ya publicada cambie de tono, pulsa «Otra versión» en su rueda de prensa." },
+    ],
+  },
+  {
     version: "4.27.0",
     date: "2026-11-20",
     title: "Habla Don Rayo",
