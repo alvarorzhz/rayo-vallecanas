@@ -26,7 +26,7 @@ export const QUESTIONS: Question[] = [
   { key: "top_mvp", label: "Más veces MVP", ask: "¿Quién será MVP más veces?", emoji: "⭐", kind: "player", unit: ["vez MVP", "veces MVP"] },
   { key: "top_apps", label: "El fijo", ask: "¿Quién jugará más partidos?", emoji: "🏃", kind: "player", unit: ["partido", "partidos"] },
   { key: "top_cards", label: "El más tarjetero", ask: "¿Quién verá más tarjetas?", emoji: "🟨", kind: "player", unit: ["tarjeta", "tarjetas"] },
-  { key: "position", label: "Puesto final en la liga", ask: "¿En qué puesto acabaremos la liga?", emoji: "🏆", kind: "number", min: 1, max: 30, close: 1 },
+  { key: "position", label: "Puesto final en el Apertura", ask: "¿En qué puesto acabaremos el Apertura?", emoji: "🏆", kind: "number", min: 1, max: 30, close: 1 },
   { key: "goals_for", label: "Goles del Rayo", ask: "¿Cuántos goles meteremos en toda la temporada?", emoji: "🥅", kind: "number", min: 0, max: 999, close: 5, unit: ["gol", "goles"] },
   { key: "wins", label: "Victorias", ask: "¿Cuántos partidos ganaremos?", emoji: "✅", kind: "number", min: 0, max: 99, close: 1, unit: ["victoria", "victorias"] },
 ];
