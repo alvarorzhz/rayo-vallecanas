@@ -21,7 +21,7 @@ const KIND_TAG: Record<NewsKind, string> = {
 };
 
 /** La noticia entera, igual dentro de la app que en su página pública. */
-export function ArticleView({ a, sheet, player, others, home, hrefOf, actions, share, notice, reactions, sheetLink = true }: {
+export function ArticleView({ a, sheet, player, others, home, hrefOf, actions, share, notice, reactions, press, pressTeaser, sheetLink = true }: {
   a: ArticleCard;
   sheet: MatchSheet | null;
   player: PlayerLine | null;
@@ -35,6 +35,9 @@ export function ArticleView({ a, sheet, player, others, home, hrefOf, actions, s
   /** Reacciones del equipo (solo dentro de la app). */
   reactions?: React.ReactNode;
   sheetLink?: boolean;
+  /** 4.27.0 · La rueda de prensa de Don Rayo (después del texto) y su aviso bajo el titular. */
+  press?: React.ReactNode;
+  pressTeaser?: React.ReactNode;
 }) {
   const official = a.kind === "comunicado";
   const promo = a.kind === "promocion";
@@ -62,6 +65,7 @@ export function ArticleView({ a, sheet, player, others, home, hrefOf, actions, s
             </p>
             {actions}
           </div>
+          {pressTeaser}
         </header>
 
         {showArt && (
@@ -85,6 +89,7 @@ export function ArticleView({ a, sheet, player, others, home, hrefOf, actions, s
               </div>
             )}
             {promo && a.sponsor && <SponsorBox s={a.sponsor} />}
+            {press}
             {sheet && !sheetFirst && <div className="mt-8 lg:hidden"><MatchSheetBox sheet={sheet} link={sheetLink} /></div>}
           </div>
           {sheet && <div className="mt-6 hidden lg:sticky lg:top-6 lg:block lg:self-start"><MatchSheetBox sheet={sheet} link={sheetLink} /></div>}

@@ -18,6 +18,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${supabase}`,
   "font-src 'self' data:",
+  // 4.27.0 · la voz de Don Rayo se guarda en Supabase Storage
+  `media-src 'self' blob: ${supabase}`,
   `connect-src 'self' ${supabase} ${supabaseWs}`,
   "worker-src 'self'",
   "manifest-src 'self'",

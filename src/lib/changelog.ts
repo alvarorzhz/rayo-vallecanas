@@ -17,6 +17,17 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.27.0",
+    date: "2026-11-20",
+    title: "Habla Don Rayo",
+    changes: [
+      "Las crónicas de La Voz traen la rueda de prensa de Don Rayo, el presidente del club: un personaje de broma, de los de antes, exagerado y con mucha sorna.",
+      "Sale dibujado en la sala de prensa: mueve la boca al hablar, con su propia voz y subtítulos. Dice el resultado, los goleadores, el MVP y la posición, y pica al rival sin faltar.",
+      "Bajo el titular de la crónica, el aviso «Don Rayo ha hablado» te lleva hasta él. Puedes oírlo, verlo sin voz o leer lo que ha dicho.",
+      { staff: "En la crónica, «Que hable Don Rayo»: la IA escribe sus frases con los datos del acta (solo apodos), las puedes retocar y después se le pone la voz, gratis con Gemini. «Otra versión» las vuelve a escribir y «Quitar» lo borra." },
+    ],
+  },
+  {
     version: "4.26.0",
     date: "2026-11-19",
     title: "La cápsula del tiempo",

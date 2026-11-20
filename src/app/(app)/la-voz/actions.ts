@@ -7,7 +7,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
 import { buildPrompt, buildQuestionsPrompt, interviewNotes, interviewToBody, kindOf, mergeAnswers, newsSlug, parseAiReply, parseQuestions, readDraft, readQuestions, KIND_LABEL, NEWS_NAME, teaser, type InterviewQA, type SponsorFacts } from "@/lib/news";
 import { fetchInterview, fetchInterviewById, fetchMatchSheet, fetchPlayerFacts, sponsorCards } from "@/lib/news-queries";
-import { askGemini } from "@/lib/gemini";
+import { askGemini, speakWithGemini } from "@/lib/gemini";
+import { buildPressPrompt, parsePress, PRESS_MAX, pressCues, rateOf, speechScript, wavFile } from "@/lib/president";
 import { shirtName } from "@/lib/squad";
 import { REACTIONS, type Reaction } from "@/lib/news";
 
@@ -71,11 +72,14 @@ export async function saveArticle(id: string | null, _: NewsState, f: FormData):
     const iv = await fetchInterview(supabase, id);
     if (iv && draft.kind !== "entrevista") return { error: "Esta pieza es una entrevista con preguntas ya mandadas: no se puede convertir en otra cosa. Para escribir otra pieza, empieza una nueva." };
     if (iv && draft.player_id !== iv.player_id) return { error: "Ya le mandaste las preguntas a otro jugador: no se puede cambiar el entrevistado. Para entrevistar a otro, empieza una pieza nueva." };
-    const { data: old } = await supabase.from("news_articles").select("status, published_at").eq("id", id).maybeSingle();
+    const { data: old } = await supabase.from("news_articles").select("status, published_at, match_id, press_audio_url").eq("id", id).maybeSingle();
     if (!old) return { error: "Esta pieza ya no existe" };
     const status = publish ? "published" : old.status;
+    // Otro partido u otro tipo de pieza: la rueda de prensa de Don Rayo ya no vale
+    const pressGone = old.match_id !== draft.match_id || draft.kind !== "cronica";
     const { error: e } = await supabase.from("news_articles")
-      .update({ ...row, status, published_at: status === "published" ? old.published_at ?? new Date().toISOString() : null }).eq("id", id);
+      .update({ ...row, status, published_at: status === "published" ? old.published_at ?? new Date().toISOString() : null, ...(pressGone ? NO_PRESS : {}) }).eq("id", id);
+    if (!e && pressGone) await dropPressAudio(old.press_audio_url);
     if (e) return { error: "No se pudo guardar. ¿Tienes permiso para editar esta pieza?" };
   } else {
     const { data, error: e } = await supabase.from("news_articles")
@@ -109,9 +113,10 @@ export async function unpublishArticle(id: string): Promise<NewsState> {
 export async function deleteArticle(id: string): Promise<NewsState> {
   await getSession();
   const supabase = await createClient();
-  const { data: a } = await supabase.from("news_articles").select("cover_url").eq("id", id).maybeSingle();
+  const { data: a } = await supabase.from("news_articles").select("cover_url, press_audio_url").eq("id", id).maybeSingle();
   const { data, error } = await supabase.from("news_articles").delete().eq("id", id).select("id");
   if (error || !data?.length) return { error: "No se pudo eliminar. ¿Tienes permiso?" };
+  await dropPressAudio(a?.press_audio_url);
   const path = a?.cover_url?.split("/news-photos/")[1];
   if (path) await supabase.storage.from("news-photos").remove([decodeURIComponent(path)]);
   refresh();
@@ -281,4 +286,98 @@ export async function reactNews(id: string, emoji: string): Promise<NewsState> {
   } catch (e) {
     return { error: e instanceof Error ? e.message : "No se ha podido guardar" };
   }
+}
+
+// ------------------------------------------------------------------ Don Rayo (4.27.0)
+const NO_PRESS = { press_text: null, press_audio_url: null, press_cues: null, press_at: null };
+const PRESS_BUCKET = "news-press";
+
+async function dropPressAudio(url: string | null | undefined) {
+  const path = url?.split(`/${PRESS_BUCKET}/`)[1]?.split("?")[0];
+  if (path) await createAdminClient().storage.from(PRESS_BUCKET).remove([decodeURIComponent(path)]);
+}
+
+export type PressState = { error?: string; text?: string; voiced?: boolean };
+
+/** Quién puede tocar la rueda de prensa: quien puede editar esa crónica. */
+async function pressArticle(id: string) {
+  const s = await getSession();
+  const supabase = await createClient();
+  const { data: a } = await supabase.from("news_articles").select("id, kind, match_id, created_by, press_text, press_audio_url").eq("id", id)
+    .maybeSingle<{ id: string; kind: string; match_id: string | null; created_by: string | null; press_text: string | null; press_audio_url: string | null }>();
+  if (!a) return { error: "Esta pieza ya no existe" } as const;
+  if (!(s.can("news", "update") || (s.can("news", "create") && a.created_by === s.user.id))) return { error: "No tienes permiso para editar esta crónica" } as const;
+  if (a.kind !== "cronica" || !a.match_id) return { error: "Don Rayo solo habla en las crónicas de un partido" } as const;
+  return { a, supabase } as const;
+}
+
+/** La IA escribe lo que dice Don Rayo con los datos del acta. Borra la voz anterior, que ya no vale. */
+export async function writePress(id: string): Promise<PressState> {
+  const p = await pressArticle(id);
+  if ("error" in p) return { error: p.error };
+  const sheet = await fetchMatchSheet(p.supabase, p.a.match_id!);
+  if (!sheet?.facts.played) return { error: "El partido aún no tiene resultado" };
+  const r = await askGemini(buildPressPrompt(sheet.facts), { maxTokens: 1024 });
+  if (!r.text) return { error: r.error };
+  const text = parsePress(r.text);
+  if (!text) return { error: "La IA no ha devuelto nada que Don Rayo pueda decir. Prueba otra vez." };
+  const { error } = await p.supabase.from("news_articles").update({ ...NO_PRESS, press_text: text, press_at: new Date().toISOString() }).eq("id", id);
+  if (error) return { error: "No se pudo guardar la rueda de prensa" };
+  await dropPressAudio(p.a.press_audio_url);
+  refresh(id);
+  return { text };
+}
+
+/** Guarda el texto retocado a mano. La voz anterior ya no coincide: se borra. */
+export async function savePressText(id: string, raw: string): Promise<PressState> {
+  const p = await pressArticle(id);
+  if ("error" in p) return { error: p.error };
+  const text = raw.replace(/\s+/g, " ").trim();
+  if (text.length < 20) return { error: "Escribe al menos una frase" };
+  if (text.length > PRESS_MAX) return { error: `Como mucho ${PRESS_MAX} letras: tiene que caber en unos 30 segundos de voz` };
+  if (text === p.a.press_text) return { text };
+  const { error } = await p.supabase.from("news_articles").update({ ...NO_PRESS, press_text: text, press_at: new Date().toISOString() }).eq("id", id);
+  if (error) return { error: "No se pudo guardar" };
+  await dropPressAudio(p.a.press_audio_url);
+  refresh(id);
+  return { text };
+}
+
+/** Crea la voz de Don Rayo con Gemini (gratis, una vez) y la guarda con la boca y los subtítulos. */
+export async function voicePress(id: string): Promise<PressState> {
+  const p = await pressArticle(id);
+  if ("error" in p) return { error: p.error };
+  const text = p.a.press_text;
+  if (!text) return { error: "Primero hay que escribir lo que dice" };
+  const v = await speakWithGemini(speechScript(text));
+  if (!v.pcm) return { error: v.error };
+  const rate = rateOf(v.mime);
+  const samples = new Int16Array(v.pcm.buffer, v.pcm.byteOffset, Math.floor(v.pcm.byteLength / 2));
+  const cues = pressCues(samples, rate, text);
+  if (cues.duration < 3) return { error: "La voz ha salido vacía. Prueba otra vez." };
+  const admin = createAdminClient();
+  const path = `${id}/${Date.now()}.wav`;
+  const { error: up } = await admin.storage.from(PRESS_BUCKET).upload(path, wavFile(v.pcm, rate), { contentType: "audio/wav", cacheControl: "31536000" });
+  if (up) return { error: "No se pudo guardar la voz" };
+  const url = admin.storage.from(PRESS_BUCKET).getPublicUrl(path).data.publicUrl;
+  // Solo si el texto no ha cambiado mientras tanto
+  const { data, error } = await p.supabase.from("news_articles").update({ press_audio_url: url, press_cues: cues }).eq("id", id).eq("press_text", text).select("id");
+  if (error || !data?.length) {
+    await admin.storage.from(PRESS_BUCKET).remove([path]);
+    return { error: "El texto ha cambiado mientras se creaba la voz. Vuelve a crearla." };
+  }
+  await dropPressAudio(p.a.press_audio_url);
+  refresh(id);
+  return { text, voiced: true };
+}
+
+/** Quita la rueda de prensa de la crónica. */
+export async function removePress(id: string): Promise<PressState> {
+  const p = await pressArticle(id);
+  if ("error" in p) return { error: p.error };
+  const { error } = await p.supabase.from("news_articles").update(NO_PRESS).eq("id", id);
+  if (error) return { error: "No se pudo quitar" };
+  await dropPressAudio(p.a.press_audio_url);
+  refresh(id);
+  return {};
 }
