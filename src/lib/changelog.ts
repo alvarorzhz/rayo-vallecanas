@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.28.1",
+    date: "2026-11-22",
+    title: "Notas: solo el podio",
+    changes: [
+      "Notas del partido: se sigue puntuando a todos igual, pero al cerrar solo se ve la nota de los 3 mejores. El resto sale en su sitio, de mejor a peor, sin su nota. Así nadie se queda señalado.",
+      "Las notas se siguen guardando enteras: la nota media de la temporada en Estadísticas se calcula con todas, como hasta ahora.",
+      "Rayo Wrapped: el puesto en la nota del equipo solo se cuenta si es del podio.",
+    ],
+  },
+  {
     version: "4.28.0",
     date: "2026-11-20",
     title: "Del Apertura a la Clausura",

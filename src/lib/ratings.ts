@@ -8,9 +8,16 @@ export type RatingBoard = {
   raters: number;
   /** Mis notas: jugador → nota. */
   mine: Record<string, number>;
-  /** Solo al cerrar: jugador → media (null si le puntuaron menos de 2) y cuántos le puntuaron. */
-  averages: Record<string, { avg: number | null; n: number }> | null;
+  /**
+   * Solo al cerrar: jugador → cuántos le puntuaron, su puesto (si tiene media) y su media,
+   * que desde la 4.28.1 solo llega para los 3 mejores (null para el resto y para los que
+   * no llegan a 2 notas). `pos` falta en las respuestas de antes de la 4.28.1.
+   */
+  averages: Record<string, { avg: number | null; n: number; pos?: number | null }> | null;
 };
+
+/** Al cerrar solo se enseña la media de los 3 mejores (empates en el 3º, todos). */
+export const TOP_VISIBLE = 3;
 
 /** Mínimo de personas que tienen que puntuar a alguien para que tenga media. */
 export const MIN_RATERS = 2;
@@ -44,22 +51,41 @@ export function scoreTone(n: number): "low" | "mid" | "good" | "top" {
 
 export const scoreWord = (n: number) => ({ low: "Flojo", mid: "Cumple", good: "Notable", top: "Crack" })[scoreTone(n)];
 
-export type RatedRow = { id: string; avg: number | null; n: number; mine: number | null };
+/**
+ * `avg` solo viene en los que se enseñan (los 3 mejores); `rank` es su puesto (empatados,
+ * el mismo). `hidden`: tiene media pero no está entre los mejores, así que va en su sitio
+ * sin nota.
+ */
+export type RatedRow = { id: string; avg: number | null; n: number; mine: number | null; rank: number | null; hidden: boolean };
 
 /**
- * Notas del partido cerrado, de la mejor media a la peor. Los que no llegan al mínimo
- * de puntuaciones van al final («sin nota»). Empate: más puntuaciones primero.
+ * Notas del partido cerrado, de la mejor media a la peor. Solo se ve la media de los
+ * {@link TOP_VISIBLE} mejores; el resto conserva su sitio sin nota. Los que no llegan al
+ * mínimo de puntuaciones van al final («sin nota»). Empate: más puntuaciones primero.
+ * Sirve tanto con la respuesta nueva (con `pos`) como con la antigua (todas las medias).
  */
 export function ratingRanking(b: Pick<RatingBoard, "averages" | "mine">, candidates: string[]): RatedRow[] {
-  return candidates
-    .map((id) => {
-      const a = b.averages?.[id];
-      return { id, avg: a?.avg ?? null, n: a?.n ?? 0, mine: b.mine[id] ?? null };
-    })
-    .sort((x, y) => {
-      if (x.avg === null || y.avg === null) return x.avg === null ? (y.avg === null ? y.n - x.n : 1) : -1;
-      return y.avg - x.avg || y.n - x.n;
-    });
+  const base = candidates.map((id, i) => {
+    const a = b.averages?.[id];
+    const avg = a?.avg ?? null;
+    const pos = a?.pos ?? null;
+    return { id, i, avg, pos, n: a?.n ?? 0, mine: b.mine[id] ?? null, ranked: pos !== null || avg !== null };
+  });
+  const byPos = base.some((x) => x.pos !== null);
+  base.sort((x, y) => {
+    if (x.ranked !== y.ranked) return x.ranked ? -1 : 1;
+    if (!x.ranked) return y.n - x.n || x.i - y.i;
+    if (byPos) return (x.pos ?? 999) - (y.pos ?? 999);
+    return y.avg! - x.avg! || y.n - x.n || x.i - y.i;
+  });
+  // Puesto de cada media (a un decimal, como se enseña): los empatados comparten puesto.
+  const r1 = (v: number) => Math.round(v * 10);
+  const shown = base.filter((x) => x.avg !== null).map((x) => r1(x.avg!));
+  return base.map((x) => {
+    const rank = x.avg !== null ? 1 + shown.filter((v) => v > r1(x.avg!)).length : null;
+    const visible = rank !== null && rank <= TOP_VISIBLE;
+    return { id: x.id, avg: visible ? x.avg : null, n: x.n, mine: x.mine, rank: visible ? rank : null, hidden: x.ranked && !visible };
+  });
 }
 
 /** Cuántos jugadores me quedan por puntuar (sin contarme a mí). */
