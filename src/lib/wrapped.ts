@@ -5,7 +5,7 @@
  * son los mismos en la pantalla y en la imagen para compartir.
  */
 import { playerSummary, teamSummary, type BestMatch, type PlayerSummary, type SumApp, type SumCallup, type SumGoal, type SumMatch } from "./season-summary.ts";
-import { fmtScore, scoreWord } from "./ratings.ts";
+import { TOP_VISIBLE, fmtScore, scoreWord } from "./ratings.ts";
 
 export type SlideKey = "intro" | "partidos" | "goles" | "porteria" | "socio" | "mejor" | "mvp" | "talisman" | "titulo";
 export const SLIDE_KEYS: SlideKey[] = ["intro", "partidos", "goles", "porteria", "socio", "mejor", "mvp", "talisman", "titulo"];
@@ -195,7 +195,7 @@ export function wrappedSlides(i: WrappedInput): { slides: Slide[]; summary: Play
     const lines: string[] = [];
     if (s.mvps > 0 && r) lines.push(`Nota media ${fmtScore(r.avg, 1)} · ${scoreWord(r.avg)}`);
     if (r?.rank === 1) lines.push("La mejor nota del equipo");
-    else if (r?.rank) lines.push(`${ord(r.rank)} mejor nota del equipo`);
+    else if (r?.rank && r.rank <= TOP_VISIBLE) lines.push(`${ord(r.rank)} mejor nota del equipo`); // solo el podio (4.28.1)
     if (s.mvps === 0 && r) lines.push(v(`Tu mejor nota en un partido: ${fmtScore(r.best, 1)}`, `Su mejor nota en un partido: ${fmtScore(r.best, 1)}`));
     slides.push(s.mvps > 0
       ? { key: "mvp", tone: "oro", kicker: "EL VESTUARIO HABLA", big: String(s.mvps), count: s.mvps, unit: pl(s.mvps, "vez MVP", "veces MVP"), lines: [v("Elegido por tus compañeros", "Elegido por sus compañeros"), ...lines], extra: { kind: "stars", n: s.mvps } }
