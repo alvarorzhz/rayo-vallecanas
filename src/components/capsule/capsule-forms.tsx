@@ -139,8 +139,8 @@ export function CapsuleSettingsForm({ season, seasons, writeUntil, opensOn, fina
           <input type="hidden" name="write_until" value={writeUntil} />
           <input type="hidden" name="opens_on" value={opensOn} />
           <div>
-            <label className="label" htmlFor="cap-pos">Puesto final en la liga</label>
-            <input id="cap-pos" name="final_position" inputMode="numeric" pattern="\d{1,2}" defaultValue={finalPosition ?? ""} placeholder="Se apunta solo con la clasificación" className="input max-w-40" />
+            <label className="label" htmlFor="cap-pos">Puesto final en el Apertura</label>
+            <input id="cap-pos" name="final_position" inputMode="numeric" pattern="\d{1,2}" defaultValue={finalPosition ?? ""} placeholder="Se apunta solo al acabar el Apertura" className="input max-w-40" />
             <p className="mt-1 text-[11px] text-negro/55">Para corregir el puesto con el que se comparan las predicciones.</p>
           </div>
         </>

@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { parseCalendar, parseCompetitionMenu, parseCompetitionName, type LeagueRow } from "../league-parse.ts";
 import {
-  LEAGUE_DATA, NoRetry, findOurTeam, inBatches, leagueFinished, mergeLeagueStats, previewOf, suspiciousRead, teamKey, withRetry,
+  LEAGUE_DATA, NoRetry, findOurTeam, inBatches, leagueFinished, mergeLeagueStats, previewOf, suspiciousRead, teamKey, withRetry, storedLeagueDone, nothingPending,
 } from "../league-plan.ts";
 import { changesText, leagueOver, nextLeagueText } from "../league-status.ts";
 
@@ -191,5 +191,29 @@ describe("lo que se enseña en Partidos → Liga", () => {
     assert.equal(t.title, "🏆 Hay liga nueva en futormes");
     assert.equal(t.body, "El Rayo aparece en «F7 - LIGA 3ª DIVISIÓN CLAUSURA | GRUPO II». Entra en Partidos → Liga para cambiarla.");
     assert.ok(nextLeagueText("x".repeat(300)).body.length < 180);
+  });
+});
+
+describe("4.28.0 · Apertura → Clausura con los partidos guardados", () => {
+  const m = (status: string, match_date: string) => ({ status, match_date });
+  test("terminada: nada pendiente y pasados 5 días del último", () => {
+    assert.equal(storedLeagueDone([m("played", "2027-01-10"), m("played", "2027-01-17")], "2027-01-23"), true);
+  });
+  test("aún no: dentro de los 5 días de margen", () => {
+    assert.equal(storedLeagueDone([m("played", "2027-01-17")], "2027-01-22"), false);
+  });
+  test("aún no: queda un partido pendiente o aplazado", () => {
+    assert.equal(storedLeagueDone([m("played", "2027-01-10"), m("scheduled", "2027-01-17")], "2027-03-01"), false);
+    assert.equal(storedLeagueDone([m("played", "2027-01-10"), m("postponed", "2027-01-17")], "2027-03-01"), false);
+  });
+  test("un suspendido no cuenta (ni como pendiente ni como último)", () => {
+    assert.equal(storedLeagueDone([m("played", "2027-01-10"), m("cancelled", "2027-01-30")], "2027-01-20"), true);
+  });
+  test("sin partidos no se da por terminada", () => {
+    assert.equal(storedLeagueDone([], "2027-06-01"), false);
+  });
+  test("al cambiar de liga: la anterior se cierra si no le queda nada", () => {
+    assert.equal(nothingPending([{ status: "played" }, { status: "cancelled" }]), true);
+    assert.equal(nothingPending([{ status: "played" }, { status: "scheduled" }]), false);
   });
 });

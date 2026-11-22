@@ -294,6 +294,13 @@ export async function saveLeague(_: LeagueState, f: FormData): Promise<LeagueSta
     if (error) throw error;
     const { error: e2 } = await supabase.from("league_competitions").upsert({ competition, name: row.competition_name, team: row.team, team_name: row.team_name });
     if (e2) throw e2;
+    // 4.28.0 · La liga que se deja queda como terminada si no le queda nada por jugar (antes solo se
+    // marcaba al sincronizar pasados 5 días del último partido, y si se cambiaba antes se quedaba «en juego»)
+    if (change && cfg) {
+      const { nothingPending } = await import("@/lib/league-plan");
+      const { data: old } = await supabase.from("matches").select("status").eq("league_competition", cfg.competition);
+      if (old?.length && nothingPending(old)) await supabase.from("league_competitions").update({ finished: true }).eq("competition", cfg.competition);
+    }
     updateTag("league-table");
     revalidatePath("/partidos", "layout");
     return { ok: change ? "Liga cambiada. Pulsa «Sincronizar con la liga» para traer sus partidos. Los de la liga anterior se quedan como están." : "Liga guardada. Ya puedes sincronizar." };

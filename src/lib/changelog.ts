@@ -17,6 +17,18 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.28.0",
+    date: "2026-11-20",
+    title: "Del Apertura a la Clausura",
+    changes: [
+      "Clasificación: en la temporada con Apertura y Clausura puedes elegir cuál ver. La del Apertura se queda como clasificación final cuando empiece la Clausura.",
+      "Objetivos: «acabar entre los N primeros» se mide en su liga. Los del Apertura se quedan en el Apertura y para la Clausura se puede poner otro.",
+      "Cápsula del tiempo: la predicción del puesto se juzga con el puesto final del Apertura, que es la liga en la que pensasteis al escribirla. Se apunta sola en cuanto acabe.",
+      { staff: "Liga: al terminar la competición, la app busca la siguiente cada mañana (antes solo los lunes) y avisa en cuanto aparece el Rayo." },
+      { staff: "Liga: al cambiar a la nueva competición, la anterior queda como terminada aunque cambies a los pocos días del último partido. En Partidos → Liga cada competición tiene su enlace a la clasificación." },
+    ],
+  },
+  {
     version: "4.27.2",
     date: "2026-11-20",
     title: "Repaso a lo último",

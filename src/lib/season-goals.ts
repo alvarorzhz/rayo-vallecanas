@@ -5,7 +5,7 @@
 import { runOf } from "./streaks.ts";
 
 export type GoalKind = "position" | "goals_for" | "wins" | "win_streak" | "unbeaten_streak" | "clean_sheets" | "all_play";
-export type SeasonGoal = { id: string; season: string; kind: GoalKind; target: number; sort: number; achieved_at: string | null };
+export type SeasonGoal = { id: string; season: string; kind: GoalKind; target: number; sort: number; achieved_at: string | null; /** 4.28.0 · liga del objetivo de puesto */ league_competition?: string | null };
 
 export const GOAL_KINDS: { kind: GoalKind; label: string; ask: string; needsTarget: boolean; default: number }[] = [
   { kind: "position", label: "Acabar entre los primeros de la liga", ask: "¿Entre los cuántos primeros?", needsTarget: true, default: 3 },

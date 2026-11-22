@@ -19,11 +19,13 @@ import { ForecastLine, MatchOdds } from "@/components/matches/league-forecast";
 import { StandingsTable, type TableRival } from "@/components/matches/league-table";
 import { LeagueOutlook } from "@/components/matches/league-outlook";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { competitionShort } from "@/lib/season-summary-queries";
 
 export const maxDuration = 60;
 export const metadata = { title: "Partidos" };
 
-type SP = { temporada?: string; ver?: string; eliminado?: string };
+type SP = { temporada?: string; ver?: string; eliminado?: string; liga?: string };
+type Comp = { competition: string; name: string | null; team: string };
 
 export default async function MatchesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
@@ -37,12 +39,15 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   const standingsP = leagueP.then((l) => (l?.competition && l.team && current ? getLeagueTableQuick(l.competition) : null));
   // 4.25.0 · Previsión de la liga (para el «¿Ganamos?» del próximo partido)
   const forecastP = leagueP.then((l) => (l?.competition && l.team && current ? getForecastQuick(l.competition, l.team) : null));
-  const [matches, seasons, league, standings, forecast] = await Promise.all([
+  // 4.28.0 · Competiciones de la temporada (Apertura y Clausura), para ver la clasificación de cada una
+  const compsP = supabase.from("league_competitions").select("competition, name, team").eq("season", season).order("created_at").returns<Comp[]>().then((r) => r.data ?? []);
+  const [matches, seasons, league, standings, forecast, comps] = await Promise.all([
     fetchMatches(supabase, season),
     fetchMatchSeasons(supabase),
     leagueP,
     standingsP,
     forecastP,
+    compsP,
   ]);
   const ranks = standings && league ? matchRanks(standings.rows, league.team, matches, season) : new Map<string, MatchRanks>();
 
@@ -69,8 +74,13 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
     const qs = new URLSearchParams(Object.entries(next).filter(([k, v]) => v && !(k === "ver" && v === "todos")) as [string, string][]);
     return `/partidos?${qs}`;
   };
-  const withTable = !!league && current;
+  // La clasificación de la liga actual y, desde la 4.28.0, la final de las anteriores (también de otras temporadas)
+  const tables: Comp[] = [...comps];
+  if (league && current && !tables.some((c) => c.competition === league.competition)) tables.push({ competition: league.competition, name: null, team: league.team });
+  const withTable = tables.length > 0;
   const tableView = view === "clasificacion" && withTable;
+  const shownComp = tables.find((c) => c.competition === sp.liga) ?? tables.find((c) => c.competition === league?.competition) ?? tables.at(-1);
+  const finalTable = !!shownComp && shownComp.competition !== league?.competition;
   const canCreate = s.can("matches", "create");
   const hero = current ? next ?? last : last;
   const heroOdds = hero && hero === next && hero.competition === "league" && standings
@@ -126,6 +136,16 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
             </Link>
           ))}
         </div>
+        {tableView && tables.length > 1 && (
+          <div className="flex flex-wrap gap-1" aria-label="Competición">
+            {tables.map((c) => (
+              <Link key={c.competition} href={link({ liga: c.competition })} prefetch aria-current={c === shownComp ? "true" : undefined}
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-bold ring-1 ${c === shownComp ? "bg-rojo text-white ring-rojo" : "bg-white text-negro/70 ring-black/10 hover:ring-rojo"}`}>
+                {competitionShort(c.name)}
+              </Link>
+            ))}
+          </div>
+        )}
         {!tableView && seasons.length > 1 && (
           <div className="flex flex-wrap gap-1">
             {seasons.map((t) => (
@@ -140,7 +160,8 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
 
       {tableView ? (
         <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-white/70 ring-1 ring-black/5" aria-label="Cargando la clasificación" />}>
-          <FullTable supabase={supabase} competition={league!.competition} team={league!.team} />
+          {finalTable && <p className="mb-3 text-sm text-negro/70">Clasificación final del <b>{competitionShort(shownComp!.name)}</b>.</p>}
+          <FullTable supabase={supabase} competition={shownComp!.competition} team={shownComp!.team} final={finalTable} />
         </Suspense>
       ) : matches.length === 0 ? (
         <Empty>
@@ -168,12 +189,12 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
   );
 }
 
-type TableProps = { supabase: SupabaseClient; competition: string; team: string };
+type TableProps = { supabase: SupabaseClient; competition: string; team: string; /** 4.28.0 · una liga anterior: sin previsión ni «Lo que queda» */ final?: boolean };
 
-async function tableData({ supabase, competition, team }: TableProps) {
+async function tableData({ supabase, competition, team, final }: TableProps) {
   const [table, forecast, rivals] = await Promise.all([
     getLeagueTable(competition),
-    getForecast(competition, team),
+    final ? null : getForecast(competition, team),
     supabase.from("rivals").select("name, short_name, color, crest_url, ext_id").not("ext_id", "is", null).returns<TableRival[]>().then((r) => r.data ?? []),
   ]);
   return { table, forecast, rivals };
@@ -193,7 +214,7 @@ async function FullTable(p: TableProps) {
     <>
       <StandingsTable table={table} us={p.team} rivals={rivals} />
       {forecast && <ForecastLine f={forecast} />}
-      <LeagueOutlook table={table} us={p.team} />
+      {!p.final && <LeagueOutlook table={table} us={p.team} />}
     </>
   );
 }
