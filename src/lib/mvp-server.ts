@@ -69,7 +69,7 @@ async function announceMvp(matchId: string, r: FinishResult) {
     const { data } = await admin.rpc("users_with_perm", { p_module: "matches", p_action: "update" });
     return sendPush((data ?? []) as string[], {
       title: "⭐ Empate en el MVP: decide tú",
-      body: `${scoreLine(m)} · Hay empate a votos y a goles. Elige al MVP en la ficha del partido.`,
+      body: `${scoreLine(m)} · Siguen empatados a votos, nota y goles. Elige al MVP en la ficha del partido.`,
       url: `/partidos/${matchId}#mvp`,
       tag: `mvp-${matchId}`,
     });
