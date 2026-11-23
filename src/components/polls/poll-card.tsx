@@ -1,8 +1,9 @@
-import { Clock, Lock, Users, Vote } from "lucide-react";
+import { Clock, EyeOff, Lock, Users, Vote } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { PollAdminActions, VoteButtons } from "@/components/polls/poll-forms";
-import { closePoll, deletePoll, remindPoll, votePoll } from "@/app/(app)/votaciones/actions";
-import { AUDIENCE_LABEL, OUTCOME_LABEL, results, timeLeft, type Poll } from "@/lib/polls";
+import { LiveRefresh } from "@/components/polls/live-refresh";
+import { closePoll, deletePoll, remindPoll, setPollLive, votePoll } from "@/app/(app)/votaciones/actions";
+import { AUDIENCE_LABEL, OUTCOME_LABEL, ago, results, timeLeft, type Poll } from "@/lib/polls";
 import { fecha } from "@/lib/format";
 
 /** Barra de resultados: verde el sí, rojo el no. */
@@ -22,16 +23,38 @@ function ResultBar({ p, dark = false }: { p: Poll; dark?: boolean }) {
   );
 }
 
+/** Punto rojo que late + «En directo». */
+function LiveBadge() {
+  return (
+    <span className="badge gap-1.5 bg-rojo text-white">
+      <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-white opacity-75" /><span className="relative inline-flex size-2 rounded-full bg-white" /></span>
+      En directo
+    </span>
+  );
+}
+
+/** «Último voto: Javi, SÍ · hace 3 min» (votaciones en directo). */
+function LastVote({ p }: { p: Poll }) {
+  const v = p.voters?.[0];
+  if (!v?.voted_at) return null;
+  return (
+    <p className="text-xs text-white/80">
+      Último voto: <b className="text-white">{v.name}</b>, {v.vote ? "✅ SÍ" : "❌ NO"} · {ago(v.voted_at)}
+    </p>
+  );
+}
+
 function Voters({ p, dark = false }: { p: Poll; dark?: boolean }) {
   if (!p.voters?.length && !p.missing?.length) return null;
   const chip = dark ? "bg-white/10 text-white" : "bg-gris";
-  const group = (title: string, names: { name: string; avatar_url: string | null }[]) =>
+  const group = (title: string, names: { name: string; avatar_url: string | null; voted_at?: string }[]) =>
     names.length ? (
       <div>
         <h4 className={`mb-1.5 text-xs font-bold uppercase tracking-wider ${dark ? "text-white/70" : "text-negro/65"}`}>{title} · {names.length}</h4>
         <ul className="flex flex-wrap gap-1.5">
           {names.map((v) => (
-            <li key={v.name} className={`flex items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-0.5 text-xs font-semibold ${chip}`}>
+            <li key={v.name} title={"voted_at" in v && v.voted_at ? `Votó ${ago(v.voted_at)}` : undefined}
+              className={`flex items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-0.5 text-xs font-semibold ${chip}`}>
               <Avatar name={v.name} url={v.avatar_url} size={20} /> {v.name}
             </li>
           ))}
@@ -39,7 +62,7 @@ function Voters({ p, dark = false }: { p: Poll; dark?: boolean }) {
       </div>
     ) : null;
   return (
-    <details className="group">
+    <details className="group" open={p.open && p.live}>
       <summary className={`cursor-pointer text-sm font-bold ${dark ? "text-dorado" : "text-rojo"}`}>Ver quién ha votado</summary>
       <div className="mt-3 space-y-3">
         {group("✅ Sí", (p.voters ?? []).filter((v) => v.vote))}
@@ -51,12 +74,13 @@ function Voters({ p, dark = false }: { p: Poll; dark?: boolean }) {
 }
 
 /**
- * Tarjeta de una votación. Abierta: en negro con los botones para votar (el recuento sale
- * después de votar, para no condicionar). Cerrada: el resultado.
+ * Tarjeta de una votación. Abierta: en negro con los botones para votar. El recuento y los votos
+ * se ven si es «en directo» (4.29.1); si no, salen al cerrar (quien gestiona ve el recuento).
+ * Lo que se puede ver lo decide poll_board() en la base de datos. Cerrada: el resultado.
  */
 export function PollCard({ p, canManage, compact = false }: { p: Poll; canManage: boolean; compact?: boolean }) {
   const r = results(p);
-  const showTally = !p.open || p.my_vote !== null || canManage || !p.can_vote;
+  const showTally = r.tally;
   const meta = (
     <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <span className="flex items-center gap-1"><Users size={13} /> {AUDIENCE_LABEL[p.audience]}</span>
@@ -71,17 +95,28 @@ export function PollCard({ p, canManage, compact = false }: { p: Poll; canManage
         <div className="relative space-y-3">
           <div className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-dorado"><Vote size={15} /> Votación</span>
-            <span className="badge bg-dorado text-negro"><Clock size={12} /> {timeLeft(p.closes_at)}</span>
+            <span className="flex flex-wrap items-center justify-end gap-1.5">
+              {p.live && <LiveBadge />}
+              <span className="badge bg-dorado text-negro"><Clock size={12} /> {timeLeft(p.closes_at)}</span>
+            </span>
           </div>
           <h3 className="sport text-2xl leading-tight font-black">{p.question}</h3>
           {p.details && !compact && <p className="whitespace-pre-line text-sm text-white/80">{p.details}</p>}
           {p.can_vote && <VoteButtons action={votePoll.bind(null, p.id)} mine={p.my_vote} dark />}
           {showTally && <ResultBar p={p} dark />}
+          {p.live && !p.anonymous && <LastVote p={p} />}
+          {!p.live && (
+            <p className="flex items-center gap-1.5 text-xs text-white/70">
+              <EyeOff size={13} /> {canManage ? "El resultado y quién ha votado qué se ven al cerrar. El recuento solo lo ves tú, como gestor." : "El resultado se verá al cerrar la votación."}
+            </p>
+          )}
           <div className="text-xs text-white/70">{meta}</div>
+          {p.live && <LiveRefresh />}
           {!compact && <Voters p={p} dark />}
           {!compact && canManage && (
             <div className="rounded-xl bg-white p-2 text-negro">
-              <PollAdminActions open remind={remindPoll.bind(null, p.id)} close={closePoll.bind(null, p.id)} remove={deletePoll.bind(null, p.id)}
+              <PollAdminActions open live={p.live} toggleLive={setPollLive.bind(null, p.id)}
+                remind={remindPoll.bind(null, p.id)} close={closePoll.bind(null, p.id)} remove={deletePoll.bind(null, p.id)}
                 missing={p.missing ? p.missing.length : Math.max(0, p.eligible - r.votes)} />
             </div>
           )}

@@ -34,7 +34,7 @@ export async function createPoll(_: PollState, f: FormData): Promise<PollState> 
 
   const supabase = await createClient();
   const { data: poll, error } = await supabase.from("polls")
-    .insert({ question, details, audience, anonymous: f.get("anonymous") === "on", closes_at: at!.toISOString(), created_by: s.user.id })
+    .insert({ question, details, audience, anonymous: f.get("anonymous") === "on", live: f.get("live") === "on", closes_at: at!.toISOString(), created_by: s.user.id })
     .select("id, closes_at").single();
   if (error || !poll) return { error: "No se pudo crear la votación" };
 
@@ -96,6 +96,18 @@ export async function closePoll(pollId: string): Promise<PollState> {
   if (error) return { error: "No se pudo cerrar" };
   refresh();
   return { ok: "Votación cerrada" };
+}
+
+/** Pone en directo (o quita) una votación abierta: el recuento y los votos se ven mientras dura. */
+export async function setPollLive(pollId: string, live: boolean): Promise<PollState> {
+  const s = await getSession();
+  if (!canManage(s)) return { error: "No tienes permiso para hacer esto" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("polls").update({ live }).eq("id", pollId).gt("closes_at", new Date().toISOString()).select("id");
+  if (error) return { error: "No se pudo cambiar" };
+  if (!data?.length) return { error: "La votación ya está cerrada" };
+  refresh();
+  return { ok: live ? "Votación en directo: ya se ven los votos" : "Los votos se verán al cerrar" };
 }
 
 /** Borra la votación y sus votos. */

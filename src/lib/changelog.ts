@@ -17,6 +17,17 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.29.1",
+    date: "2026-11-23",
+    title: "Votaciones en directo",
+    changes: [
+      "Votaciones: ahora hay votaciones «en directo». Desde el primer voto todos veis el recuento de sí y no y quién ha votado qué, y se va actualizando solo. Sale con un punto rojo «En directo».",
+      "En el resto de votaciones el resultado y el voto de cada uno se ven al cerrar, como siempre. Mientras está abierta solo se sabe cuánta gente ha votado.",
+      { staff: "Al lanzar una votación eliges «¿Cuándo se ven los votos?»: al cerrar o en directo. En una votación ya abierta puedes tocar «Poner en directo» (o quitarlo)." },
+      { staff: "En las votaciones normales sigues viendo el recuento y quién falta mientras está abierta, pero quién ha votado qué ya solo al cerrar (antes se podía ver antes de tiempo)." },
+    ],
+  },
+  {
     version: "4.29.0",
     date: "2026-11-23",
     title: "El almacén del club",

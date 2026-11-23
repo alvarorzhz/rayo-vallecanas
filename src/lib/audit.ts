@@ -187,7 +187,7 @@ const FIELD: Record<string, string> = {
   category: "Tipo de material", min_qty: "Mínimo en buen estado", item_id: "Artículo", qty: "Piezas", condition: "Estado",
   size: "Talla", holder_player_id: "Lo tiene", lent_on: "Prestado el",
   // Votaciones
-  question: "Pregunta", details: "Detalles", audience: "Para quién", anonymous: "Anónima",
+  question: "Pregunta", details: "Detalles", audience: "Para quién", anonymous: "Anónima", live: "En directo",
   created_by: "Creado por", created_at: "Creado el", ext_id: "Id en la liga",
 };
 

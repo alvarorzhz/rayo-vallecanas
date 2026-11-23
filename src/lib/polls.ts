@@ -8,19 +8,24 @@ export type Poll = {
   details: string | null;
   audience: PollAudience;
   anonymous: boolean;
+  /** En directo (4.29.1): el recuento y quién ha votado qué se ven mientras está abierta. */
+  live: boolean;
   closes_at: string;
   created_at: string;
   reminded_at: string | null;
   open: boolean;
   created_by_name: string | null;
-  yes: number;
-  no: number;
+  /** Votos emitidos (siempre se sabe cuántos). */
+  votes: number;
+  /** Recuento: null mientras está abierta si no es en directo (salvo para quien gestiona). */
+  yes: number | null;
+  no: number | null;
   /** Personas a las que va dirigida (activas). */
   eligible: number;
   my_vote: boolean | null;
   can_vote: boolean;
-  /** Quién ha votado qué (null si es secreta). */
-  voters: { name: string; vote: boolean; avatar_url: string | null }[] | null;
+  /** Quién ha votado qué, el último primero (null si es secreta, o si está abierta y no es en directo). */
+  voters: { name: string; vote: boolean; avatar_url: string | null; voted_at?: string }[] | null;
   /** Quién falta por votar: solo para gestores y si no es secreta. */
   missing: string[] | null;
 };
@@ -92,14 +97,18 @@ export function timeLeft(closes: string | Date, now = new Date()): string {
 export type Outcome = "yes" | "no" | "tie" | "none";
 
 /** Resultado: porcentajes (sobre los votos), participación y quién gana. */
-export function results(p: Pick<Poll, "yes" | "no" | "eligible">) {
-  const votes = p.yes + p.no;
-  const yesPct = votes ? Math.round((p.yes / votes) * 100) : 0;
-  const outcome: Outcome = !votes ? "none" : p.yes > p.no ? "yes" : p.no > p.yes ? "no" : "tie";
+export function results(p: Pick<Poll, "yes" | "no" | "eligible"> & { votes?: number }) {
+  const yes = p.yes ?? 0, no = p.no ?? 0;
+  const counted = yes + no;
+  const votes = p.votes ?? counted;
+  const yesPct = counted ? Math.round((yes / counted) * 100) : 0;
+  const outcome: Outcome = !counted ? "none" : yes > no ? "yes" : no > yes ? "no" : "tie";
   return {
     votes,
+    /** ¿Se puede enseñar el recuento? */
+    tally: p.yes !== null && p.no !== null,
     yesPct,
-    noPct: votes ? 100 - yesPct : 0,
+    noPct: counted ? 100 - yesPct : 0,
     turnout: p.eligible ? Math.min(100, Math.round((votes / p.eligible) * 100)) : 0,
     outcome,
   };
@@ -112,6 +121,17 @@ export const OUTCOME_LABEL: Record<Outcome, string> = {
   none: "Nadie votó",
 };
 
+/** «ahora», «hace 5 min», «hace 2 h», «hace 3 días»: cuándo votó cada uno en las votaciones en directo. */
+export function ago(at: string | Date, now = new Date()): string {
+  const min = Math.floor((now.getTime() - new Date(at).getTime()) / 60_000);
+  if (min < 1) return "ahora";
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.floor(h / 24);
+  return `hace ${d} ${d === 1 ? "día" : "días"}`;
+}
+
 /** Texto para compartir el resultado por WhatsApp. */
 export function shareText(p: Poll): string {
   const r = results(p);
@@ -119,7 +139,7 @@ export function shareText(p: Poll): string {
   return [
     `${head} · Rayo Vallecañas ⚡`,
     `«${p.question}»`,
-    `✅ Sí: ${p.yes} (${r.yesPct} %) · ❌ No: ${p.no} (${r.noPct} %)`,
+    r.tally ? `✅ Sí: ${p.yes} (${r.yesPct} %) · ❌ No: ${p.no} (${r.noPct} %)` : null,
     `Han votado ${r.votes} de ${p.eligible}.`,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
