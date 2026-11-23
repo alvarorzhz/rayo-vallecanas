@@ -40,6 +40,8 @@ export const BACKUP_TABLES: [string, string][] = [
   ["sponsor_agreements", "Patrocinadores · acuerdos"],
   ["sponsor_installments", "Patrocinadores · plazos"],
   ["sponsor_settings", "Patrocinadores · ajustes"],
+  ["material_items", "Material · artículos"],
+  ["material_lots", "Material · piezas"],
   ["match_predictions", "Partidos · porra"],
   ["match_live_events", "Partidos · directo"],
   ["birthday_wishes", "Plantilla · felicitaciones"],

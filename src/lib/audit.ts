@@ -82,6 +82,13 @@ export const TABLE_GROUPS: { label: string; tables: Record<string, string> }[] =
     },
   },
   {
+    label: "Material",
+    tables: {
+      material_items: "Material · artículo",
+      material_lots: "Material · piezas",
+    },
+  },
+  {
     label: "La Voz del Rayo",
     tables: {
       news_articles: "Noticia",
@@ -176,6 +183,9 @@ const FIELD: Record<string, string> = {
   in_kind: "En especie", in_kind_value_cents: "Valor en especie", benefits: "Contrapartidas", starts_on: "Empieza",
   ends_on: "Termina", contract_path: "Contrato", contract_name: "Nombre del contrato", expiry_reminded_at: "Aviso de fin enviado",
   agreement_id: "Acuerdo", reminded_at: "Recordatorio enviado", show_home: "Logos en Inicio", show_result: "Logos en las imágenes para compartir",
+  // Material
+  category: "Tipo de material", min_qty: "Mínimo en buen estado", item_id: "Artículo", qty: "Piezas", condition: "Estado",
+  size: "Talla", holder_player_id: "Lo tiene", lent_on: "Prestado el",
   // Votaciones
   question: "Pregunta", details: "Detalles", audience: "Para quién", anonymous: "Anónima", live: "En directo",
   created_by: "Creado por", created_at: "Creado el", ext_id: "Id en la liga",
@@ -195,7 +205,7 @@ const VALUES: Record<string, Record<string, string>> = {
   numbering_mode: { auto: "Automática", booklet: "Talonarios", manual: "Elección manual" },
   module: {
     lottery_admin: "Sorteos · gestión", lottery_sell: "Sorteos · vender", users: "Usuarios y permisos", audit: "Auditoría",
-    finances: "Finanzas", squad: "Plantilla", squad_private: "Plantilla · datos personales", matches: "Partidos", sponsors: "Patrocinadores", news: "La Voz del Rayo",
+    finances: "Finanzas", squad: "Plantilla", squad_private: "Plantilla · datos personales", matches: "Partidos", sponsors: "Patrocinadores", material: "Material", news: "La Voz del Rayo",
   },
   foot: { right: "Diestro", left: "Zurdo", both: "Ambidiestro" },
   armband: { captain: "Capitán", vice: "Segundo capitán" },
@@ -221,6 +231,8 @@ const TABLE_VALUES: Record<string, Record<string, Record<string, string>>> = {
     kind: { money: "Dinero", in_kind: "En especie", mixed: "Dinero y especie" },
   },
   notifications: { status: { pending: "Pendiente", sent: "Enviado", failed: "Fallido" } },
+  material_items: { category: { kit: "Equipaciones", balls: "Balones", training: "Entrenamiento", goalkeeper: "Portero", medical: "Botiquín", other: "Otros" } },
+  material_lots: { condition: { new: "Nuevo", used: "Usado", broken: "Roto" } },
   lottery_shares: { status: { available: "Libre", reserved: "Reservada", sold: "Vendida", voided: "Anulada" } },
   player_documents: { kind: { dni: "DNI", federation: "Ficha federativa", medical: "Reconocimiento médico", authorization: "Autorización", insurance: "Seguro", other: "Otro" } },
 };
@@ -289,7 +301,7 @@ export function recordSummary(row: Pick<AuditRow, "old_data" | "new_data" | "tab
   const person = [d.first_name, d.last_name].filter(Boolean).join(" ");
   const direct = d.reference ?? d.name ?? d.full_name ?? d.title ?? d.question ?? d.concept ?? (person || null);
   if (direct) return String(direct);
-  for (const k of ["player_id", "user_id", "match_id", "sponsor_id", "campaign_id"]) {
+  for (const k of ["player_id", "user_id", "match_id", "sponsor_id", "campaign_id", "item_id"]) {
     const v = d[k];
     if (typeof v === "string" && names.has(v)) return names.get(v)!;
   }

@@ -28,6 +28,18 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: "4.29.0",
+    date: "2026-11-23",
+    title: "El almacén del club",
+    changes: [
+      { staff: "Gestión → Material: el inventario del club. Cada artículo (camisetas, balones, petos, conos, botiquín…) con cuántas piezas hay y en qué estado: nuevas, usadas o rotas." },
+      { staff: "Las camisetas, una por dorsal y con su talla, colgadas en su percha. Con un botón se crea una por cada dorsal de la plantilla que aún no tenga la suya." },
+      { staff: "Préstamos: apunta quién tiene cada cosa. «Devuelto al almacén» y «Una se ha roto» con un toque; si de 8 balones se rompe 1, se separa solo." },
+      { staff: "Lo que falta: ponle un mínimo a un artículo y, si quedan menos piezas en buen estado, la app avisa con un botón para apuntar la compra como gasto en Finanzas." },
+      "En tu ficha, «Mi material»: lo que tienes del club (camiseta, balones…), si te han prestado algo.",
+    ],
+  },
+  {
     version: "4.28.3",
     date: "2026-11-23",
     title: "Empate en el MVP: manda la nota",
