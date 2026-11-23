@@ -9,7 +9,7 @@ import { createMovement } from "../actions";
 
 export const metadata = { title: "Nuevo movimiento" };
 
-export default async function NewMovementPage({ searchParams }: { searchParams: Promise<{ tipo?: string; ok?: string }> }) {
+export default async function NewMovementPage({ searchParams }: { searchParams: Promise<{ tipo?: string; ok?: string; concepto?: string; categoria?: string }> }) {
   const sp = await searchParams;
   await requirePerm("finances", "create");
   const kind = kindFromSlug(sp.tipo) ?? "expense";
@@ -19,6 +19,11 @@ export default async function NewMovementPage({ searchParams }: { searchParams: 
     kind === "income" ? fetchMovementLinks(supabase) : Promise.resolve(undefined),
   ]);
   const income = kind === "income";
+  // 4.29.0 · Desde Material («Apuntar la compra»): concepto y categoría ya puestos (solo la primera vez, no tras «Guardar»)
+  const prefill = sp.ok ? undefined : {
+    concept: sp.concepto?.slice(0, 200),
+    categoryId: sp.categoria ? (cats ?? []).find((c) => c.active && c.name.toLowerCase() === sp.categoria!.toLowerCase())?.id : undefined,
+  };
   return (
     <>
       <PageHeader title={income ? "Nuevo ingreso" : "Nuevo gasto"} back={{ href: "/finanzas", label: "Finanzas" }}
@@ -28,7 +33,7 @@ export default async function NewMovementPage({ searchParams }: { searchParams: 
           </Link>
         } />
       {sp.ok && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Guardado. Puedes apuntar el siguiente.</p>}
-      <MovementForm key={`${kind}-${sp.ok ?? ""}`} kind={kind} categories={cats ?? []} action={createMovement} today={today()} links={links} />
+      <MovementForm key={`${kind}-${sp.ok ?? ""}`} kind={kind} categories={cats ?? []} action={createMovement} today={today()} links={links} prefill={prefill} />
     </>
   );
 }

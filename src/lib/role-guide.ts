@@ -100,6 +100,15 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
       delete: "Eliminar patrocinadores y acuerdos (si tienen cobros, primero hay que anularlos en Finanzas).",
     },
   },
+  material: {
+    title: "Material deportivo",
+    acts: {
+      read: "Ver en Gestión el inventario del club: cada artículo con sus piezas, estado (nuevo, usado, roto), tallas, dorsales y quién tiene cada cosa. Sin este permiso, cada jugador ve solo el material que tiene él, en su ficha.",
+      create: "Dar de alta artículos nuevos y añadirles piezas.",
+      update: "Cambiar el estado, la talla o el dorsal de las piezas, apuntar a quién se presta cada cosa y quitar piezas.",
+      delete: "Eliminar un artículo entero con todas sus piezas.",
+    },
+  },
 };
 
 export const MENU_BY_MODULE: { module: string; act: Act; label: string }[] = [
@@ -110,6 +119,7 @@ export const MENU_BY_MODULE: { module: string; act: Act; label: string }[] = [
   { module: "squad", act: "read", label: "Plantilla" },
   { module: "finances", act: "read", label: "Finanzas" },
   { module: "sponsors", act: "read", label: "Patrocinadores" },
+  { module: "material", act: "read", label: "Material" },
   { module: "news", act: "read", label: "La Voz del Rayo" },
   { module: "users", act: "read", label: "Usuarios" },
   { module: "audit", act: "read", label: "Auditoría" },

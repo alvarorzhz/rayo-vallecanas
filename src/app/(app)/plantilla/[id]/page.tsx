@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Camera, ClipboardList, Cross, FolderLock, Mail, Pencil, Phone, Plane, ShieldAlert, Unlink, UserCheck, Wallet } from "lucide-react";
+import { Camera, ClipboardList, Cross, FolderLock, Mail, Pencil, Phone, Plane, ShieldAlert, Shirt, Unlink, UserCheck, Wallet } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
@@ -32,6 +32,8 @@ import { Streaks } from "@/components/squad/streaks";
 import { fetchDiscipline } from "@/lib/discipline-queries";
 import { CardCycle } from "@/components/squad/card-cycle";
 import { FoldCard } from "@/components/squad/fold-card";
+import { CategoryIcon, KitShirt } from "@/components/material/icons";
+import { CONDITION_LABEL, CONDITION_TONE, type MaterialCategory, type MaterialLot } from "@/lib/material";
 import { createAccess, deletePlayer, deletePlayerDoc, linkUser, rejoinPlayer, removePlayerPhoto, retirePlayer, savePlayerDoc, unlinkUser, updateMyContact, uploadPlayerPhoto } from "../actions";
 import { registerFeePayment, saveFeeOverride } from "../cuotas/actions";
 
@@ -66,9 +68,12 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
   // Usuario vinculado y usuarios libres para vincular (solo gestores con acceso a Usuarios)
   const canUsers = s.can("users", "read") && isManager;
 
+  const showMaterial = s.can("material") || isMe;
+  type HeldItem = { name: string; category: MaterialCategory };
+  type HeldLot = Pick<MaterialLot, "id" | "item_id" | "qty" | "condition" | "size" | "number" | "lent_on"> & { item: HeldItem | HeldItem[] | null };
   // 4.21.1 · Todo lo demás se pide a la vez (antes iba de una en una: ~9 viajes seguidos a la base de datos)
   type GoalRow = { match_id: string; scorer_id: string | null; assist_id: string | null };
-  const [{ data: priv }, docsRes, ownRes, fees, appsRes, goalsRes, callupRes, careerRes, disc, usersRes] = await Promise.all([
+  const [{ data: priv }, docsRes, ownRes, fees, appsRes, goalsRes, callupRes, careerRes, disc, usersRes, materialRes] = await Promise.all([
     canPrivate ? supabase.from("player_private").select("*").eq("player_id", id).maybeSingle<PlayerPrivate>() : Promise.resolve({ data: null }),
     showDocs
       ? supabase.from("player_documents").select("*").eq("player_id", id).order("created_at", { ascending: false }).returns<PlayerDocument[]>()
@@ -96,7 +101,14 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
           supabase.from("players").select("user_id").not("user_id", "is", null),
         ])
       : Promise.resolve(null),
+    // 4.29.0 · El material del club que tiene (lo ven los gestores con permiso de Material y el propio jugador)
+    showMaterial
+      ? supabase.from("material_lots").select("id, item_id, qty, condition, size, number, lent_on, item:material_items(name, category)")
+        .eq("holder_player_id", id).returns<HeldLot[]>()
+      : Promise.resolve({ data: [] as HeldLot[] }),
   ]);
+  const held = (materialRes.data ?? []).map((l) => ({ ...l, item: Array.isArray(l.item) ? l.item[0] ?? null : l.item }))
+    .sort((a, b) => (a.item?.name ?? "").localeCompare(b.item?.name ?? "", "es"));
 
   const docs = docsRes.data;
   const deletable = (docs ?? []).filter((d) => s.can("squad_private", "delete") || (isMe && d.uploaded_by === s.user.id)).map((d) => d.id);
@@ -379,6 +391,47 @@ export default async function PlayerPage({ params, searchParams }: { params: Pro
         </div>
 
         <div className="space-y-6">
+          {showMaterial && (held.length > 0 || s.can("material")) && (
+            <FoldCard title={<><Shirt size={20} className="shrink-0 text-rojo" /> {isMe ? "Mi material" : "Su material"}</>}
+              meta={<span className="text-xs font-bold uppercase tracking-wider text-negro/55">{held.reduce((n, l) => n + l.qty, 0)}</span>}>
+              {held.length ? (
+                <ul className="space-y-1.5">
+                  {held.map((l) => {
+                    const row = (
+                      <>
+                        {l.number !== null ? (
+                          <KitShirt number={l.number} size={l.size} condition={l.condition} className="h-10 w-10 shrink-0" />
+                        ) : (
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-black/5">
+                            {l.item ? <CategoryIcon category={l.item.category} size={20} /> : null}
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1">
+                          <b className="block truncate">{l.qty > 1 ? `${l.qty} × ` : ""}{l.item?.name ?? "Material"}</b>
+                          <span className="text-xs text-negro/65">
+                            {[l.number !== null ? `Dorsal ${l.number}` : null, l.size ? `Talla ${l.size}` : null, l.lent_on ? `desde el ${fecha(l.lent_on)}` : null].filter(Boolean).join(" · ")}
+                          </span>
+                        </span>
+                        {l.condition !== "new" && <span className={`badge ${CONDITION_TONE[l.condition]}`}>{CONDITION_LABEL[l.condition]}</span>}
+                      </>
+                    );
+                    return (
+                      <li key={l.id}>
+                        {s.can("material")
+                          ? <Link href={`/admin/material/${l.item_id}?pieza=${l.id}#pieza`} className="flex items-center gap-3 rounded-xl bg-gris px-2.5 py-1.5 text-sm hover:ring-1 hover:ring-rojo">{row}</Link>
+                          : <div className="flex items-center gap-3 rounded-xl bg-gris px-2.5 py-1.5 text-sm">{row}</div>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="text-sm text-negro/65">No tiene nada del club ahora mismo.</p>
+              )}
+              <p className="mt-3 text-xs text-negro/65">
+                {isMe ? "Es material del club: cuídalo y devuélvelo cuando te lo pidan. Si algo se rompe, díselo a un gestor." : "Se apunta en Gestión → Material."}
+              </p>
+            </FoldCard>
+          )}
           {fees && (
             <FoldCard title={<><Wallet size={20} className="shrink-0 text-rojo" /> Cuota {season}</>} meta={<span className={`badge ${FEE_STATUS_TONE[feeStatus(feeDue, feePaid)]}`}>{FEE_STATUS_LABEL[feeStatus(feeDue, feePaid)]}</span>}>
               <FeeBar due={feeDue} paid={feePaid} />
