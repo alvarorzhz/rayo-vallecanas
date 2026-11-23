@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.28.2",
+    date: "2026-11-23",
+    title: "Vuelven los nombres",
+    changes: [
+      { staff: "Auditoría: ya se ve otra vez quién hizo cada cambio. Desde la 4.20.3 salía «Usuario borrado» en casi todo, aunque no se había borrado nadie. Los registros antiguos también recuperan el nombre." },
+      "Rifa: vuelve el nombre del vendedor en las ventas y en el justificante.",
+      { staff: "También vuelven los nombres en la lista de vendedores y la exportación de la rifa, en Gestión → Uso y en quién anuló un movimiento de Finanzas." },
+    ],
+  },
+  {
     version: "4.28.1",
     date: "2026-11-22",
     title: "Notas: solo el podio",
