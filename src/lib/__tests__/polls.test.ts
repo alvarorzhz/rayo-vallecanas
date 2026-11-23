@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkClose, closesAt, madridToUtc, results, shareText, timeLeft, type Poll } from "../polls.ts";
+import { ago, checkClose, closesAt, madridToUtc, results, shareText, timeLeft, type Poll } from "../polls.ts";
 import { areaOf } from "../notifications.ts";
 
 test("la hora de Madrid se pasa bien a UTC, en invierno y en verano", () => {
@@ -31,10 +31,10 @@ test("el tiempo que queda se lee bien", () => {
 });
 
 test("resultado, porcentajes y participación", () => {
-  assert.deepEqual(results({ yes: 7, no: 3, eligible: 14 }), { votes: 10, yesPct: 70, noPct: 30, turnout: 71, outcome: "yes" });
+  assert.deepEqual(results({ yes: 7, no: 3, eligible: 14 }), { votes: 10, tally: true, yesPct: 70, noPct: 30, turnout: 71, outcome: "yes" });
   assert.equal(results({ yes: 2, no: 2, eligible: 4 }).outcome, "tie");
   assert.equal(results({ yes: 1, no: 5, eligible: 10 }).outcome, "no");
-  assert.deepEqual(results({ yes: 0, no: 0, eligible: 0 }), { votes: 0, yesPct: 0, noPct: 0, turnout: 0, outcome: "none" });
+  assert.deepEqual(results({ yes: 0, no: 0, eligible: 0 }), { votes: 0, tally: true, yesPct: 0, noPct: 0, turnout: 0, outcome: "none" });
   // 1 de 3: los porcentajes suman 100
   const r = results({ yes: 1, no: 2, eligible: 3 });
   assert.equal(r.yesPct + r.noPct, 100);
@@ -46,6 +46,24 @@ test("el texto para compartir lleva la pregunta y el resultado", () => {
   assert.match(t, /Gana el SÍ/);
   assert.match(t, /«¿Cena el viernes\?»/);
   assert.match(t, /Han votado 10 de 12/);
+});
+
+test("abierta y sin «en directo»: se sabe cuántos han votado pero no el recuento", () => {
+  const r = results({ votes: 6, yes: null, no: null, eligible: 14 });
+  assert.equal(r.tally, false);
+  assert.equal(r.votes, 6);
+  assert.equal(r.turnout, 43);
+  const t = shareText({ question: "¿Cena?", open: true, votes: 6, yes: null, no: null, eligible: 14 } as Poll);
+  assert.doesNotMatch(t, /Sí:/);
+  assert.match(t, /Han votado 6 de 14/);
+});
+
+test("cuándo votó cada uno", () => {
+  const now = new Date("2026-11-23T18:00:00Z");
+  assert.equal(ago("2026-11-23T17:59:40Z", now), "ahora");
+  assert.equal(ago("2026-11-23T17:55:00Z", now), "hace 5 min");
+  assert.equal(ago("2026-11-23T15:00:00Z", now), "hace 3 h");
+  assert.equal(ago("2026-11-22T17:00:00Z", now), "hace 1 día");
 });
 
 test("cada aviso enviado cae en su sección", () => {

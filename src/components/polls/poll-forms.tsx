@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState, useTransition } from "react";
-import { BellRing, Lock, Square, Trash2 } from "lucide-react";
+import { BellRing, Clock, Lock, Radio, Square, Trash2 } from "lucide-react";
 import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { DURATIONS } from "@/lib/polls";
@@ -52,8 +52,9 @@ export function VoteButtons({ action, mine, dark = false }: { action: (vote: boo
 }
 
 /** Recordar, cerrar ya y borrar (quien gestiona los avisos). */
-export function PollAdminActions({ remind, close, remove, open, missing }: {
+export function PollAdminActions({ remind, close, remove, open, missing, live, toggleLive }: {
   remind: () => Promise<S>; close: () => Promise<S>; remove: () => Promise<S>; open: boolean; missing: number;
+  live?: boolean; toggleLive?: (live: boolean) => Promise<S>;
 }) {
   const [state, setState] = useState<S>();
   const [pending, start] = useTransition();
@@ -67,6 +68,12 @@ export function PollAdminActions({ remind, close, remove, open, missing }: {
         {open && (
           <button type="button" disabled={pending || missing === 0} className="btn-ghost px-3 py-1.5 text-sm" onClick={() => run(remind)}>
             <BellRing size={15} className="text-rojo" /> Recordar a los que faltan{missing ? ` (${missing})` : ""}
+          </button>
+        )}
+        {open && toggleLive && (
+          <button type="button" disabled={pending} className="btn-ghost px-3 py-1.5 text-sm"
+            onClick={() => run(() => toggleLive(!live), live ? undefined : "¿Poner la votación en directo? Todos verán ya el recuento y quién ha votado qué.")}>
+            <Radio size={15} className="text-rojo" /> {live ? "Ver votos solo al cerrar" : "Poner en directo"}
           </button>
         )}
         {open && (
@@ -87,6 +94,8 @@ export function PollAdminActions({ remind, close, remove, open, missing }: {
 export function PollForm({ action }: { action: (s: S, f: FormData) => Promise<S> }) {
   const [state, formAction] = useActionState(action, undefined);
   const [duration, setDuration] = useState("24");
+  const [live, setLive] = useState(false);
+  const [secret, setSecret] = useState(false);
   return (
     <form action={formAction} className="space-y-4">
       <div>
@@ -120,10 +129,26 @@ export function PollForm({ action }: { action: (s: S, f: FormData) => Promise<S>
           <input id="poll-until" name="until" type="datetime-local" required className="input" />
         </div>
       )}
+      <fieldset>
+        <legend className="label">¿Cuándo se ven los votos?</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {[
+            { v: false, icon: <Clock size={14} />, title: "Al cerrar", text: "Mientras está abierta solo se ve cuánta gente ha votado. El resultado sale al final." },
+            { v: true, icon: <Radio size={14} />, title: "En directo", text: secret
+              ? "El recuento de sí y no se ve desde el primer voto (es secreta: sin nombres)."
+              : "Desde el primer voto todos ven el recuento y quién ha votado qué." },
+          ].map((o) => (
+            <label key={o.title} className={`flex cursor-pointer items-start gap-3 rounded-xl p-3 text-sm ring-2 transition ${live === o.v ? "bg-rojo/5 ring-rojo" : "bg-gris ring-transparent"}`}>
+              <input type="radio" name="live" value={o.v ? "on" : ""} checked={live === o.v} onChange={() => setLive(o.v)} className="mt-0.5 size-4 accent-rojo" />
+              <span><b className="flex items-center gap-1">{o.icon} {o.title}</b> <span className="text-negro/65">{o.text}</span></span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <label className="flex items-start gap-3 rounded-xl bg-gris p-3 text-sm">
-        <input type="checkbox" name="anonymous" className="mt-0.5 size-4 accent-rojo" />
+        <input type="checkbox" name="anonymous" checked={secret} onChange={(e) => setSecret(e.target.checked)} className="mt-0.5 size-4 accent-rojo" />
         <span><b className="flex items-center gap-1"><Lock size={14} /> Voto secreto</b>
-          <span className="text-negro/65">Nadie ve quién ha votado qué, ni los gestores: solo el recuento. Si no lo marcas, se ve el voto de cada uno.</span></span>
+          <span className="text-negro/65">Nadie ve quién ha votado qué, ni los gestores: solo el recuento. Si no lo marcas, se ve el voto de cada uno {live ? "desde el principio" : "al cerrar"}.</span></span>
       </label>
       <label className="flex items-start gap-3 rounded-xl bg-gris p-3 text-sm">
         <input type="checkbox" name="notify" defaultChecked className="mt-0.5 size-4 accent-rojo" />
