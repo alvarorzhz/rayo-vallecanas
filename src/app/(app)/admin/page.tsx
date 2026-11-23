@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BellRing, ChartColumn, DatabaseBackup, Handshake, IdCard, ScrollText, Users, type LucideIcon } from "lucide-react";
+import { BellRing, ChartColumn, DatabaseBackup, Handshake, IdCard, ScrollText, Shirt, Users, type LucideIcon } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -10,6 +10,7 @@ import { madridDayRange } from "@/lib/audit";
 import { seasonOf } from "@/lib/finance";
 import { fecha } from "@/lib/format";
 import { PageHeader } from "@/components/ui";
+import { shortfall, tally, type MaterialLot } from "@/lib/material";
 
 export const metadata = { title: "Gestión" };
 
@@ -25,13 +26,14 @@ export default async function OfficeDesk() {
   const canUsers = s.can("users");
   const canSponsors = s.can("sponsors");
   const canNotices = s.can("users", "update") || s.can("lottery_admin", "update");
-  if (!canUsers && !canSponsors && !canNotices && !isSuper) redirect("/?error=permiso");
+  const canMaterial = s.can("material");
+  if (!canUsers && !canSponsors && !canNotices && !canMaterial && !isSuper) redirect("/?error=permiso");
 
   const supabase = await createClient();
   const admin = createAdminClient();
   const season = seasonOf();
   const none = Promise.resolve(null);
-  const [people, defs, custom, sponsors, deals, subs, lastNotice, openPolls, todayLog, lastBackup, usage7] = await Promise.all([
+  const [people, defs, custom, sponsors, deals, subs, lastNotice, openPolls, todayLog, lastBackup, usage7, material] = await Promise.all([
     canUsers ? supabase.from("profiles").select("active") : none,
     canUsers ? fetchProfileDefs(supabase) : none,
     canUsers ? supabase.from("user_permissions").select("user_id") : none,
@@ -43,6 +45,7 @@ export default async function OfficeDesk() {
     isSuper ? supabase.from("audit_log").select("id", { count: "exact", head: true }).gte("created_at", madridDayRange(madridDay(), "start")!) : none,
     isSuper ? supabase.from("audit_log").select("created_at").eq("action", "BACKUP").order("created_at", { ascending: false }).limit(1).maybeSingle() : none,
     isSuper ? supabase.from("usage_daily").select("user_id").gte("day", madridDay(new Date(Date.now() - 6 * 86400_000))) : none,
+    canMaterial ? fetchMaterialDesk(supabase) : none,
   ]);
 
   const folders: Folder[] = [];
@@ -58,6 +61,10 @@ export default async function OfficeDesk() {
   if (canSponsors) {
     folders.push({ href: "/admin/patrocinadores", title: "Patrocinadores", icon: Handshake, tab: "var(--color-negro)", value: sponsors?.count ?? 0, unit: "patrocinadores actuales",
       detail: `${deals?.count ?? 0} ${deals?.count === 1 ? "acuerdo firmado" : "acuerdos firmados"} en ${season}` });
+  }
+  if (canMaterial && material) {
+    folders.push({ href: "/admin/material", title: "Material", icon: Shirt, tab: "var(--color-dorado)", value: material.usable, unit: material.usable === 1 ? "pieza en buen estado" : "piezas en buen estado",
+      detail: material.short ? `Falta material en ${material.short} ${material.short === 1 ? "artículo" : "artículos"}` : material.items ? `${material.items} ${material.items === 1 ? "artículo" : "artículos"} en el almacén` : "El almacén del club" });
   }
   if (canNotices) {
     const withPush = new Set((subs?.data ?? []).map((r) => r.user_id)).size;
@@ -102,4 +109,19 @@ export default async function OfficeDesk() {
       </ul>
     </>
   );
+}
+
+/** Cajón de Material en la mesa: piezas útiles y cuántos artículos están por debajo del mínimo. */
+async function fetchMaterialDesk(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const [{ data: items }, { data: lots }] = await Promise.all([
+    supabase.from("material_items").select("id, min_qty"),
+    supabase.from("material_lots").select("item_id, qty, condition, holder_player_id"),
+  ]);
+  const all = (lots ?? []) as (Pick<MaterialLot, "item_id" | "qty" | "condition" | "holder_player_id">)[];
+  const list = (items ?? []) as { id: string; min_qty: number | null }[];
+  return {
+    items: list.length,
+    usable: tally(all).usable,
+    short: list.filter((it) => shortfall(it, tally(all.filter((l) => l.item_id === it.id))) > 0).length,
+  };
 }

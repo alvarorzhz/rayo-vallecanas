@@ -49,6 +49,7 @@ La barra inferior del móvil tiene seis apartados: **Inicio · Partidos · Plant
 - **Usuarios**: altas con contraseña provisional, deshabilitar accesos, foto de perfil.
 - **Perfiles y permisos**: superadministrador, gestor y jugador, más **perfiles a medida** y excepciones por persona (ver, crear, editar, borrar en cada módulo).
 - **Patrocinadores**: fichas, acuerdos por temporada (dinero, especie o mixto), plazos de cobro y avisos de vencimiento.
+- **Material**: inventario del club (equipaciones por talla y dorsal, balones, petos, botiquín…) con estado nuevo/usado/roto, quién tiene cada cosa, mínimo con aviso «Lo que falta» y botón para apuntar la compra en Finanzas. Cada jugador ve en su ficha solo lo suyo («Mi material»).
 - **Avisos**: mensajes push al equipo, **votaciones sí/no** y registro de todos los avisos enviados.
 - **Auditoría** (solo superadministrador):
   - *Cambios*: quién cambió qué y cuándo, con el **valor anterior y el nuevo** de cada campo, en lenguaje claro. Filtros por apartado, acción, persona y fechas, e historial completo de cualquier registro.

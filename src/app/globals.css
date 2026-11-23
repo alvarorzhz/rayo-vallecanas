@@ -1193,3 +1193,30 @@ a.card:active, .card-link:active, .lift:active { transform: scale(0.985); transi
 .donrayo-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 8px; border-radius: 12px; border: 1.5px solid rgba(255, 255, 255, 0.22); font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; transition: transform 0.1s; }
 .donrayo-btn:active { transform: scale(0.97); }
 .donrayo-btn-gold { background: var(--color-dorado); border-color: var(--color-dorado); color: #111; }
+
+/* --- 4.29.0 · Material: el almacén del club */
+/* Botones de estado: cada uno se enciende con su color */
+.peer:checked + .cond-new { background: #15803d; color: #fff; box-shadow: none; }
+.peer:checked + .cond-used { background: var(--color-dorado); color: var(--color-negro); box-shadow: none; }
+.peer:checked + .cond-broken { background: var(--color-rojo); color: #fff; box-shadow: none; }
+/* Etiqueta de almacén: agujero del cordel arriba a la derecha */
+.stock-tag { position: relative; }
+.stock-tag::after {
+  content: ""; position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; border-radius: 9999px; pointer-events: none;
+  background: var(--color-gris); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35), 0 0 0 2px #fff, 0 0 0 3px rgba(0, 0, 0, 0.08);
+}
+/* Barra del estado: segmentos que crecen al entrar */
+.stock-bar { display: flex; overflow: hidden; border-radius: 9999px; background: rgba(0, 0, 0, 0.06); }
+.stock-bar > span { display: block; height: 100%; }
+.stock-bar > .stock-fill { display: flex; height: 100%; width: 100%; transform-origin: left; animation: grow 0.8s var(--ease-out) both; }
+/* Burra de camisetas: la barra de la que cuelgan y una percha por camiseta */
+.kit-rail { position: relative; padding-top: 18px; }
+.kit-rail::before {
+  content: ""; position: absolute; left: -4px; right: -4px; top: 6px; height: 6px; border-radius: 9999px;
+  background: linear-gradient(#5b5b5b, #1f1f1f); box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+.kit-hanger { position: relative; }
+.kit-hanger::before {
+  content: ""; position: absolute; left: 50%; top: -14px; width: 12px; height: 14px; transform: translateX(-50%);
+  border: 2px solid #3a3a3a; border-bottom: 0; border-radius: 8px 8px 0 0;
+}

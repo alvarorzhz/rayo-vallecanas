@@ -18,6 +18,7 @@ export function MovementForm({
   movement,
   today,
   links,
+  prefill,
 }: {
   kind: FinanceKind;
   categories: Category[];
@@ -26,6 +27,8 @@ export function MovementForm({
   today: string;
   /** 4.20.2 · Jugadores y plazos de patrocinio para enlazar el ingreso (solo ingresos). */
   links?: MovementLinks;
+  /** 4.29.0 · Concepto y categoría que llegan ya puestos (por ejemplo, desde Material). */
+  prefill?: { concept?: string; categoryId?: string };
 }) {
   const [state, formAction] = useActionState(action, undefined);
   const [file, setFile] = useState<{ path: string; name: string } | null>(
@@ -36,7 +39,7 @@ export function MovementForm({
   const input = useRef<HTMLInputElement>(null);
   const income = kind === "income";
   const options = categories.filter((c) => c.kind === kind && (c.active || c.id === movement?.category_id));
-  const [categoryId, setCategoryId] = useState(movement?.category_id ?? "");
+  const [categoryId, setCategoryId] = useState(movement?.category_id ?? prefill?.categoryId ?? "");
   const catName = options.find((c) => c.id === categoryId)?.name ?? "";
   const fee = income && !!links && isFeeCategory(catName);
   const sponsor = income && !!links && isSponsorCategory(catName);
@@ -82,7 +85,7 @@ export function MovementForm({
         </div>
         <div className="sm:col-span-2">
           <label className="label" htmlFor="concept">Concepto</label>
-          <input id="concept" name="concept" required maxLength={200} className="input" defaultValue={movement?.concept}
+          <input id="concept" name="concept" required maxLength={200} className="input" defaultValue={movement?.concept ?? prefill?.concept}
             placeholder={income ? "Ej.: Venta de bocadillos del torneo" : "Ej.: Arbitraje jornada 5"} />
         </div>
         <div>
