@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { NightEgg, Nightcap, useMadrugada } from "@/components/night-egg";
 import { fiestaDe, fiestaForzada, madridParts, saludoDe, type DiaFiesta } from "@/lib/fiestas";
 
 /*
@@ -8,6 +9,7 @@ import { fiestaDe, fiestaForzada, madridParts, saludoDe, type DiaFiesta } from "
  * - 7 toques seguidos al escudo de la cabecera (uno por jugador de fútbol 7): cruza un rayo,
  *   suena la grada y la app entra un rato en «modo noche de final» (negro y dorado).
  * - En Navidad, Nochevieja y Año Nuevo el escudo se viste y sale un saludo al entrar.
+ * - De madrugada (1:00-5:59) el escudo se pone gorro de dormir y el árbitro te saca amarilla (night-egg.tsx).
  */
 
 const EVENT = "rv-rayo";
@@ -40,6 +42,7 @@ export function CrestEgg({ width, height, className = "" }: { width: number; hei
   const taps = useRef({ n: 0, last: 0 });
   const [tap, setTap] = useState(0);
   const fiesta = useFiesta();
+  const noche = useMadrugada();
 
   function onClick(e: React.MouseEvent) {
     const now = Date.now();
@@ -62,6 +65,7 @@ export function CrestEgg({ width, height, className = "" }: { width: number; hei
         className={`relative select-none drop-shadow-lg ${tap ? "egg-tap" : ""}`} />
       {fiesta?.adorno === "gorro" && <SantaHat size={width * 0.78} />}
       {fiesta?.adorno === "purpurina" && <Glitter />}
+      {noche && fiesta?.adorno !== "gorro" && <Nightcap size={width * 0.78} />}
     </span>
   );
 }
@@ -246,6 +250,7 @@ export function EasterEggs() {
 
   return (
     <>
+      <NightEgg />
       {bolt > 0 && (
         <div key={bolt} aria-hidden className="egg-rayo pointer-events-none fixed inset-0 z-[70] overflow-hidden">
           <div className="egg-dim absolute inset-0" />

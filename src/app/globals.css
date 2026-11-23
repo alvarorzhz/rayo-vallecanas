@@ -521,8 +521,34 @@ html.rv-final {
 @keyframes lg-holo { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
 .lg-burst span { position: absolute; left: 50%; top: 45%; width: 6px; height: 6px; border-radius: 9999px; background: var(--color-dorado); opacity: 0; animation: egg-spark 0.9s ease-out both; }
 
+/* 4.30.1 · Sorpresa de madrugada: luz de luna en el fondo, cielo con estrellas y focos del campo */
+html.rv-noche { --color-gris: #E3E6F0; }
+.noche-z { left: 0; top: 0; opacity: 0; animation: noche-z 3s ease-out infinite; }
+@keyframes noche-z { 0% { opacity: 0; transform: translate(0, 4px) scale(0.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(10px, -16px) scale(1.25); } }
+.noche-cielo {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.85) 0 1px, transparent 1.6px) 0 0 / 97px 113px,
+    radial-gradient(circle at 63% 41%, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.6px) 0 0 / 151px 89px,
+    radial-gradient(circle at 37% 77%, rgba(255, 246, 208, 0.7) 0 1.2px, transparent 2px) 0 0 / 173px 131px,
+    radial-gradient(ellipse at 50% 120%, #2a3470, transparent 65%),
+    linear-gradient(180deg, #05081a, #0d1433 55%, #18214d);
+  animation: noche-in 0.6s ease-out both;
+}
+@keyframes noche-in { from { opacity: 0; } to { opacity: 1; } }
+.noche-luna { background: #fff6d0; box-shadow: 0 0 40px 6px rgba(255, 246, 208, 0.35), inset -10px -4px 0 0 #d9cf9f; }
+.noche-haz { background: linear-gradient(180deg, rgba(255, 246, 208, 0.22), transparent); clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%); }
+.noche-tarjeta { opacity: 0; transform-origin: 50% 100%; animation: noche-tarjeta 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes noche-tarjeta {
+  0% { opacity: 0; transform: translate(calc(-50% + var(--x)), 90px) rotate(calc(var(--tilt) - 40deg)) scale(0.6); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translate(calc(-50% + var(--x)), 0) rotate(var(--tilt)) scale(1); }
+}
+.noche-apagado { transition: background-color 0.6s; }
+.noche-buenas { animation: noche-in 0.9s ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .egg-bolt, .egg-flash, .egg-spark, .egg-twinkle, .egg-final-bg, .lg-holo, .lg-charging { animation: none !important; }
+  .noche-tarjeta { opacity: 1; transform: translate(calc(-50% + var(--x)), 0) rotate(var(--tilt)); }
+  .egg-bolt, .egg-flash, .egg-spark, .egg-twinkle, .egg-final-bg, .lg-holo, .lg-charging, .noche-z, .noche-tarjeta, .noche-cielo { animation: none !important; }
   .egg-bolt, .egg-flash, .egg-spark { display: none; }
   .egg-grito { animation: egg-grito 2.4s linear both !important; animation-duration: 2.4s !important; }
 }
