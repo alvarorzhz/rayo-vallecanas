@@ -1,0 +1,17 @@
+-- =====================================================================
+-- 4.28.2 · Vuelven los nombres de las personas.
+--
+-- La 4.20.3 (20261117000050_advisor_fixes.sql) quitó a los usuarios con sesión el
+-- permiso de ejecutar member_list() creyendo que la app no la usaba. Pero la vista
+-- member_directory (nombre y perfil de cada usuario) se construye con esa función,
+-- así que desde entonces leerla falla con «permission denied for function member_list».
+-- Consecuencias: la auditoría pintaba «Usuario borrado» en todo lo que hizo una persona,
+-- y faltaba el nombre del vendedor en ventas, justificantes, lista de vendedores y
+-- exportación de la rifa, en Gestión → Uso y en quién anuló un movimiento de Finanzas.
+--
+-- Se devuelve el permiso tal y como estaba antes de la 4.20.3. La función solo da id,
+-- nombre, perfil y si está activo, y solo a quien tiene sesión (auth.uid() is not null).
+-- El aviso de Supabase Advisors «authenticated_security_definer» sobre member_list es
+-- ESPERADO: no volver a quitar este permiso.
+-- =====================================================================
+grant execute on function public.member_list() to authenticated;
