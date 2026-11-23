@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { shrinkImage } from "@/lib/shrink-image";
 import { PAYMENT_METHOD_LABEL } from "@/lib/format";
 import { KIND_LABEL, STATUS_LABEL, TIER_LABEL, type Agreement, type AgreementKind, type Sponsor } from "@/lib/sponsors";
-import type { SponsorState } from "@/app/(app)/admin/patrocinadores/actions";
+import type { SponsorState } from "@/app/(app)/finanzas/patrocinadores/actions";
 import { SponsorLogo } from "./logo";
 
 type A = (s: SponsorState, f: FormData) => Promise<SponsorState>;

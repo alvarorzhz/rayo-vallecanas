@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fetchProfileDefs, profileKey } from "@/lib/roles";
@@ -30,8 +29,7 @@ export default async function UsersPage() {
     <>
       <PageHeader
         title="Usuarios"
-        subtitle="Gestores y jugadores con acceso a la aplicación. Pulsa en una persona para cambiar su perfil, sus permisos o deshabilitar su acceso."
-        actions={<Link href="/admin/perfiles" prefetch className="btn-ghost"><BookOpen size={16} /> Qué hace cada perfil</Link>}
+        subtitle="Gestores y jugadores con acceso a la aplicación. Pulsa en una persona para cambiar su perfil, sus permisos o deshabilitar su acceso. En «Perfiles» ves qué hace cada uno."
       />
       {s.can("users", "create") && (
         <section className="card mb-6">

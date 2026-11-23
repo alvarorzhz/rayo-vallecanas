@@ -44,6 +44,13 @@ const nextConfig: NextConfig = {
   // satori (imágenes para compartir) carga harfbuzz en WebAssembly desde su carpeta: si se empaqueta,
   // no encuentra el .wasm y las imágenes salen por el plan B, más lento
   serverExternalPackages: ["satori"],
+  // 4.30.0 · Los patrocinadores pasaron de Gestión a Finanzas: los enlaces y avisos viejos siguen llegando
+  async redirects() {
+    return [
+      { source: "/admin/patrocinadores", destination: "/finanzas/patrocinadores", permanent: false },
+      { source: "/admin/patrocinadores/:path*", destination: "/finanzas/patrocinadores/:path*", permanent: false },
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

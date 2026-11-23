@@ -178,7 +178,7 @@ export default async function SponsorPage({ params }: { params: Promise<{ id: st
 
   return (
     <>
-      <PageHeader title={sponsor.name} back={{ href: "/admin/patrocinadores", label: "Patrocinadores" }}
+      <PageHeader title={sponsor.name} back={{ href: "/finanzas/patrocinadores", label: "Patrocinadores" }}
         subtitle={<span className="flex flex-wrap items-center gap-1.5">
           <span className={`badge ${sponsor.tier === "main" ? "bg-dorado text-negro" : "bg-black/5 text-negro/70"}`}>{TIER_LABEL[sponsor.tier]}</span>
           {!sponsor.active && <span className="badge bg-black/5 text-negro/60">Antiguo patrocinador</span>}

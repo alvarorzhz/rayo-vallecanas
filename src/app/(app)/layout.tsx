@@ -32,9 +32,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (s.can("news")) items.push({ href: "/la-voz", label: "La Voz del Rayo", icon: "Newspaper", mobile: false });
   // «Mis ventas» va dentro de Sorteos para no cargar la barra de abajo
   if (s.can("lottery_admin") || s.can("lottery_sell")) items.push({ href: "/loteria", label: "Sorteos", icon: "Ticket", also: ["/mis-ventas"] });
-  if (s.can("finances")) items.push({ href: "/finanzas", label: "Finanzas", icon: "Wallet" });
-  // Panel de gestión: usuarios, perfiles, avisos, auditoría y copias de seguridad
-  if (s.can("users") || s.can("lottery_admin", "update") || s.can("sponsors") || s.profile.role === "superadmin")
+  // 4.30.0 · Los patrocinadores viven en Finanzas
+  if (s.can("finances") || s.can("sponsors")) items.push({ href: "/finanzas", label: "Finanzas", icon: "Wallet" });
+  // Panel de gestión: equipo (usuarios y perfiles), avisos, material y, para el superadministrador, control
+  if (s.can("users") || s.can("lottery_admin", "update") || s.can("material") || s.profile.role === "superadmin")
     items.push({ href: "/admin", label: "Gestión", icon: "Settings" });
 
   // Especial Matchday: el día del partido, una tira «Hoy jugamos» arriba en todas las páginas

@@ -92,21 +92,21 @@ export function buildTour(s: Session): TourStep[] {
     steps.push({ key: "sorteos", href: "/loteria", target: "/loteria", icon: "Ticket", title: "Sorteos", text: "La lotería y las rifas del club.", points: p });
   }
 
-  if (s.can("finances")) {
-    const p = ["El saldo de la temporada con los ingresos y los gastos.", "Los informes por categoría y por temporada."];
+  if (s.can("finances") || s.can("sponsors")) {
+    const p = s.can("finances") ? ["El saldo de la temporada con los ingresos y los gastos.", "Los informes por categoría y por temporada."] : [];
     if (s.can("finances", "create")) p.splice(1, 0, "Apunta cada ingreso o gasto con la foto de su justificante.");
+    if (s.can("sponsors")) p.push("Patrocinadores: sus acuerdos, contratos y cobros.");
     steps.push({ key: "finanzas", href: "/finanzas", target: "/finanzas", icon: "Wallet", title: "Finanzas", text: "Las cuentas del club. Los jugadores no tienen acceso.", points: p });
   }
 
   const isSuper = s.profile.role === "superadmin";
-  if (s.can("users") || s.can("lottery_admin", "update") || s.can("sponsors") || s.can("material") || isSuper) {
-    const p: string[] = [];
-    if (s.can("users")) p.push("Usuarios: da de alta a gente nueva y cambia su perfil.", "Perfiles: decide con casillas qué puede hacer cada perfil.");
-    if (s.can("sponsors")) p.push("Patrocinadores: sus acuerdos, contratos y cobros.");
-    if (s.can("material")) p.push("Material: el inventario del club, en qué estado está cada cosa y quién la tiene.");
+  if (s.can("users") || s.can("lottery_admin", "update") || s.can("material") || isSuper) {
+    const p: string[] = ["Arriba, «Para hoy» te dice lo que necesita atención."];
+    if (s.can("users")) p.push("Equipo: da de alta a gente nueva, cambia su perfil y decide con casillas qué puede hacer cada perfil.");
     if (s.can("users", "update") || s.can("lottery_admin", "update")) p.push("Avisos: manda un aviso al móvil del equipo o lanza una votación de sí o no.");
-    if (isSuper) p.push("Auditoría y copias de seguridad (una automática cada lunes), solo para el superadministrador.");
-    steps.push({ key: "gestion", href: "/admin", target: "/admin", icon: "Settings", title: "Gestión", text: "El panel de control del club.", points: p });
+    if (s.can("material")) p.push("Material: el inventario del club, en qué estado está cada cosa y quién la tiene.");
+    if (isSuper) p.push("Control, solo para el superadministrador: el uso de la app, la auditoría y las copias de seguridad (una automática cada lunes).");
+    steps.push({ key: "gestion", href: "/admin", target: "/admin", icon: "Settings", title: "Gestión", text: "El despacho del club, en cuatro cajones.", points: p });
   }
 
   steps.push({

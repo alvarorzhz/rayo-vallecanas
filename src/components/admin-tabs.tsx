@@ -1,39 +1,44 @@
 "use client";
-import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BellRing, BriefcaseBusiness, ChartColumn, DatabaseBackup, Handshake, IdCard, ScrollText, Shirt, Users } from "lucide-react";
 
-const ICONS = { BriefcaseBusiness, ChartColumn, Users, IdCard, BellRing, Handshake, Shirt, ScrollText, DatabaseBackup };
-export type AdminTab = { href: string; label: string; icon: keyof typeof ICONS; exact?: boolean };
+/** Una página dentro de un cajón del despacho. `prefix`: también cuenta lo que cuelga de ella (Auditoría → Accesos, Sesiones). */
+export type DeskPage = { href: string; label: string; prefix?: boolean };
+/** Cajón del despacho: una o varias páginas que se eligen con un selector. */
+export type DeskDrawer = { key: string; pages: DeskPage[] };
 
-/** Pestañas de archivador del despacho: la activa sobresale y se une a la hoja. */
-export function AdminTabs({ tabs }: { tabs: AdminTab[] }) {
+const isOn = (path: string, p: DeskPage) => path === p.href || (!!p.prefix && path.startsWith(p.href + "/"));
+
+/**
+ * 4.30.0 · Sin tira de pestañas: en la portada de cada cajón sale «← Despacho» para volver a la mesa y,
+ * si el cajón tiene varias páginas (Equipo, Control), un selector para pasar de una a otra.
+ * En la mesa y en las fichas de detalle (que ya llevan su propio «←») no sale nada.
+ */
+export function DeskNav({ drawers }: { drawers: DeskDrawer[] }) {
   const path = usePathname();
-  const nav = useRef<HTMLElement>(null);
-  // En el móvil no caben todas: la pestaña abierta se desliza a la vista (sin mover la página)
-  useEffect(() => {
-    const box = nav.current;
-    const on = box?.querySelector<HTMLElement>("[aria-current]");
-    if (box && on) box.scrollTo({ left: on.offsetLeft - (box.clientWidth - on.offsetWidth) / 2, behavior: "smooth" });
-  }, [path]);
+  const drawer = drawers.find((d) => d.pages.some((p) => isOn(path, p)));
+  if (!drawer) return null;
   return (
-    <nav ref={nav} aria-label="Gestión" className="-mx-4 mb-6 overflow-x-auto overflow-y-hidden overscroll-x-contain px-4 sm:mx-0 sm:px-0">
-      <div className="folder-tabs flex w-max min-w-full items-end gap-1">
-        {tabs.map((t) => {
-          const Icon = ICONS[t.icon];
-          const active = t.exact ? path === t.href : path === t.href || path.startsWith(t.href + "/");
-          return (
-            <Link key={t.href} href={t.href} prefetch
-              aria-current={active ? "page" : undefined}
-              className={`folder-tab flex items-center gap-1.5 whitespace-nowrap px-3 pb-2.5 pt-2 text-sm font-bold ${
-                active ? "tab-on bg-negro text-white" : "bg-white text-negro/70 ring-1 ring-black/10 hover:text-rojo"
-              }`}>
-              <Icon size={16} className={active ? "text-dorado" : ""} /> {t.label}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-3">
+      <Link href="/admin" prefetch
+        className="group inline-flex items-center gap-1.5 rounded-full bg-white py-1 pl-2 pr-3 text-[13px] font-bold text-negro/70 ring-1 ring-black/10 transition hover:text-rojo hover:ring-rojo/40 active:scale-95">
+        <span aria-hidden className="transition-transform duration-200 group-hover:-translate-x-0.5">←</span> Despacho
+      </Link>
+      {drawer.pages.length > 1 && (
+        <nav aria-label="Apartados" className="flex w-full gap-1 rounded-xl bg-black/5 p-1 sm:w-max">
+          {drawer.pages.map((p) => {
+            const on = isOn(path, p);
+            return (
+              <Link key={p.href} href={p.href} prefetch replace scroll={false} aria-current={on ? "page" : undefined}
+                className={`flex-1 whitespace-nowrap rounded-lg px-4 py-1.5 text-center text-sm font-bold transition sm:flex-none ${
+                  on ? "tab-on bg-negro text-white shadow" : "text-negro/65 hover:text-rojo"
+                }`}>
+                {p.label}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
+    </div>
   );
 }

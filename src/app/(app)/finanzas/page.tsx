@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { BarChart3, Minus, Plus, Scale, Settings2, List, TrendingDown, TrendingUp, Wallet } from "lucide-react";
-import { requirePerm } from "@/lib/session";
+import { BarChart3, Handshake, Minus, Plus, Scale, Settings2, List, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { redirect } from "next/navigation";
+import { getSession, requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha } from "@/lib/format";
 import { Empty, Hero, PageHeader } from "@/components/ui";
@@ -11,16 +12,22 @@ export const metadata = { title: "Finanzas" };
 
 export default async function FinancesPage({ searchParams }: { searchParams: Promise<{ t?: string }> }) {
   const sp = await searchParams;
+  // 4.30.0 · Quien solo lleva patrocinadores entra directo a ellos
+  const pre = await getSession();
+  if (!pre.can("finances") && pre.can("sponsors")) redirect("/finanzas/patrocinadores");
   const s = await requirePerm("finances");
   const supabase = await createClient();
   const season = sp.t && seasonRange(sp.t) ? sp.t : seasonOf();
   const range = seasonRange(season)!;
 
-  const [{ data: sum }, { data: seasons }, { data: latest }, { data: byCat }] = await Promise.all([
+  const canSponsors = s.can("sponsors");
+  const [{ data: sum }, { data: seasons }, { data: latest }, { data: byCat }, sponsorsNow, dealsNow] = await Promise.all([
     supabase.rpc("finance_summary", { p_from: range.from, p_to: range.to }),
     supabase.rpc("finance_seasons"),
     supabase.from("finance_movements").select(MOVEMENT_SELECT).eq("season", season).order("op_date", { ascending: false }).order("created_at", { ascending: false }).limit(8).returns<MovementRow[]>(),
     supabase.from("finance_movements").select("kind, amount_cents, category:finance_categories(name)").eq("season", season).is("voided_at", null).returns<{ kind: string; amount_cents: number; category: { name: string } | null }[]>(),
+    canSponsors ? supabase.from("sponsors").select("id", { count: "exact", head: true }).eq("active", true) : null,
+    canSponsors ? supabase.from("sponsor_agreements").select("id", { count: "exact", head: true }).eq("season", season).eq("status", "signed") : null,
   ]);
   const summary = sum as FinanceSummary;
   const result = summary.income_cents - summary.expense_cents;
@@ -81,6 +88,19 @@ export default async function FinancesPage({ searchParams }: { searchParams: Pro
         </dl>
       </Hero>
       {result < 0 && <p className="-mt-3 mb-6 text-xs font-semibold text-rojo">Esta temporada se ha gastado más de lo ingresado.</p>}
+      {/* 4.30.0 · Los patrocinadores, con el dinero */}
+      {canSponsors && (
+        <Link href="/finanzas/patrocinadores" prefetch className="card group mb-6 flex items-center gap-3 sm:max-w-md">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gris text-rojo ring-1 ring-black/5 transition group-hover:bg-rojo group-hover:text-white"><Handshake size={22} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="sport block text-lg font-black leading-tight group-hover:text-rojo">Patrocinadores</span>
+            <span className="block truncate text-xs text-negro/65">
+              {sponsorsNow?.count ?? 0} {sponsorsNow?.count === 1 ? "actual" : "actuales"} · {dealsNow?.count ?? 0} {dealsNow?.count === 1 ? "acuerdo firmado" : "acuerdos firmados"} en {season}
+            </span>
+          </span>
+          <span aria-hidden className="text-negro/30 transition group-hover:translate-x-0.5 group-hover:text-rojo">→</span>
+        </Link>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <section className="card min-w-0">

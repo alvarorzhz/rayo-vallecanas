@@ -38,10 +38,10 @@ export const USAGE_AREAS: UsageArea[] = [
   { key: "finanzas", label: "Resumen de finanzas", group: "Finanzas" },
   { key: "movimientos", label: "Movimientos", group: "Finanzas" },
   { key: "informes", label: "Informes", group: "Finanzas" },
+  { key: "patrocinadores", label: "Patrocinadores", group: "Finanzas" },
   { key: "mesa", label: "Mesa del despacho", group: "Gestión" },
   { key: "usuarios", label: "Usuarios", group: "Gestión" },
   { key: "perfiles", label: "Perfiles", group: "Gestión" },
-  { key: "patrocinadores", label: "Patrocinadores", group: "Gestión" },
   { key: "avisos", label: "Avisos", group: "Gestión" },
   { key: "auditoria", label: "Auditoría", group: "Gestión" },
   { key: "copia", label: "Copia de seguridad", group: "Gestión" },
@@ -57,7 +57,7 @@ const SUB: Record<string, Record<string, string>> = {
   partidos: { estadisticas: "estadisticas", porra: "porra", liga: "liga", rivales: "rivales", resumen: "resumen", nuevo: "partido_editar" },
   plantilla: { cuotas: "cuotas", documentos: "documentos", historia: "historia", "nueva-temporada": "temporada", nuevo: "jugador_editar" },
   "la-voz": { nueva: "redaccion", entrevista: "entrevista" },
-  finanzas: { movimientos: "movimientos", informes: "informes", nuevo: "movimientos", ajustes: "finanzas" },
+  finanzas: { movimientos: "movimientos", informes: "informes", nuevo: "movimientos", ajustes: "finanzas", patrocinadores: "patrocinadores" },
   admin: { usuarios: "usuarios", perfiles: "perfiles", patrocinadores: "patrocinadores", avisos: "avisos", auditoria: "auditoria", copia: "copia", uso: "uso" },
 };
 

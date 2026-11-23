@@ -28,8 +28,8 @@ const msg = (e: unknown) => {
 };
 
 function refresh(sponsorId?: string) {
-  revalidatePath("/admin/patrocinadores");
-  if (sponsorId) revalidatePath(`/admin/patrocinadores/${sponsorId}`);
+  revalidatePath("/finanzas/patrocinadores");
+  if (sponsorId) revalidatePath(`/finanzas/patrocinadores/${sponsorId}`);
   revalidatePath("/");
 }
 
@@ -98,7 +98,7 @@ export async function saveSponsor(id: string | null, _: SponsorState, f: FormDat
     return { error: msg(e) };
   }
   refresh(sid!);
-  if (!id) redirect(`/admin/patrocinadores/${sid}`);
+  if (!id) redirect(`/finanzas/patrocinadores/${sid}`);
   return { ok: "Ficha guardada" };
 }
 
@@ -109,7 +109,7 @@ export async function deleteSponsor(id: string): Promise<SponsorState> {
   const { data: old } = await supabase.storage.from("sponsor-logos").list(id);
   if (old?.length) await supabase.storage.from("sponsor-logos").remove(old.map((o) => `${id}/${o.name}`));
   refresh();
-  redirect("/admin/patrocinadores");
+  redirect("/finanzas/patrocinadores");
 }
 
 // ---------------------------------------------------------------- Acuerdos
