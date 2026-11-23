@@ -17,6 +17,15 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.28.3",
+    date: "2026-11-23",
+    title: "Empate en el MVP: manda la nota",
+    changes: [
+      "MVP del partido: si dos o más empatan a votos, gana el que tenga mejor nota media en ese partido (cuenta si le han puntuado al menos 2 personas).",
+      "Si también empatan a nota, gana el que más goles metió. Y si aún siguen empatados, lo elige un gestor, como hasta ahora.",
+    ],
+  },
+  {
     version: "4.28.2",
     date: "2026-11-23",
     title: "Vuelven los nombres",

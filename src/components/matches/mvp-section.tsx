@@ -95,7 +95,7 @@ export function MvpSection({ m, board, pool, canEdit, gala = null }: { m: MatchR
       </div>
 
       {winner && <Winner p={winner} votes={board.tally?.[winner.player_id] ?? 0} picked={board.picked} gala={gala} matchId={m.id} />}
-      {stage === "tie" && <p className="rounded-xl bg-dorado/15 p-3 text-sm font-semibold">Empate a votos y a goles. {canEdit ? "Elige tú al MVP entre los empatados:" : "Lo decide un gestor."}</p>}
+      {stage === "tie" && <p className="rounded-xl bg-dorado/15 p-3 text-sm font-semibold">Empate a votos, nota y goles. {canEdit ? "Elige tú al MVP entre los empatados:" : "Lo decide un gestor."}</p>}
       {stage === "empty" && <p className="rounded-xl bg-gris p-3 text-sm">Nadie votó. {canEdit ? "Puedes elegir tú al MVP:" : ""}</p>}
       {(stage === "tie" || stage === "empty") && canEdit && <MvpChoices choices={toPick} mine={null} action={pickMvp.bind(null, m.id)} mode="pick" />}
 
