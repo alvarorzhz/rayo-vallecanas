@@ -41,7 +41,7 @@ export async function sponsorReminders(today: string) {
     return await sendPush((users ?? []) as string[], {
       title: "🤝 Patrocinadores",
       body: lines.slice(0, 3).join(" · ") + (lines.length > 3 ? ` · y ${lines.length - 3} más` : ""),
-      url: one.size === 1 ? `/admin/patrocinadores/${[...one][0]}` : "/admin/patrocinadores",
+      url: one.size === 1 ? `/finanzas/patrocinadores/${[...one][0]}` : "/finanzas/patrocinadores",
       tag: "patrocinadores",
     });
   } catch {

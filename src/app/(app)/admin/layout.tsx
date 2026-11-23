@@ -1,28 +1,26 @@
 import { getSession } from "@/lib/session";
-import { AdminTabs, type AdminTab } from "@/components/admin-tabs";
-import { OfficePlaque } from "@/components/admin-office";
+import { DeskNav, type DeskDrawer } from "@/components/admin-tabs";
 
-/** Panel «Gestión» (el despacho del club): la mesa, usuarios, perfiles, patrocinadores, material, avisos y, para superadministradores, auditoría y copias. */
+/**
+ * Panel «Gestión» (el despacho del club). 4.30.0 · Cuatro cajones en vez de diez pestañas:
+ * Equipo (usuarios y perfiles), Avisos, Material y, solo superadministradores, Control (uso, auditoría y copia).
+ * Los patrocinadores viven en Finanzas.
+ */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
-  const isSuper = s.profile.role === "superadmin";
-  const tabs: AdminTab[] = [{ href: "/admin", label: "Mesa", icon: "BriefcaseBusiness", exact: true }];
-  if (s.can("users")) {
-    tabs.push({ href: "/admin/usuarios", label: "Usuarios", icon: "Users" });
-    tabs.push({ href: "/admin/perfiles", label: "Perfiles", icon: "IdCard" });
-  }
-  if (s.can("sponsors")) tabs.push({ href: "/admin/patrocinadores", label: "Patrocinadores", icon: "Handshake" });
-  if (s.can("material")) tabs.push({ href: "/admin/material", label: "Material", icon: "Shirt" });
-  if (s.can("users", "update") || s.can("lottery_admin", "update")) tabs.push({ href: "/admin/avisos", label: "Avisos", icon: "BellRing" });
-  if (isSuper) {
-    tabs.push({ href: "/admin/uso", label: "Uso", icon: "ChartColumn" });
-    tabs.push({ href: "/admin/auditoria", label: "Auditoría", icon: "ScrollText" });
-    tabs.push({ href: "/admin/copia", label: "Copia de seguridad", icon: "DatabaseBackup" });
-  }
+  const drawers: DeskDrawer[] = [];
+  if (s.can("users")) drawers.push({ key: "equipo", pages: [{ href: "/admin/usuarios", label: "Personas" }, { href: "/admin/perfiles", label: "Perfiles" }] });
+  if (s.can("users", "update") || s.can("lottery_admin", "update")) drawers.push({ key: "avisos", pages: [{ href: "/admin/avisos", label: "Avisos" }] });
+  if (s.can("material")) drawers.push({ key: "material", pages: [{ href: "/admin/material", label: "Material" }] });
+  if (s.profile.role === "superadmin")
+    drawers.push({ key: "control", pages: [
+      { href: "/admin/uso", label: "Uso" },
+      { href: "/admin/auditoria", label: "Auditoría", prefix: true },
+      { href: "/admin/copia", label: "Copia" },
+    ] });
   return (
     <>
-      <OfficePlaque />
-      <AdminTabs tabs={tabs} />
+      <DeskNav drawers={drawers} />
       {children}
     </>
   );

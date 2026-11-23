@@ -20,7 +20,7 @@ function refresh() {
   // 4.20.2 · Una cuota o un patrocinio enlazados también cambian Cuotas, «Mi cuota» y Patrocinadores
   revalidatePath("/plantilla", "layout");
   revalidatePath("/perfil");
-  revalidatePath("/admin/patrocinadores", "layout");
+  revalidatePath("/finanzas/patrocinadores", "layout");
 }
 
 function movementFromForm(f: FormData) {

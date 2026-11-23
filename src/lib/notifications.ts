@@ -87,6 +87,6 @@ export function areaOf(url: string | null, tag: string | null): NoticeArea {
   if (u.startsWith("/partidos")) return "matches";
   if (u.startsWith("/la-voz")) return "news";
   if (u.startsWith("/loteria")) return "lottery";
-  if (u.startsWith("/admin/patrocinadores")) return "sponsors";
+  if (u.startsWith("/finanzas/patrocinadores")) return "sponsors";
   return "manual";
 }

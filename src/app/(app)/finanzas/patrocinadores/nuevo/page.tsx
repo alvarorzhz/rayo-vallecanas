@@ -9,7 +9,7 @@ export default async function NewSponsorPage() {
   await requirePerm("sponsors", "create");
   return (
     <>
-      <PageHeader title="Nuevo patrocinador" subtitle="Después podrás añadirle el acuerdo de la temporada." back={{ href: "/admin/patrocinadores", label: "Patrocinadores" }} />
+      <PageHeader title="Nuevo patrocinador" subtitle="Después podrás añadirle el acuerdo de la temporada." back={{ href: "/finanzas/patrocinadores", label: "Patrocinadores" }} />
       <section className="card"><SponsorForm action={saveSponsor.bind(null, null)} /></section>
     </>
   );

@@ -17,6 +17,17 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.30.0",
+    date: "2026-11-23",
+    title: "Gestión, más fácil",
+    changes: [
+      { staff: "Gestión ya no tiene diez pestañas: entras y eliges entre cuatro cajones grandes. Equipo (usuarios y perfiles), Avisos (avisos y votaciones), Material y, solo para el superadministrador, Control (uso, auditoría y copia)." },
+      { staff: "Arriba de Gestión, «Para hoy»: lo que necesita atención, como el material que falta, las votaciones abiertas o una copia de seguridad que no ha salido." },
+      { staff: "Dentro de cada cajón, «← Despacho» para volver y un selector para pasar de una parte a otra (Personas · Perfiles, Uso · Auditoría · Copia)." },
+      { staff: "Patrocinadores se ha mudado a Finanzas, junto a los cobros de sus acuerdos. Los avisos y enlaces de antes te llevan al sitio nuevo." },
+    ],
+  },
+  {
     version: "4.29.1",
     date: "2026-11-23",
     title: "Votaciones en directo",

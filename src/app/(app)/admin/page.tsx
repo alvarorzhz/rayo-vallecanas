@@ -1,44 +1,43 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BellRing, ChartColumn, DatabaseBackup, Handshake, IdCard, ScrollText, Shirt, Users, type LucideIcon } from "lucide-react";
+import { BellRing, CheckCircle2, ShieldCheck, Shirt, Users, type LucideIcon } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchProfileDefs } from "@/lib/roles";
 import { madridDay } from "@/lib/dates";
 import { madridDayRange } from "@/lib/audit";
-import { seasonOf } from "@/lib/finance";
 import { fecha } from "@/lib/format";
-import { PageHeader } from "@/components/ui";
+import { OfficePlaque } from "@/components/admin-office";
 import { shortfall, tally, type MaterialLot } from "@/lib/material";
 
 export const metadata = { title: "Gestión" };
 
 type Folder = {
   href: string; title: string; icon: LucideIcon; tab: string;
-  value: string | number; unit: string; detail?: string;
+  value: string | number; unit: string; detail?: string; alert?: string; parts?: string[];
 };
+type Todo = { href: string; text: string };
 
-/** Mesa del despacho: un cajón por cada sección de Gestión, con lo más importante a la vista. */
+/**
+ * Mesa del despacho. 4.30.0 · Cuatro cajones (Equipo, Avisos, Material, Control) y, arriba,
+ * «Para hoy» con lo que pide atención. Los patrocinadores pasaron a Finanzas.
+ */
 export default async function OfficeDesk() {
   const s = await getSession();
   const isSuper = s.profile.role === "superadmin";
   const canUsers = s.can("users");
-  const canSponsors = s.can("sponsors");
   const canNotices = s.can("users", "update") || s.can("lottery_admin", "update");
   const canMaterial = s.can("material");
-  if (!canUsers && !canSponsors && !canNotices && !canMaterial && !isSuper) redirect("/?error=permiso");
+  if (!canUsers && !canNotices && !canMaterial && !isSuper) redirect(s.can("sponsors") ? "/finanzas/patrocinadores" : "/?error=permiso");
 
   const supabase = await createClient();
   const admin = createAdminClient();
-  const season = seasonOf();
   const none = Promise.resolve(null);
-  const [people, defs, custom, sponsors, deals, subs, lastNotice, openPolls, todayLog, lastBackup, usage7, material] = await Promise.all([
+  const [people, defs, custom, subs, lastNotice, openPolls, todayLog, lastBackup, usage7, material] = await Promise.all([
     canUsers ? supabase.from("profiles").select("active") : none,
     canUsers ? fetchProfileDefs(supabase) : none,
     canUsers ? supabase.from("user_permissions").select("user_id") : none,
-    canSponsors ? supabase.from("sponsors").select("id", { count: "exact", head: true }).eq("active", true) : none,
-    canSponsors ? supabase.from("sponsor_agreements").select("id", { count: "exact", head: true }).eq("season", season).eq("status", "signed") : none,
     canNotices ? admin.from("push_subscriptions").select("user_id") : none,
     canNotices ? supabase.from("push_log").select("title, created_at").order("created_at", { ascending: false }).limit(1).maybeSingle() : none,
     canNotices ? supabase.from("polls").select("id", { count: "exact", head: true }).gt("closes_at", new Date().toISOString()) : none,
@@ -49,58 +48,82 @@ export default async function OfficeDesk() {
   ]);
 
   const folders: Folder[] = [];
+  const todo: Todo[] = [];
   if (canUsers) {
     const rows = people?.data ?? [];
     const off = rows.filter((p) => !p.active).length;
-    folders.push({ href: "/admin/usuarios", title: "Usuarios", icon: Users, tab: "var(--color-rojo)", value: rows.length - off, unit: rows.length - off === 1 ? "persona con acceso" : "personas con acceso",
-      detail: off ? `${off} sin acceso` : "Fichero de carnets del club" });
     const customized = new Set((custom?.data ?? []).map((c) => c.user_id)).size;
-    folders.push({ href: "/admin/perfiles", title: "Perfiles", icon: IdCard, tab: "var(--color-dorado)", value: defs?.length ?? 0, unit: "perfiles",
-      detail: customized ? `${customized} ${customized === 1 ? "persona" : "personas"} con permisos a medida` : "Qué hace y qué ve cada uno" });
-  }
-  if (canSponsors) {
-    folders.push({ href: "/admin/patrocinadores", title: "Patrocinadores", icon: Handshake, tab: "var(--color-negro)", value: sponsors?.count ?? 0, unit: "patrocinadores actuales",
-      detail: `${deals?.count ?? 0} ${deals?.count === 1 ? "acuerdo firmado" : "acuerdos firmados"} en ${season}` });
-  }
-  if (canMaterial && material) {
-    folders.push({ href: "/admin/material", title: "Material", icon: Shirt, tab: "var(--color-dorado)", value: material.usable, unit: material.usable === 1 ? "pieza en buen estado" : "piezas en buen estado",
-      detail: material.short ? `Falta material en ${material.short} ${material.short === 1 ? "artículo" : "artículos"}` : material.items ? `${material.items} ${material.items === 1 ? "artículo" : "artículos"} en el almacén` : "El almacén del club" });
+    folders.push({ href: "/admin/usuarios", title: "Equipo", icon: Users, tab: "var(--color-rojo)", value: rows.length - off, unit: rows.length - off === 1 ? "persona con acceso" : "personas con acceso",
+      detail: [off ? `${off} sin acceso` : null, `${defs?.length ?? 0} perfiles`, customized ? `${customized} con permisos a medida` : null].filter(Boolean).join(" · "),
+      parts: ["Altas y accesos", "Perfiles y permisos"] });
   }
   if (canNotices) {
     const withPush = new Set((subs?.data ?? []).map((r) => r.user_id)).size;
     const last = lastNotice?.data;
-    folders.push({ href: "/admin/avisos", title: "Avisos", icon: BellRing, tab: "var(--color-rojo)", value: withPush, unit: withPush === 1 ? "persona con avisos" : "personas con avisos",
-      detail: openPolls?.count ? `${openPolls.count} ${openPolls.count === 1 ? "votación abierta" : "votaciones abiertas"}` : last ? `Último: ${last.title}` : "Tablón de anuncios del equipo" });
+    const polls = openPolls?.count ?? 0;
+    folders.push({ href: "/admin/avisos", title: "Avisos", icon: BellRing, tab: "var(--color-rojo)", value: withPush, unit: withPush === 1 ? "persona con avisos" : "personas con avisos activados",
+      detail: last ? `Último: ${last.title}` : "Manda un aviso o lanza una votación", parts: ["Aviso", "Votación sí/no"] });
+    if (polls) todo.push({ href: "/votaciones", text: `${polls} ${polls === 1 ? "votación abierta" : "votaciones abiertas"}` });
+  }
+  if (canMaterial && material) {
+    folders.push({ href: "/admin/material", title: "Material", icon: Shirt, tab: "var(--color-dorado)", value: material.usable, unit: material.usable === 1 ? "pieza en buen estado" : "piezas en buen estado",
+      detail: material.items ? `${material.items} ${material.items === 1 ? "artículo" : "artículos"} en el almacén` : "El almacén del club",
+      alert: material.short ? `Falta material en ${material.short} ${material.short === 1 ? "artículo" : "artículos"}` : undefined });
+    if (material.short) todo.push({ href: "/admin/material", text: `Falta material en ${material.short} ${material.short === 1 ? "artículo" : "artículos"} del almacén` });
   }
   if (isSuper) {
     const active7 = new Set((usage7?.data ?? []).map((r) => r.user_id)).size;
-    folders.push({ href: "/admin/uso", title: "Uso", icon: ChartColumn, tab: "var(--color-rojo)", value: active7, unit: active7 === 1 ? "persona esta semana" : "personas esta semana",
-      detail: "Qué pantallas usa de verdad el equipo" });
-    folders.push({ href: "/admin/auditoria", title: "Auditoría", icon: ScrollText, tab: "var(--color-dorado)", value: todayLog?.count ?? 0, unit: todayLog?.count === 1 ? "anotación hoy" : "anotaciones hoy",
-      detail: "Libro de registro: quién cambió qué" });
     const b = lastBackup?.data;
-    folders.push({ href: "/admin/copia", title: "Copia de seguridad", icon: DatabaseBackup, tab: "var(--color-negro)", value: b ? fecha(b.created_at) : "Nunca", unit: "última copia",
-      detail: "Archivador con todos los datos" });
+    folders.push({ href: "/admin/uso", title: "Control", icon: ShieldCheck, tab: "var(--color-negro)", value: active7, unit: active7 === 1 ? "persona esta semana" : "personas esta semana",
+      detail: `${todayLog?.count ?? 0} ${todayLog?.count === 1 ? "cambio" : "cambios"} hoy · última copia ${b ? fecha(b.created_at) : "nunca"}`,
+      parts: ["Uso", "Auditoría", "Copia"] });
+    // La copia automática sale cada lunes: si pasan más de 8 días, algo ha fallado
+    if (!b || Date.now() - new Date(b.created_at).getTime() > 8 * 86400_000)
+      todo.push({ href: "/admin/copia", text: b ? `La última copia de seguridad es del ${fecha(b.created_at)}` : "Aún no hay ninguna copia de seguridad" });
   }
 
   return (
     <>
-      <PageHeader title="Mesa del despacho" subtitle="Todo lo que se lleva desde la directiva, a mano. Abre la carpeta que necesites." />
-      <ul className="stagger grid gap-x-4 gap-y-5 sm:grid-cols-2 xl:grid-cols-3">
+      <OfficePlaque />
+      <section aria-label="Para hoy" className={`mb-5 rounded-2xl px-4 py-3 ring-1 ${todo.length ? "bg-dorado/15 ring-dorado/50" : "bg-white ring-black/5"}`}>
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-negro/60">Para hoy</p>
+        {todo.length ? (
+          <ul className="mt-1 space-y-1">
+            {todo.map((t) => (
+              <li key={t.href + t.text}>
+                <Link href={t.href} prefetch className="group flex items-center gap-2 text-sm font-semibold hover:text-rojo">
+                  <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-rojo" />
+                  <span className="min-w-0 flex-1">{t.text}</span>
+                  <span aria-hidden className="text-negro/30 transition group-hover:translate-x-0.5 group-hover:text-rojo">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-negro/70"><CheckCircle2 size={16} className="text-green-700" /> Todo en orden, nada pendiente.</p>
+        )}
+      </section>
+      <ul className="stagger grid gap-x-4 gap-y-5 sm:grid-cols-2">
         {folders.map((f) => (
           <li key={f.href}>
             <Link href={f.href} prefetch style={{ "--tab": f.tab } as React.CSSProperties}
               className="card desk-folder group flex h-full items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gris text-rojo ring-1 ring-black/5 transition group-hover:bg-rojo group-hover:text-white">
-                <f.icon size={22} />
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gris text-rojo ring-1 ring-black/5 transition group-hover:bg-rojo group-hover:text-white">
+                <f.icon size={24} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="sport text-lg font-black leading-tight group-hover:text-rojo">{f.title}</p>
+                <p className="sport text-xl font-black leading-tight group-hover:text-rojo">{f.title}</p>
                 <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
                   <span className="sport text-3xl font-black leading-none tabular-nums">{f.value}</span>
                   <span className="text-xs font-semibold text-negro/60">{f.unit}</span>
                 </p>
+                {f.alert && <p className="mt-1.5 text-xs font-bold text-rojo">{f.alert}</p>}
                 {f.detail && <p className="mt-1.5 truncate text-xs text-negro/65">{f.detail}</p>}
+                {f.parts && (
+                  <p className="mt-2 flex flex-wrap gap-1">
+                    {f.parts.map((p) => <span key={p} className="rounded-full bg-gris px-2 py-0.5 text-[11px] font-bold text-negro/70">{p}</span>)}
+                  </p>
+                )}
               </div>
               <span aria-hidden className="self-center text-negro/30 transition group-hover:translate-x-0.5 group-hover:text-rojo">→</span>
             </Link>

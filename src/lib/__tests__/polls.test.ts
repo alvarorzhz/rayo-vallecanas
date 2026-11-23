@@ -71,6 +71,6 @@ test("cada aviso enviado cae en su sección", () => {
   assert.equal(areaOf("/partidos/liga", "liga-sincronizacion"), "league");
   assert.equal(areaOf("/partidos/123", "convocatoria-123"), "matches");
   assert.equal(areaOf("/loteria/venta/1", null), "lottery");
-  assert.equal(areaOf("/admin/patrocinadores", "patrocinadores"), "sponsors");
+  assert.equal(areaOf("/finanzas/patrocinadores", "patrocinadores"), "sponsors");
   assert.equal(areaOf("/", null), "manual");
 });

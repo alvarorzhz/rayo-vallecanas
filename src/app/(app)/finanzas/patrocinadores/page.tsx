@@ -56,7 +56,7 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
     const st = main ? shownStatus(main, today) : null;
     return (
       <li key={sp.id} className="anim-rise" style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}>
-        <Link href={`/admin/patrocinadores/${sp.id}`} prefetch
+        <Link href={`/finanzas/patrocinadores/${sp.id}`} prefetch
           className="card contract-clip group flex h-full flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:ring-rojo/40">
           <div className="flex items-center gap-3">
             <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 ring-1 ring-black/10">
@@ -100,13 +100,13 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Patrocinadores" subtitle={<>Fichas, acuerdos y cobros de la temporada <b>{season}</b>. Cada cobro se apunta como ingreso en Finanzas.</>}
-        actions={s.can("sponsors", "create") ? <Link href="/admin/patrocinadores/nuevo" prefetch className="btn-primary"><Plus size={18} /> Nuevo patrocinador</Link> : undefined} />
+      <PageHeader title="Patrocinadores" back={s.can("finances") ? { href: "/finanzas", label: "Finanzas" } : undefined} subtitle={<>Fichas, acuerdos y cobros de la temporada <b>{season}</b>. Cada cobro se apunta como ingreso en Finanzas.</>}
+        actions={s.can("sponsors", "create") ? <Link href="/finanzas/patrocinadores/nuevo" prefetch className="btn-primary"><Plus size={18} /> Nuevo patrocinador</Link> : undefined} />
 
       {seasons.length > 1 && (
         <div className="mb-4 flex flex-wrap gap-1">
           {seasons.map((t) => (
-            <Link key={t} href={`/admin/patrocinadores?temporada=${t.replace("/", "-")}`} prefetch
+            <Link key={t} href={`/finanzas/patrocinadores?temporada=${t.replace("/", "-")}`} prefetch
               className={`rounded-lg px-2.5 py-1.5 text-xs font-bold ring-1 ${t === season ? "bg-rojo text-white ring-rojo" : "bg-white text-negro/70 ring-black/10 hover:ring-rojo"}`}>{t}</Link>
           ))}
         </div>

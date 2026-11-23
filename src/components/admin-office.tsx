@@ -20,7 +20,7 @@ export function OfficePlaque() {
         <img src="/escudo.png" alt="" width={40} height={40} className="h-10 w-10 shrink-0 object-contain drop-shadow" />
         <div className="min-w-0">
           <p className="truncate text-[10px] font-bold uppercase tracking-[0.25em] text-dorado">Rayo Vallecañas · Gestión</p>
-          <p className="sport truncate text-xl font-black leading-tight sm:text-2xl">Despacho del club</p>
+          <h1 className="sport truncate text-xl font-black leading-tight sm:text-2xl">Despacho del club</h1>
         </div>
       </div>
       <div aria-label={`Hoy es ${weekday} ${day} de ${month}`} role="img"
