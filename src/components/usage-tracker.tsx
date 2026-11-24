@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { trackUsageAction } from "@/app/account-actions";
 import { isStandalone } from "@/lib/push-client";
 import { deviceKind, usageArea } from "@/lib/usage";
 
@@ -23,9 +23,9 @@ export function UsageTracker() {
     const t = setTimeout(() => {
       last.set(area, Date.now());
       // El dispositivo y si usa la app instalada, solo la primera vez en cada apertura de la app
-      const extra = sentDevice ? {} : { p_device: deviceKind(navigator.userAgent, navigator.maxTouchPoints), p_installed: isStandalone() };
+      const first = !sentDevice;
       sentDevice = true;
-      createClient().rpc("track_usage", { p_area: area, ...extra }).then(() => {}, () => {});
+      trackUsageAction(area, first ? deviceKind(navigator.userAgent, navigator.maxTouchPoints) : undefined, first ? isStandalone() : undefined).catch(() => {});
     }, 800);
     return () => clearTimeout(t);
   }, [path]);

@@ -83,3 +83,16 @@ export const ERROR_KIND_LABEL: Record<ErrorKind, string> = {
   js: "Fallo sin pantalla de error",
   repintado: "Repintado al arrancar (418)",
 };
+
+/**
+ * 4.30.4 · Vigía de arranque (va en el <head>, sin depender de React ni de los estilos).
+ * Si a los 15 s la app no ha arrancado (window.__rvReady lo pone RegisterSW), deja apuntado el atasco
+ * y ofrece «Volver a intentar» y «Reparar la app» en vez de dejar a la persona mirando una pantalla quieta.
+ */
+export const STUCK_SCRIPT = `(function(){setTimeout(function(){if(window.__rvReady||document.getElementById("rv-atasco"))return;
+try{var er=(window.__rvErr||[]).slice(0,3).map(function(e){return e.message}).join(" | ");navigator.sendBeacon&&navigator.sendBeacon("/api/fallo-carga",new Blob([JSON.stringify({path:location.pathname,errors:er,online:navigator.onLine})],{type:"application/json"}));}catch(e){}
+var d=document.createElement("div");d.id="rv-atasco";d.setAttribute("role","alert");
+d.setAttribute("style","position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:2147483647;background:#080808;color:#fff;border-radius:16px;padding:16px;font:15px/1.35 system-ui,-apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.4);max-width:420px;margin:0 auto");
+var b="display:inline-block;margin:10px 8px 0 0;padding:9px 14px;border-radius:10px;font-weight:700;text-decoration:none;";
+d.innerHTML='<b style="display:block;font-size:16px">La app está tardando en cargar</b><span style="opacity:.75">Suele ser la cobertura. Si vuelve a pasar, repárala: no se borra nada tuyo.</span><br><a href="" style="'+b+'background:#d6001c;color:#fff">Volver a intentar</a><a href="/reparar" style="'+b+'background:#fff;color:#080808">Reparar la app</a>';
+(document.body||document.documentElement).appendChild(d);},15000);})();`;

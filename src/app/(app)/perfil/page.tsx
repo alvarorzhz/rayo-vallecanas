@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { removeAvatar, uploadAvatar } from "./actions";
 import { fetchMyFee } from "@/lib/squad-queries";
 import { MyFeeCard } from "@/components/squad/my-fee";
+import { ChangePassword } from "@/components/change-password";
 
 export const metadata = { title: "Mi perfil" };
 
@@ -67,6 +68,7 @@ export default async function ProfilePage() {
           </dl>
           <p className="mt-3 text-xs text-negro/65">Para cambiar tu nombre o teléfono, pídeselo a un gestor.</p>
         </section>
+        <ChangePassword email={p.email} />
         <section className="card">
           <h2 className="mb-1 font-bold">Tutorial</h2>
           <p className="mb-3 text-sm text-negro/65">Un recorrido rápido por todas las secciones de la app.</p>

@@ -78,22 +78,11 @@ export function ResetPasswordForm({ action }: { action: A }) {
 
 export function InviteForm({ action, profiles }: { action: A; profiles: ProfileOption[] }) {
   const [state, formAction] = useActionState(action, undefined);
-  const [mode, setMode] = useState<"password" | "email">("password");
   if (state?.password) return <AccessResult state={state} again="Dar de alta a otro" />;
   return (
     <form action={formAction} className="grid gap-3 sm:grid-cols-2">
-      <fieldset className="sm:col-span-2 grid gap-2 sm:grid-cols-2">
-        <legend className="label">¿Cómo le damos acceso?</legend>
-        {([
-          ["password", "Contraseña provisional", "Recomendado. La app crea una contraseña y se la mandas por WhatsApp."],
-          ["email", "Invitación por email", "Le llega un correo para crear su contraseña (puede tardar o no llegar)."],
-        ] as const).map(([v, t, h]) => (
-          <label key={v} className={`flex cursor-pointer gap-3 rounded-xl border-2 p-3 ${mode === v ? "border-rojo bg-rojo/5" : "border-negro/10"}`}>
-            <input type="radio" name="mode" value={v} checked={mode === v} onChange={() => setMode(v)} className="mt-1 accent-rojo" />
-            <span><span className="block font-bold">{t}</span><span className="block text-sm text-negro/60">{h}</span></span>
-          </label>
-        ))}
-      </fieldset>
+      {/* 4.30.4 · Solo alta con contraseña provisional (la invitación por email se quitó: el correo gratuito manda muy pocos por hora) */}
+      <p className="sm:col-span-2 text-sm text-negro/65">La app le crea una contraseña provisional y se la mandas por WhatsApp. Al entrar, elegirá la suya.</p>
       <input name="full_name" required className="input" placeholder="Nombre y apellidos" />
       <input name="email" type="email" required className="input" placeholder="Email" />
       <input name="phone" type="tel" className="input" placeholder="Teléfono (opcional)" />
@@ -102,7 +91,7 @@ export function InviteForm({ action, profiles }: { action: A; profiles: ProfileO
       </select>
       <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3">
         <FormMessage state={state} />
-        <SubmitButton className="btn-primary" pendingText="Creando…">{mode === "email" ? "Enviar invitación" : "Dar de alta"}</SubmitButton>
+        <SubmitButton className="btn-primary" pendingText="Creando…">Dar de alta</SubmitButton>
       </div>
     </form>
   );

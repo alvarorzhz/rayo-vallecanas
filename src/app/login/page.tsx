@@ -6,7 +6,8 @@ export const metadata = { title: "Iniciar sesión" };
 const ERRORS: Record<string, string> = {
   inactivo: "Tu acceso a la app está deshabilitado. Habla con un gestor del club.",
   sesion: "Tu sesión se ha cerrado. Vuelve a entrar con tu email y contraseña.",
-  enlace: "El enlace no es válido o ha caducado. Solicita uno nuevo.",
+  enlace: "El enlace no es válido o ha caducado (cada enlace sirve una sola vez). Pide otro en «¿Has olvidado la contraseña?».",
+  caducada: "Tu sesión ha caducado. Vuelve a entrar con tu email y contraseña.",
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {

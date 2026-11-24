@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { logAppErrorAction } from "@/app/account-actions";
 import { cleanMessage, cleanPath, isNoise, kindOf, type ErrorKind } from "@/lib/error-log";
 import { deviceKind } from "@/lib/usage";
 
@@ -23,12 +23,10 @@ export function reportAppError(kind: ErrorKind, message: string, digest?: string
   const key = `${kind}|${path}|${msg}`;
   if (sent.has(key) || sent.size > 20) return;
   sent.add(key);
-  createClient()
-    .rpc("log_app_error", {
-      p_kind: kind, p_path: path, p_message: msg, p_digest: digest ?? null,
-      p_version: window.__rvVersion ?? null, p_device: deviceKind(navigator.userAgent, navigator.maxTouchPoints),
-    })
-    .then(() => {}, () => {});
+  logAppErrorAction({
+    kind, path, message: msg, digest: digest ?? null,
+    version: window.__rvVersion ?? null, device: deviceKind(navigator.userAgent, navigator.maxTouchPoints),
+  }).catch(() => {});
 }
 
 function handle(e: Buffered) {

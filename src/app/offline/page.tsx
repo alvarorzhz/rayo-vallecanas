@@ -11,6 +11,9 @@ export default function Offline() {
         Puedes consultar las pantallas que ya habías abierto. Para registrar ventas o cobros necesitas conexión, así
         evitamos duplicados.
       </p>
+      {/* 4.30.4 · También sale si la conexión va tan lenta que la página no llega: un toque para reintentar */}
+      <a href="" className="btn-primary mt-2">Volver a intentar</a>
+      <a href="/reparar" className="text-sm text-white/60 underline">¿Sigue sin cargar? Reparar la app</a>
     </main>
   );
 }

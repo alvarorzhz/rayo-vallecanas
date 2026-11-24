@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, CalendarDays, Home, Settings, Shirt, Sparkles, Ticket, Trophy, UserRound, Wallet, X, Newspaper } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { saveSeenAction } from "@/app/account-actions";
 import type { TourStep } from "@/lib/tour";
 import { APP_VERSION } from "@/lib/changelog";
 
@@ -55,11 +55,7 @@ export function Tour({ steps, version, seen }: { steps: TourStep[]; version: num
     } catch {}
     if (seen >= version) return;
     // Se guarda en la cuenta para que no vuelva a salir en otros móviles u ordenadores
-    const supabase = createClient();
-    supabase.auth
-      .updateUser({ data: { tutorial: version } })
-      .then(({ error }) => (error ? null : supabase.auth.refreshSession()))
-      .catch(() => {});
+    saveSeenAction({ tutorial: version }).catch(() => {});
   }, [seen, version]);
 
   const step = i === null ? null : steps[i];
