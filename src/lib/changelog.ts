@@ -17,6 +17,13 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.30.2",
+    date: "2026-11-24",
+    title: "Pequeños retoques",
+    quiet: true,
+    changes: ["Pequeños retoques en la previa y en la porra."],
+  },
+  {
     version: "4.30.1",
     date: "2026-11-23",
     title: "Pequeños retoques",

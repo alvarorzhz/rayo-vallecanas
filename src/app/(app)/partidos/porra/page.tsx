@@ -45,6 +45,7 @@ export default async function PorraPage({ searchParams }: { searchParams: Promis
                 <li key={r.user_id} className="anim-rise min-w-0" style={{ animationDelay: `${i * 90}ms` }}>
                   <div className="text-3xl">{MEDAL[r.pos - 1] ?? ""}</div>
                   <div className="sport truncate text-lg font-black leading-tight">{r.name}</div>
+                  {r.nostradamus && <div className="truncate text-[10px] font-black text-[#C9A7FF]">🔮 Nostradamus</div>}
                   <div className={`mx-auto mt-1 rounded-t-xl bg-white/10 px-2 pt-2 ${r.pos === 1 ? "h-20" : r.pos === 2 ? "h-14" : "h-10"}`}>
                     <span className="sport text-2xl font-black text-dorado tabular-nums">{r.points}</span><span className="text-xs text-white/70"> pts</span>
                   </div>
@@ -70,7 +71,7 @@ export default async function PorraPage({ searchParams }: { searchParams: Promis
                 {table.map((r) => (
                   <tr key={r.user_id} className={r.user_id === s.user.id ? "bg-dorado/15 font-bold" : ""}>
                     <td className="px-3 py-2 tabular-nums text-negro/60">{r.pos}</td>
-                    <td className="max-w-0 truncate py-2 font-semibold">{r.name}</td>
+                    <td className="max-w-0 truncate py-2 font-semibold">{r.name}{r.nostradamus && <span title="Dos resultados clavados: Nostradamus durante una semana" aria-label="Nostradamus" className="ml-1.5 rounded-full bg-[#4B1F8F] px-1.5 py-0.5 text-[10px] font-black text-[#F4D35E]">🔮</span>}</td>
                     <td className="py-2 text-center tabular-nums">{r.exact}</td>
                     <td className="py-2 text-center tabular-nums">{r.sign}</td>
                     <td className="py-2 text-center tabular-nums text-negro/60">{r.played}</td>
