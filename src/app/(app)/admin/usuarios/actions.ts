@@ -2,7 +2,6 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { siteUrl } from "@/lib/receipt";
 import { tempPassword } from "@/lib/password";
 import { EDITABLE_MODULES, isUuid } from "@/lib/roles";
 
@@ -34,18 +33,11 @@ export async function inviteUser(_: ActionState, f: FormData): Promise<ActionSta
   if (!email || !full_name) return { error: "Nombre y email son obligatorios" };
 
   const admin = createAdminClient();
-  const byEmail = str(f, "mode") === "email";
-  // Sin dominio propio el email de Supabase tiene un límite muy bajo, así que por defecto
-  // se crea el usuario con una contraseña provisional que el gestor le pasa por WhatsApp.
-  const password = byEmail ? undefined : tempPassword();
-  const { data, error } = byEmail
-    ? await admin.auth.admin.inviteUserByEmail(email, {
-        data: { full_name, phone },
-        redirectTo: `${siteUrl()}/auth/callback?next=/auth/nueva-clave`,
-      })
-    : await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name, phone } });
+  // 4.30.4 · Siempre con contraseña provisional que el gestor le pasa por WhatsApp (sin invitación por email)
+  const password = tempPassword();
+  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name, phone } });
   if (error) return { error: /already|registered|exists/i.test(error.message) ? "Ya existe un usuario con ese email" : error.message };
-  if (!byEmail) await admin.from("profiles").update({ must_change_password: true }).eq("id", data.user.id);
+  await admin.from("profiles").update({ must_change_password: true }).eq("id", data.user.id);
 
   // El rol se asigna con la sesión del usuario actual: la BD comprueba que puede hacerlo.
   if (target.role !== "player" || target.custom_role_id) {
@@ -53,7 +45,6 @@ export async function inviteUser(_: ActionState, f: FormData): Promise<ActionSta
     if (roleErr) return { error: `Usuario creado, pero no se pudo asignar el perfil: ${roleErr.message}` };
   }
   revalidatePath("/admin/usuarios");
-  if (byEmail) return { ok: `Invitación enviada a ${email}` };
   return { ok: `Usuario creado: ${full_name}`, password, name: full_name, phone, email };
 }
 
@@ -122,7 +113,7 @@ export async function setUserAccess(uid: string, enable: boolean) {
   revalidatePath(`/admin/usuarios/${uid}`);
 }
 
-/** Crea una contraseña provisional nueva (por si la olvida o no le llega el email). */
+/** Crea una contraseña provisional nueva (por si la olvida o no le llega el correo de recuperación). */
 export async function resetPassword(uid: string): Promise<ActionState> {
   const supabase = await createClient();
   const { data: allowed } = await supabase.rpc("has_perm", { p_module: "users", p_action: "update" });

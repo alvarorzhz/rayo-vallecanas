@@ -52,6 +52,8 @@ export function ErrorScreen({ error, reset, full = false }: { error: Error & { d
           <button type="button" onClick={() => window.location.assign("/")} className="btn-ghost">Ir a Inicio</button>
         </div>
       )}
+      {/* 4.30.4 · Si se repite, limpiar lo guardado en el dispositivo suele arreglarlo */}
+      {!reloading && <a href="/reparar" className="mt-4 text-sm text-negro/55 underline hover:text-rojo">¿Sigue pasando? Reparar la app</a>}
       {error.digest && <p className="mt-6 text-xs text-negro/40">Código del fallo: {error.digest}</p>}
     </div>
   );

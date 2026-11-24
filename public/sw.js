@@ -3,7 +3,7 @@
 // - Páginas: red primero; sin conexión se muestra la última versión vista o /offline.
 // - Cualquier petición que no sea GET (ventas, cobros…) va SIEMPRE a la red: nunca se encola
 //   ni se reintenta offline, para evitar duplicidades.
-const VERSION = "rv-v1";
+const VERSION = "rv-v2";
 const STATIC = `${VERSION}-static`;
 const PAGES = `${VERSION}-pages`;
 const PRECACHE = ["/offline", "/escudo.png", "/icons/icon-192.png", "/icons/icon-512.png"];
@@ -43,20 +43,35 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          if (res.ok && !res.redirected) {
-            const copy = res.clone();
-            caches.open(PAGES).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => caches.match(req).then((hit) => hit || caches.match("/offline"))),
-    );
-  }
+  if (req.mode === "navigate") event.respondWith(navigate(req));
 });
+
+// 4.30.4 · Si la red no contesta en este tiempo, se enseña la última versión vista (o «Sin conexión», con botón
+// para reintentar) en vez de dejar la pantalla en blanco esperando.
+const NAV_TIMEOUT = 10000;
+
+function navigate(req) {
+  const fromCache = () => caches.match(req).then((hit) => hit || caches.match("/offline"));
+  const net = fetch(req).then((res) => {
+    // Safari (la app instalada del iPhone) no acepta que el service worker le dé una página que llegó tras
+    // una redirección (p. ej. «/» → «/login» con la sesión caducada) y se queda en blanco: se rehace como
+    // una redirección normal para que el navegador la siga él.
+    if (res.redirected) return Response.redirect(res.url, 303);
+    if (res.ok && res.type === "basic") {
+      const copy = res.clone();
+      caches.open(PAGES).then((c) => c.put(req, copy));
+    }
+    return res;
+  });
+  let timer;
+  const slow = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(null), NAV_TIMEOUT);
+  });
+  return Promise.race([net, slow])
+    .then((res) => res || fromCache().then((hit) => hit || net))
+    .catch(() => fromCache().then((hit) => hit || Response.error()))
+    .finally(() => clearTimeout(timer));
+}
 
 // ------------------------------------------------------------------ Notificaciones push
 self.addEventListener("push", (event) => {

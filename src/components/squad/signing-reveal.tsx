@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Sparkles, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { saveSeenAction } from "@/app/account-actions";
 import { FutCard } from "@/components/squad/player-card";
 import { Jersey } from "@/components/squad/jersey";
 import { Confetti } from "@/components/matches/matchday-fx";
@@ -205,10 +205,7 @@ export function SigningsOnEnter({ entries, init, now, me }: { entries: RosterEnt
 
   const save = useCallback((mark: string) => {
     try { localStorage.setItem(`${KEY}:${me}`, mark); } catch {}
-    const supabase = createClient();
-    supabase.auth.updateUser({ data: { fichajes: mark } })
-      .then(({ error }) => (error ? null : supabase.auth.refreshSession()))
-      .catch(() => {});
+    saveSeenAction({ fichajes: mark }).catch(() => {});
   }, [me]);
 
   useEffect(() => {

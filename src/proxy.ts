@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/offline", "/privacidad", "/api/cron", "/api/convocatoria", "/api/votacion", "/rifa", "/api/rifa", "/noticias"];
+const PUBLIC_PATHS = ["/login", "/auth", "/offline", "/privacidad", "/api/cron", "/api/convocatoria", "/api/votacion", "/rifa", "/api/rifa", "/noticias", "/reparar"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -34,6 +34,9 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = path === "/" ? "" : `?next=${encodeURIComponent(path)}`;
+    // 4.30.4 · Tenía sesión y ya no vale (caducó o se cerró): se le dice en el login en vez de mandarle sin más
+    const hadSession = request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
+    if (hadSession) url.searchParams.set("error", "caducada");
     return NextResponse.redirect(url);
   }
   if (user && path === "/login") {

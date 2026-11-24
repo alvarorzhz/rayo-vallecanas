@@ -17,6 +17,21 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.30.4",
+    date: "2026-11-24",
+    title: "Entrar sin líos",
+    changes: [
+      "¿Has olvidado la contraseña? Además del enlace por email, ahora hay un botón «Avisar a un gestor»: les llega un aviso y te mandan una contraseña provisional por WhatsApp.",
+      "Ya puedes cambiar tu contraseña desde Mi perfil.",
+      "Botón del ojo para ver lo que escribes en la contraseña.",
+      "Mensajes más claros al entrar: demasiados intentos seguidos, sin cobertura, sesión caducada o enlace ya usado.",
+      "Si la app tarda mucho en abrir, ya no se queda la pantalla quieta: puedes volver a intentarlo o repararla con un toque, sin perder nada.",
+      "La sesión ya no se cierra sola de vez en cuando al volver a la app.",
+      { staff: "En Gestión → Equipo el alta de usuarios es siempre con contraseña provisional por WhatsApp (se quita la invitación por email)." },
+      { staff: "Si a alguien no le carga la app, mándale este enlace: rayo-vallecanas.vercel.app/reparar" },
+    ],
+  },
+  {
     version: "4.30.3",
     date: "2026-11-24",
     title: "Listos para la Clausura",
