@@ -76,7 +76,7 @@ export function goalProgress(kind: GoalKind, target: number, f: GoalFacts): Goal
       return {
         value: pos, target, done,
         pct: done ? 100 : inside ? 80 : Math.max(8, (target / pos) * 70),
-        now: `${pos}º ahora`,
+        now: f.league.finished ? `Acabó ${pos}º` : `${pos}º ahora`,
         hint: done ? null : f.league.finished ? (inside ? null : "La liga ya ha terminado") : inside ? "Va por buen camino" : `Hay que subir ${plural(pos - target, "puesto", "puestos")}`,
       };
     }

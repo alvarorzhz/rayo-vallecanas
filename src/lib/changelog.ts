@@ -17,6 +17,17 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.30.3",
+    date: "2026-11-24",
+    title: "Listos para la Clausura",
+    changes: [
+      { staff: "Repaso del paso del Apertura a la Clausura: la app avisa cuando el Rayo aparece en la liga nueva, se cambia en Partidos → Liga y el Apertura se queda con su clasificación final, sus estadísticas y su resumen." },
+      { staff: "En Estadísticas, el puesto del balance dice de qué liga es (Apertura o Clausura), porque los puntos de al lado son de toda la temporada." },
+      { staff: "El objetivo de puesto del Apertura, cuando ya ha terminado, dice «Acabó 11º» en vez de «11º ahora»." },
+      { staff: "Al cambiar de liga ya no vuelven a salir en «Nuevos en la liga» los jugadores que habíais descartado." },
+    ],
+  },
+  {
     version: "4.30.2",
     date: "2026-11-24",
     title: "Pequeños retoques",

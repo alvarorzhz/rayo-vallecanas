@@ -264,6 +264,10 @@ export type LeagueState = {
 
 type LeagueCfg = { competition: string; team: string; team_name: string | null };
 
+/** Al cambiar de liga solo se conservan los jugadores descartados (o nada, si no hay). */
+const ignoredOnly = (summary: Record<string, unknown> | null) =>
+  Array.isArray(summary?.ignoredPlayers) && summary.ignoredPlayers.length ? { ignoredPlayers: summary.ignoredPlayers } : null;
+
 /**
  * Guardar la competición va en dos pasos: primero se lee y se enseña lo que se va a traer;
  * al confirmar, se guarda. Cambiar de liga no borra nada de la anterior.
@@ -276,8 +280,10 @@ export async function saveLeague(_: LeagueState, f: FormData): Promise<LeagueSta
   if (!competition) return { error: "Pega la dirección de la competición en futormes (la que acaba en «?itm=…»)" };
   try {
     const supabase = await createClient();
-    const { data: cfg } = await supabase.from("league_sync").select("competition, team, team_name").eq("id", 1).maybeSingle<LeagueCfg>();
+    const { data: cfg } = await supabase.from("league_sync").select("competition, team, team_name, last_summary").eq("id", 1)
+      .maybeSingle<LeagueCfg & { last_summary: Record<string, unknown> | null }>();
     const change = !!cfg && cfg.competition !== competition;
+    const prevSummary = cfg?.last_summary ?? null;
     // Nuestro equipo: el elegido a mano, el que ya teníamos si es la misma competición o, si no, por su nombre
     const r = await previewLeague(competition, { id: str(f, "team") || (cfg && !change ? cfg.team : null), name: cfg?.team_name });
     if ("teams" in r) return { error: "No encuentro a Rayo Vallecañas en esa competición: elige nuestro equipo.", teams: r.teams, competition };
@@ -289,7 +295,8 @@ export async function saveLeague(_: LeagueState, f: FormData): Promise<LeagueSta
     const { error } = await supabase.from("league_sync").upsert({
       id: 1, provider: "futormes", ...row, updated_by: s.user.id,
       // Liga nueva: el resumen y los avisos de la anterior ya no valen
-      ...(change ? { last_synced_at: null, last_summary: null } : {}),
+      // (4.30.3: menos los jugadores que se descartaron en «Nuevos en la liga», que siguen sin ser de los nuestros)
+      ...(change ? { last_synced_at: null, last_summary: ignoredOnly(prevSummary) } : {}),
     });
     if (error) throw error;
     const { error: e2 } = await supabase.from("league_competitions").upsert({ competition, name: row.competition_name, team: row.team, team_name: row.team_name });
