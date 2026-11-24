@@ -546,9 +546,23 @@ html.rv-noche { --color-gris: #E3E6F0; }
 .noche-apagado { transition: background-color 0.6s; }
 .noche-buenas { animation: noche-in 0.9s ease-out both; }
 
+/* 4.30.2 · Sorpresa de la porra: la bola de cristal */
+.oraculo-fondo { background: radial-gradient(ellipse at 50% 35%, #3B1D6E, #160830 60%, #0A0418); animation: noche-in 0.5s ease-out both; }
+.oraculo-bola {
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.35), transparent 30%), radial-gradient(circle at 50% 55%, #8E5BE8, #4B1F8F 55%, #22094A);
+  box-shadow: 0 0 60px 12px rgba(160, 110, 255, 0.45), inset 0 -18px 40px rgba(0, 0, 0, 0.45);
+  animation: oraculo-latido 3s ease-in-out infinite;
+}
+@keyframes oraculo-latido { 0%, 100% { box-shadow: 0 0 50px 8px rgba(160, 110, 255, 0.4), inset 0 -18px 40px rgba(0, 0, 0, 0.45); } 50% { box-shadow: 0 0 80px 20px rgba(190, 140, 255, 0.6), inset 0 -18px 40px rgba(0, 0, 0, 0.45); } }
+.oraculo-niebla { background: conic-gradient(from 0deg, transparent, rgba(233, 216, 255, 0.28), transparent 40%, rgba(233, 216, 255, 0.2), transparent 75%); filter: blur(10px); animation: oraculo-giro 6s linear infinite; }
+@keyframes oraculo-giro { to { transform: rotate(360deg); } }
+.oraculo-cara { animation: oraculo-aparece 2.2s ease-out 0.3s both; }
+@keyframes oraculo-aparece { 0% { opacity: 0; filter: blur(12px); transform: scale(0.6); } 100% { opacity: 1; filter: blur(0); transform: none; } }
+.oraculo-chispa { opacity: 0; animation: egg-twinkle 2.6s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .noche-tarjeta { opacity: 1; transform: translate(calc(-50% + var(--x)), 0) rotate(var(--tilt)); }
-  .egg-bolt, .egg-flash, .egg-spark, .egg-twinkle, .egg-final-bg, .lg-holo, .lg-charging, .noche-z, .noche-tarjeta, .noche-cielo { animation: none !important; }
+  .egg-bolt, .egg-flash, .egg-spark, .egg-twinkle, .egg-final-bg, .lg-holo, .lg-charging, .noche-z, .noche-tarjeta, .noche-cielo, .oraculo-bola, .oraculo-niebla, .oraculo-cara, .oraculo-chispa { animation: none !important; }
   .egg-bolt, .egg-flash, .egg-spark { display: none; }
   .egg-grito { animation: egg-grito 2.4s linear both !important; animation-duration: 2.4s !important; }
 }

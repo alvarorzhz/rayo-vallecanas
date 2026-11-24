@@ -5,6 +5,8 @@ import { MatchdayDetails, MatchdayHero } from "@/components/matches/matchday";
 import { fetchMatchWeather } from "@/lib/weather";
 import { MyCallupCard, callupOpen } from "@/components/matches/callup-section";
 import { PorraCard } from "@/components/matches/porra";
+import { OracleEgg } from "@/components/matches/oracle-egg";
+import { fetchMyOracle } from "@/lib/porra-queries";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha } from "@/lib/format";
@@ -51,6 +53,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   // 4.26.0 · Cápsula del tiempo: la gala recién abierta o la invitación a escribir
   const capsuleP = canMatches ? fetchCapsuleHome(supabase, s.user.id).catch(() => null) : Promise.resolve(null);
+  // 4.30.2 · Sorpresa de la porra: bola de cristal y mote de «Nostradamus»
+  const oracleP = canMatches ? fetchMyOracle(supabase, s.user.id, season).catch(() => null) : Promise.resolve(null);
   // 4.19.0 · Inicio más rápido: todo lo que no depende de nada se pide a la vez (antes iba una consulta detrás de otra)
   const [campaign, roster, bdayRows, [matchday, focus], [display, showcase, board], [news, newsCount, pendingChronicle], ended, myInterviews, myPlayerId, goalsWon] = await Promise.all([
     // Campaña activa más reciente visible para el usuario (solo mientras está abierta)
@@ -96,7 +100,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   ]);
   // Revisa si se ha cumplido algún objetivo (por detrás, sin frenar Inicio)
   if (canMatches) after(() => checkSeasonGoals());
-  const capsule = await capsuleP;
+  const [capsule, oracle] = await Promise.all([capsuleP, oracleP]);
   // Si se acaba de abrir la cápsula, avisa al equipo (por detrás; solo una vez)
   if (capsule?.stage === "open") after(() => capsuleTick());
 
@@ -133,7 +137,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             // Votación del MVP (si ya toca, hace el recuento antes de leer el acta)
             final ? fetchMvpBoard(supabase, focus.m.id) : Promise.resolve(null),
             final ? Promise.resolve([]) : fetchCallups(supabase, focus.m),
-            final ? Promise.resolve({ lastH2H: null, topScorer: null, hot: [], ranks: null, stake: null }) : fetchMatchdayPreview(supabase, focus.m),
+            final ? Promise.resolve({ lastH2H: null, topScorer: null, hot: [], ranks: null, stake: null, dato: null }) : fetchMatchdayPreview(supabase, focus.m),
             final && focus.m.report_saved_at ? fetchReport(supabase, focus.m) : Promise.resolve(null),
             // El tiempo en Salamanca a la hora del partido: la víspera y el mismo día
             focus.phase === "eve" || focus.phase === "day" ? fetchMatchWeather(focus.m.match_date, focus.m.kickoff) : Promise.resolve(null),
@@ -195,13 +199,16 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const sponsors = display.show_home ? ((showcase.data ?? []) as Showcase[]) : [];
 
   const firstName = s.profile.full_name.split(" ")[0];
-  const greeting = `¡Hola, ${firstName}! ⚡`;
+  const greeting = oracle?.nostradamus ? "¡Hola, Nostradamus! 🔮" : `¡Hola, ${firstName}! ⚡`;
   const recentForm = form(matchday?.recent ?? []);
   const sellNow = campaign && campaign.status === "active" && canSell;
 
 
   return (
     <>
+      {oracle?.oracle && (
+        <OracleEgg oracle={oracle.oracle} name={me ? shirtName(me.player) : firstName} photo={me?.player.photo_url ?? s.profile.avatar_url} />
+      )}
       {error === "permiso" && (
         <div className="mb-4 rounded-xl bg-rojo/10 p-3 text-sm font-medium text-rojo">No tienes permiso para acceder a esa sección.</div>
       )}
@@ -220,7 +227,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           {!afterMatch && (md.phase === "eve" || md.phase === "day") && !(md.myPlayerId && md.callups.some((c) => c.player_id === md.myPlayerId) && callupOpen(md.m)) && <PorraCard m={md.m} />}
           <MatchdayDetails m={md.m} phase={md.phase} callups={md.callups} myPlayerId={md.myPlayerId} canEdit={s.can("matches", "update")}
             recent={matchday?.recent ?? []} lastH2H={md.lastH2H} topScorer={md.topScorer} report={md.report} mvp={md.mvp} gala={md.gala}
-            hot={md.hot} ranks={md.ranks} stake={md.stake} />
+            hot={md.hot} ranks={md.ranks} stake={md.stake} dato={md.dato} />
         </>
       ) : matchday?.next ? (
         <>

@@ -1,3 +1,4 @@
+import type { Dato } from "@/lib/absurdo";
 import Link from "next/link";
 import { ArrowRight, CalendarPlus, ClipboardCheck, ClipboardList, Flame, MapPin, Megaphone, Radio, Shirt, Star, Swords, Trophy } from "lucide-react";
 import {
@@ -217,12 +218,14 @@ function WeatherChip({ w, time }: { w: MatchWeather; time: string | null }) {
 type Scorer = { goals: number; number: number | null; position: string; player: Player };
 
 /** Debajo de la portada: tu convocatoria, los convocados y la previa (o el resumen si ya se jugó). */
-export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent, lastH2H, topScorer, report, mvp = null, gala = null, hot = [], ranks = null, stake = null }: {
+export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent, lastH2H, topScorer, report, mvp = null, gala = null, hot = [], ranks = null, stake = null, dato = null }: {
   m: MatchRow; phase: MatchdayPhase; callups: CallupRow[]; myPlayerId: string | null; canEdit: boolean;
   recent: MatchRow[]; lastH2H: MatchRow | null; topScorer: Scorer | null; report: ReportView | null; mvp?: MvpBoard | null;
   gala?: (GalaInfo & { votes: number; picked: boolean }) | null;
   /** La previa: jugadores en forma, posición de los dos equipos y qué nos jugamos. */
   hot?: HotPlayer[]; ranks?: MatchRanks | null; stake?: string | null;
+  /** 4.30.2 · Sorpresa: el dato del Departamento de Estadística Absurda. */
+  dato?: Dato | null;
 }) {
   const formRows = [...recent].filter((x) => x.id !== m.id).slice(0, 5).reverse();
   const run = streak(recent);
@@ -335,11 +338,25 @@ export function MatchdayDetails({ m, phase, callups, myPlayerId, canEdit, recent
           {lastH2H ? <MatchLine m={lastH2H} /> : <p className="text-sm text-negro/65">Primer enfrentamiento (en la app). ¡A estrenarnos con victoria!</p>}
         </div>
         <InForm hot={hot} top={topScorer} />
+        {dato && <DatoAbsurdo dato={dato} />}
       </section>
     </div>
   );
 }
 
+
+/** Un dato con pinta de serio y ningún sentido. Se sella como «oficial» con asterisco. */
+function DatoAbsurdo({ dato }: { dato: Dato }) {
+  return (
+    <aside className="relative overflow-hidden rounded-xl border border-dashed border-negro/25 bg-[#FBF7E9] p-3 pr-4">
+      <span aria-hidden className="absolute -right-2 top-2 rotate-12 rounded border-2 border-rojo/60 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-rojo/70">Oficial*</span>
+      <p className="flex items-center gap-1.5 pr-14 text-[11px] font-bold uppercase tracking-wider text-negro/60">📊 Departamento de Estadística Absurda</p>
+      <p className="mt-1.5 text-sm font-semibold leading-snug">{dato.text}</p>
+      {dato.now && <p className="mt-1 text-sm font-black text-rojo">{dato.now}</p>}
+      <p className="mt-2 text-[11px] italic text-negro/55">*No es oficial. Fiabilidad: ninguna. Pero por si acaso.</p>
+    </aside>
+  );
+}
 
 /** «Tu partido»: lo que hizo el usuario según el acta. */
 function MyMatchCard({ app, report }: { app: ReportView["appearances"][number]; report: ReportView }) {

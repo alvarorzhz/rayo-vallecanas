@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { shirtName } from "@/lib/squad";
 import { porraOpen, porraPoints, porraTable, type Prediction } from "@/lib/porra";
 import type { Match } from "@/lib/matches";
+import { todayMadrid } from "@/lib/matches";
+import { nostradamusSet, oracleFor, type Oracle, type PlayedMatch } from "@/lib/nostradamus";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
 export type PorraName = { name: string; avatar: string | null };
@@ -59,5 +61,23 @@ export async function fetchPorraSeason(supabase: DB, season: string) {
     : { data: [] as Prediction[] };
   const table = porraTable(preds ?? [], (matches ?? []) as { id: string; status: string; goals_for: number | null; goals_against: number | null }[]);
   const names = await porraNames(table.map((r) => r.user_id));
-  return { table: table.map((r) => ({ ...r, ...(names.get(r.user_id) ?? { name: "—", avatar: null }) })), matches: ids.length };
+  // 4.30.2 · Sorpresa: quien lleva dos resultados clavados, «Nostradamus» durante una semana
+  const nostra = nostradamusSet(preds ?? [], (matches ?? []) as PlayedMatch[], todayMadrid());
+  return { table: table.map((r) => ({ ...r, ...(names.get(r.user_id) ?? { name: "—", avatar: null }), nostradamus: nostra.has(r.user_id) })), matches: ids.length };
+}
+
+/**
+ * 4.30.2 · Sorpresa de la porra: la bola de cristal si he clavado un resultado en los últimos días
+ * y si me toca el mote de «Nostradamus». Solo mis pronósticos (los demás no hacen falta).
+ */
+export async function fetchMyOracle(supabase: DB, userId: string, season: string): Promise<{ oracle: Oracle | null; nostradamus: boolean }> {
+  const { data } = await supabase.from("match_predictions")
+    .select("match_id, user_id, goals_for, goals_against, match:matches!inner(id, match_date, status, goals_for, goals_against, season, rival:rivals!inner(name))")
+    .eq("user_id", userId).eq("match.season", season).eq("match.status", "played")
+    .returns<(Prediction & { match: PlayedMatch & { rival: { name: string } } })[]>();
+  const rows = data ?? [];
+  const today = todayMadrid();
+  const matches = rows.map((r) => ({ ...r.match, rival: r.match.rival.name }));
+  const oracle = oracleFor(userId, rows, matches, today);
+  return { oracle, nostradamus: nostradamusSet(rows, matches, today).has(userId) };
 }

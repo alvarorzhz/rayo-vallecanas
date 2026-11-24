@@ -3,7 +3,8 @@ import type { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
 import { byKickoff, todayMadrid, type Match, type MatchRow, type Rival } from "@/lib/matches";
 import { sortCallups, type Callup, type CallupRow } from "@/lib/callups";
-import { sortRoster, type Player, type SquadStatus } from "@/lib/squad";
+import { shirtName, sortRoster, type Player, type SquadStatus } from "@/lib/squad";
+import { datoAbsurdo, type Dato, type HistMatch } from "@/lib/absurdo";
 import type { Appearance, MatchGoal, ReportPlayer, ReportView } from "@/lib/reports";
 import { getStandings } from "@/lib/league-table";
 import { matchRanks, stakes } from "@/lib/standings";
@@ -86,7 +87,46 @@ export async function fetchMatchdayPreview(supabase: DB, m: MatchRow) {
 
   const ranks = standings ? matchRanks(standings.table.rows, standings.us, [m], m.season).get(m.id) ?? null : null;
   const stake = standings && ranks ? stakes(standings.table.rows, standings.us, ranks.rival, m.rival.name) : null;
-  return { lastH2H: last?.[0] ?? null, topScorer: top?.[0] ?? null, hot, ranks, stake };
+  const dato = await fetchDatoAbsurdo(supabase, m).catch(() => null);
+  return { lastH2H: last?.[0] ?? null, topScorer: top?.[0] ?? null, hot, ranks, stake, dato };
+}
+
+/** 4.30.2 · El dato del Departamento de Estadística Absurda para la previa (sorpresa, sin anunciar). */
+async function fetchDatoAbsurdo(supabase: DB, m: MatchRow): Promise<Dato | null> {
+  const { data: played } = await supabase.from("matches").select("id, match_date, kickoff, goals_for, goals_against, rival:rivals!inner(name)")
+    .eq("status", "played").not("goals_for", "is", null).not("goals_against", "is", null)
+    .order("match_date", { ascending: false }).limit(80)
+    .returns<{ id: string; match_date: string; kickoff: string | null; goals_for: number; goals_against: number; rival: { name: string } }[]>();
+  if (!played || played.length < 4) return null;
+  const ids = played.map((x) => x.id);
+  const [{ data: goals }, { data: yes }] = await Promise.all([
+    supabase.from("match_goals").select("match_id, scorer_id, assist_id, sort, created_at").in("match_id", ids)
+      .returns<{ match_id: string; scorer_id: string | null; assist_id: string | null; sort: number; created_at: string }[]>(),
+    supabase.from("match_callups").select("match_id, player_id, replied_at").in("match_id", [...ids, m.id]).eq("reply", "yes").not("replied_at", "is", null)
+      .returns<{ match_id: string; player_id: string; replied_at: string }[]>(),
+  ]);
+  const first = new Map<string, { player_id: string; replied_at: string }>();
+  for (const c of yes ?? []) {
+    const f = first.get(c.match_id);
+    if (!f || c.replied_at < f.replied_at) first.set(c.match_id, c);
+  }
+  const byMatch = new Map<string, typeof goals>();
+  for (const g of goals ?? []) byMatch.set(g.match_id, [...(byMatch.get(g.match_id) ?? []), g]);
+  const hist: HistMatch[] = played.map((x) => {
+    const gs = (byMatch.get(x.id) ?? []).sort((a, b) => a.sort - b.sort || a.created_at.localeCompare(b.created_at));
+    return {
+      id: x.id, date: x.match_date, kickoff: x.kickoff, rival: x.rival.name, gf: x.goals_for, ga: x.goals_against,
+      firstYes: first.get(x.id)?.player_id ?? null, firstScorer: gs[0]?.scorer_id ?? null,
+      assisters: [...new Set(gs.map((g) => g.assist_id).filter((a): a is string => !!a))],
+    };
+  });
+  const people = new Set<string>();
+  for (const h of hist) for (const id of [h.firstYes, h.firstScorer, ...h.assisters]) if (id) people.add(id);
+  const { data: ps } = people.size
+    ? await supabase.from("players").select("id, first_name, last_name, nickname").in("id", [...people]).returns<Pick<Player, "id" | "first_name" | "last_name" | "nickname">[]>()
+    : { data: [] as Pick<Player, "id" | "first_name" | "last_name" | "nickname">[] };
+  const names = new Map((ps ?? []).map((p) => [p.id, shirtName(p)]));
+  return datoAbsurdo(hist, { id: m.id, date: m.match_date, kickoff: m.kickoff, rival: m.rival.name, firstYes: first.get(m.id)?.player_id ?? null }, names);
 }
 
 /** Lo justo para la tira «Hoy jugamos» de todas las páginas. */
