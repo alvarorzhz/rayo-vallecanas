@@ -150,11 +150,14 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
 }
 
 async function leagueRank(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: l } = await supabase.from("league_sync").select("competition, team").eq("id", 1).maybeSingle<{ competition: string | null; team: string | null }>();
+  const { data: l } = await supabase.from("league_sync").select("competition, team, competition_name").eq("id", 1)
+    .maybeSingle<{ competition: string | null; team: string | null; competition_name: string | null }>();
   if (!l?.competition || !l.team) return null;
   const t = await getLeagueTableQuick(l.competition);
   const me = t?.rows.find((r) => r.teamId === l.team);
-  return me && t ? { pos: me.pos, total: t.rows.length } : null;
+  // 4.30.3 · En la Clausura el puesto es el de la Clausura (los puntos de al lado son de toda la temporada): se dice cuál
+  const half = (l.competition_name ?? "").match(/\b(apertura|clausura)\b/i)?.[1];
+  return me && t ? { pos: me.pos, total: t.rows.length, label: half ? half[0].toUpperCase() + half.slice(1).toLowerCase() : null } : null;
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -172,7 +175,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 type Rec = ReturnType<typeof record>;
 
-function Balance({ rec, rank, last }: { rec: Rec; rank: { pos: number; total: number } | null; last: MatchRow[] }) {
+function Balance({ rec, rank, last }: { rec: Rec; rank: { pos: number; total: number; label: string | null } | null; last: MatchRow[] }) {
   const diff = rec.gf - rec.ga;
   const parts = [
     { n: rec.W, label: plural(rec.W, "ganado", "ganados"), dot: "bg-green-600" },
@@ -193,7 +196,7 @@ function Balance({ rec, rank, last }: { rec: Rec; rank: { pos: number; total: nu
           {rank && (
             <div className="ml-auto rounded-2xl bg-dorado px-3 py-1.5 text-center text-negro shadow-[0_6px_16px_-8px_rgba(213,175,50,0.9)]">
               <div className="sport text-3xl font-black italic leading-none">{rank.pos}º</div>
-              <div className="text-[10px] font-bold uppercase tracking-wider">de {rank.total} en liga</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider">de {rank.total} {rank.label ? `· ${rank.label}` : "en liga"}</div>
             </div>
           )}
         </div>

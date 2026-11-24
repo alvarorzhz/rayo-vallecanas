@@ -37,4 +37,7 @@ test("toda la plantilla y el puesto en la liga", () => {
   assert.equal(goalProgress("position", 6, facts([], { league })).done, true);
   assert.equal(goalProgress("position", 1, facts([], { league })).hint, "Hay que subir 1 puesto");
   assert.equal(goalProgress("position", 3, facts([])).now, "Sin clasificación");
+  // 4.30.3 · El objetivo del Apertura, ya terminado: el puesto final, no «ahora»
+  const over = goalProgress("position", 6, facts([], { league: { pos: 11, total: 12, finished: true, secured: () => false } }));
+  assert.deepEqual([over.done, over.now, over.hint], [false, "Acabó 11º", "La liga ya ha terminado"]);
 });
