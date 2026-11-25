@@ -201,3 +201,52 @@ export function UserEditForm({
     </form>
   );
 }
+
+/** 4.30.7 · Dar de baja para siempre: primero se explica qué se borra y qué se queda, y hay que escribir BAJA. */
+export function RemoveMemberForm({ action, name }: { action: A; name: string }) {
+  const [state, formAction] = useActionState(action, undefined);
+  const [open, setOpen] = useState(false);
+  const [word, setWord] = useState("");
+  if (!open) {
+    return (
+      <button type="button" className="btn-ghost text-rojo" onClick={() => setOpen(true)}>
+        Dar de baja y borrar sus datos
+      </button>
+    );
+  }
+  return (
+    <form action={formAction} className="space-y-3 rounded-2xl bg-rojo/5 p-4 text-sm ring-1 ring-rojo/30">
+      <p className="font-bold text-rojo">¿Dar de baja a {name} para siempre?</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <p className="mb-1 font-bold">Se borra</p>
+          <ul className="list-disc space-y-0.5 pl-5 text-negro/75">
+            <li>Su nombre, email, teléfono y foto</li>
+            <li>Su cuenta de acceso: no podrá volver a entrar</li>
+            <li>Sus avisos, permisos y rastro de conexiones</li>
+          </ul>
+        </div>
+        <div>
+          <p className="mb-1 font-bold">Se queda</p>
+          <ul className="list-disc space-y-0.5 pl-5 text-negro/75">
+            <li>Sus ventas, cobros, entregas y apuntes, a nombre de «Antiguo miembro»</li>
+            <li>Su ficha de jugador en Plantilla, con sus estadísticas</li>
+          </ul>
+        </div>
+      </div>
+      <p className="text-negro/65">No se puede deshacer. Si vuelve, se le da de alta de nuevo.</p>
+      <label className="block">
+        <span className="mb-1 block font-bold">Escribe BAJA para confirmar</span>
+        <input name="confirm" value={word} onChange={(e) => setWord(e.target.value)} className="input max-w-48 uppercase"
+          autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-label="Escribe BAJA para confirmar" />
+      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <SubmitButton className="btn-primary" pendingText="Dando de baja…" disabled={word.trim().toUpperCase() !== "BAJA"}>
+          Dar de baja y borrar sus datos
+        </SubmitButton>
+        <button type="button" className="btn-ghost" onClick={() => { setOpen(false); setWord(""); }}>Cancelar</button>
+      </div>
+      <FormMessage state={state} />
+    </form>
+  );
+}

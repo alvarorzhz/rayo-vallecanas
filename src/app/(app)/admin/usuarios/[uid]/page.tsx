@@ -4,9 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
 import { Avatar } from "@/components/avatar";
 import { bandOf } from "@/components/admin-office";
-import { ResetPasswordForm, UserEditForm } from "@/components/admin-forms";
-import { resetPassword, setUserAccess, updateUser } from "../actions";
-import { Lock, LockOpen } from "lucide-react";
+import { RemoveMemberForm, ResetPasswordForm, UserEditForm } from "@/components/admin-forms";
+import { removeMember, resetPassword, setUserAccess, updateUser } from "../actions";
+import { Lock, LockOpen, UserX } from "lucide-react";
 import { EDITABLE_MODULES, fetchProfileDefs, profileKey } from "@/lib/roles";
 
 export const metadata = { title: "Usuario" };
@@ -22,7 +22,10 @@ export default async function UserPage({ params }: { params: Promise<{ uid: stri
   ]);
   if (!profile) notFound();
   const isSuper = s.profile.role === "superadmin";
-  const canEdit = s.can("users", "update") && (isSuper || profile.role !== "superadmin");
+  const removed = Boolean(profile.removed_at);
+  const canEdit = !removed && s.can("users", "update") && (isSuper || profile.role !== "superadmin");
+  // 4.30.7 · Dar de baja borrando sus datos: quien puede borrar usuarios (de serie, solo el superadmin)
+  const canRemove = canEdit && s.can("users", "delete") && uid !== s.user.id;
   const def = defs.find((d) => d.key === profileKey(profile));
   const band = bandOf(def?.base ?? profile.role);
   const profiles = defs.filter((d) => d.key !== "superadmin" || isSuper || profile.role === "superadmin")
@@ -30,7 +33,7 @@ export default async function UserPage({ params }: { params: Promise<{ uid: stri
 
   return (
     <>
-      <PageHeader title={profile.full_name} subtitle={profile.email} back={{ href: "/admin/usuarios", label: "Usuarios" }} />
+      <PageHeader title={profile.full_name} subtitle={removed ? "Dado de baja" : profile.email} back={{ href: "/admin/usuarios", label: "Usuarios" }} />
       {/* Carnet del club, con el sello del acceso (vuelve a caer cada vez que cambia) */}
       <section className="card carnet mb-4 flex items-stretch overflow-hidden p-0 sm:p-0">
         <span aria-hidden className={`w-2.5 shrink-0 ${band.split(" ")[0]}`} />
@@ -45,10 +48,21 @@ export default async function UserPage({ params }: { params: Promise<{ uid: stri
             </div>
           </div>
           <span key={String(profile.active)} className={`ink-stamp absolute bottom-3 right-4 text-sm sm:bottom-auto sm:top-1/2 sm:-mt-3.5 ${profile.active ? "text-green-700" : "text-rojo"}`}>
-            {profile.active ? <><LockOpen size={14} /> Acceso habilitado</> : <><Lock size={14} /> Sin acceso</>}
+            {removed ? <><UserX size={14} /> De baja</> : profile.active ? <><LockOpen size={14} /> Acceso habilitado</> : <><Lock size={14} /> Sin acceso</>}
           </span>
         </div>
       </section>
+      {removed ? (
+        <section className="card mb-6 ring-2 ring-rojo/40">
+          <h2 className="flex items-center gap-2"><UserX size={18} className="text-rojo" /> Dado de baja</h2>
+          <p className="mt-1 text-sm text-negro/60">
+            El {new Date(profile.removed_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Madrid" })} se le dio de baja
+            y se borraron sus datos personales y su cuenta de acceso. Sus ventas, cobros y apuntes siguen ahí a nombre de «Antiguo miembro».
+            Si vuelve, dale de alta de nuevo.
+          </p>
+        </section>
+      ) : (
+        <>
       <section className={`card mb-6 flex flex-wrap items-center justify-between gap-4 ${profile.active ? "" : "ring-2 ring-rojo/40"}`}>
         <div className="min-w-0">
           <h2 className="flex items-center gap-2">
@@ -75,6 +89,12 @@ export default async function UserPage({ params }: { params: Promise<{ uid: stri
             <ResetPasswordForm action={resetPassword.bind(null, uid)} />
           </div>
         )}
+        {canRemove && (
+          <div className="basis-full border-t border-black/5 pt-3">
+            <p className="mb-2 text-sm text-negro/60">¿Se ha ido del club y no va a volver? Puedes darle de baja y borrar sus datos personales.</p>
+            <RemoveMemberForm action={removeMember.bind(null, uid)} name={profile.full_name} />
+          </div>
+        )}
       </section>
       <UserEditForm
         action={updateUser.bind(null, uid)}
@@ -84,6 +104,8 @@ export default async function UserPage({ params }: { params: Promise<{ uid: stri
         userPerms={userPerms ?? []}
         canEdit={canEdit}
       />
+        </>
+      )}
     </>
   );
 }

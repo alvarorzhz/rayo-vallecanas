@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { tempPassword } from "@/lib/password";
@@ -98,6 +99,9 @@ export async function setUserAccess(uid: string, enable: boolean) {
   const { data: allowed } = await supabase.rpc("has_perm", { p_module: "users", p_action: "update" });
   if (!allowed) throw new Error("No tienes permiso para cambiar el acceso de usuarios");
 
+  const { data: target } = await supabase.from("profiles").select("removed_at").eq("id", uid).maybeSingle();
+  if (target?.removed_at) throw new Error("Este usuario está dado de baja: no se puede volver a habilitar");
+
   // La base de datos vuelve a comprobarlo (y que solo un superadmin toque a otro superadmin)
   const { data: changed, error } = await supabase.from("profiles").update({ active: enable }).eq("id", uid).select("id");
   if (error) throw new Error(error.message);
@@ -111,6 +115,36 @@ export async function setUserAccess(uid: string, enable: boolean) {
   }
   revalidatePath("/admin/usuarios");
   revalidatePath(`/admin/usuarios/${uid}`);
+}
+
+/**
+ * 4.30.7 · Da de baja a un usuario para siempre y borra sus datos personales (nombre,
+ * email, teléfono, foto y cuenta de acceso). Sus ventas, cobros, apuntes y votos se
+ * conservan a nombre de «Antiguo miembro». Lo hace la base de datos (remove_member),
+ * que vuelve a comprobar los permisos; aquí se borran además los archivos de su foto.
+ */
+export async function removeMember(uid: string, _: ActionState, f: FormData): Promise<ActionState> {
+  if (str(f, "confirm").toUpperCase() !== "BAJA") return { error: "Escribe BAJA para confirmar" };
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (claims?.claims?.sub === uid) return { error: "No puedes darte de baja a ti mismo" };
+  const { data: allowed } = await supabase.rpc("has_perm", { p_module: "users", p_action: "delete" });
+  if (!allowed) return { error: "No tienes permiso para dar de baja usuarios" };
+
+  const { error } = await supabase.rpc("remove_member", { p_uid: uid });
+  if (error) return { error: error.message };
+
+  // Archivos de su foto de perfil (se guardan en avatars/<uid>/…)
+  try {
+    const admin = createAdminClient();
+    const { data: files } = await admin.storage.from("avatars").list(uid, { limit: 100 });
+    if (files?.length) await admin.storage.from("avatars").remove(files.map((x) => `${uid}/${x.name}`));
+  } catch {
+    // Sin clave de servicio la foto ya no se enseña en ningún sitio (el enlace se ha borrado)
+  }
+  revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${uid}`);
+  redirect(`/admin/usuarios/${uid}`);
 }
 
 /** Crea una contraseña provisional nueva (por si la olvida o no le llega el correo de recuperación). */
