@@ -21,7 +21,7 @@ export default async function RivalsPage() {
 
   return (
     <>
-      <PageHeader title="Rivales" subtitle="Los equipos contra los que jugamos, con su escudo y su campo" back={{ href: "/partidos", label: "Partidos" }} />
+      <PageHeader title="Rivales" subtitle="Los equipos contra los que jugamos, con su escudo y su campo" back={{ href: "/partidos/liga", label: "Liga" }} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <section className="min-w-0 space-y-2">
           {rivals.length === 0 ? (

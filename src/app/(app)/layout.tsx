@@ -29,7 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const s = await getSession();
   const items: NavItem[] = [{ href: "/", label: "Inicio", icon: "Home" }];
   if (s.can("matches")) items.push({ href: "/partidos", label: "Partidos", icon: "CalendarDays" });
-  if (s.can("squad")) items.push({ href: "/plantilla", label: "Plantilla", icon: "Shirt" });
+  if (s.can("squad")) items.push({ href: "/plantilla", label: "Plantilla", icon: "Shirt", not: ["/plantilla/cuotas"] });
   // La Voz del Rayo: en el ordenador, en el menú; en el móvil, el periódico de la cabecera (la barra de abajo ya va llena)
   // 4.31.0 · Un apartado apagado desde Gestión → Control → Mandos desaparece del menú
   const newsOn = s.can("news") && !s.off("news");
@@ -37,7 +37,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // «Mis ventas» va dentro de Sorteos para no cargar la barra de abajo
   if ((s.can("lottery_admin") || s.can("lottery_sell")) && !s.off("lottery")) items.push({ href: "/loteria", label: "Sorteos", icon: "Ticket", also: ["/mis-ventas"] });
   // 4.30.0 · Los patrocinadores viven en Finanzas
-  if (s.can("finances") || s.can("sponsors")) items.push({ href: "/finanzas", label: "Finanzas", icon: "Wallet" });
+  // 4.31.2 · Las cuotas se abren desde Finanzas (su dirección sigue siendo /plantilla/cuotas)
+  if (s.can("finances") || s.can("sponsors")) items.push({ href: "/finanzas", label: "Finanzas", icon: "Wallet", also: ["/plantilla/cuotas"] });
   // Panel de gestión: equipo (usuarios y perfiles), avisos, material y, para el superadministrador, control
   if (s.can("users") || s.can("lottery_admin", "update") || s.can("material") || s.profile.role === "superadmin")
     items.push({ href: "/admin", label: "Gestión", icon: "Settings" });

@@ -103,7 +103,7 @@ export function MovementForm({
               {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <input type="hidden" name="fee_season" value={movement?.fee_season ?? links.season} />
-            <p className="mt-1 text-xs text-negro/65">Así cuenta como pagada en Plantilla → Cuotas ({movement?.fee_season ?? links.season}) y en su «Mi cuota».</p>
+            <p className="mt-1 text-xs text-negro/65">Así cuenta como pagada en Finanzas → Cuotas ({movement?.fee_season ?? links.season}) y en su «Mi cuota».</p>
           </div>
         )}
         {sponsor && links && (
