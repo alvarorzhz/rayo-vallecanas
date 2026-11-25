@@ -74,7 +74,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
         back={{ href: `/partidos?temporada=${ss}`, label: "Partidos" }}
         actions={<>
           <Link href={`/partidos/resumen?de=${ss}`} prefetch className="btn-ghost"><Award size={18} /> Resumen de temporada</Link>
-          <Link href={`/partidos/porra?temporada=${ss}`} prefetch className="btn-ghost"><Target size={18} /> Porra</Link>
+          {!sess.off("porra") && <Link href={`/partidos/porra?temporada=${ss}`} prefetch className="btn-ghost"><Target size={18} /> Porra</Link>}
         </>} />
 
       {seasons.length > 1 && (

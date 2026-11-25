@@ -8,6 +8,7 @@ export const BACKUP_TABLES: [string, string][] = [
   ["user_permissions", "Permisos personalizados"],
   ["custom_roles", "Perfiles a medida"],
   ["custom_role_permissions", "Perfiles a medida · permisos"],
+  ["app_settings", "Mandos de la app"],
   ["lottery_campaigns", "Campañas"],
   ["lottery_campaign_sellers", "Vendedores asignados"],
   ["lottery_booklets", "Talonarios"],
