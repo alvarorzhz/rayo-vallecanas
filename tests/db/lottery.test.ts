@@ -320,6 +320,7 @@ describe("sorteo de la rifa", () => {
     const c = await campaign({ kind: "raffle", shares: 50, sellers: ["dani"] });
     await sale("dani", c.id, 1);
     const { db } = await as("gestor");
+    ok(await db.from("lottery_campaigns").update({ status: "closed" }).eq("id", c.id));
     await rejects(db.rpc("lottery_draw_winner", { p_campaign_id: c.id, p_number: 51 }), /entre 1 y 50/);
     const [win] = ok(await db.rpc("lottery_draw_winner", { p_campaign_id: c.id, p_number: 40 })) as { winning_number: number; reference: string | null }[];
     assert.equal(win.winning_number, 40);
@@ -330,9 +331,35 @@ describe("sorteo de la rifa", () => {
     const raffle = await campaign({ kind: "raffle", shares: 10, sellers: ["dani"] });
     const lottery = await campaign();
     const gestor = await as("gestor"), dani = await as("dani");
+    ok(await gestor.db.from("lottery_campaigns").update({ status: "closed" }).eq("id", raffle.id));
     await rejects(gestor.db.rpc("lottery_draw_winner", { p_campaign_id: raffle.id }), /No hay números vendidos/);
     await rejects(gestor.db.rpc("lottery_draw_winner", { p_campaign_id: lottery.id }), /solo existe para rifas/);
+    ok(await gestor.db.from("lottery_campaigns").update({ status: "active" }).eq("id", raffle.id));
     await sale("dani", raffle.id, 1);
+    ok(await gestor.db.from("lottery_campaigns").update({ status: "closed" }).eq("id", raffle.id));
     await rejects(dani.db.rpc("lottery_draw_winner", { p_campaign_id: raffle.id }), /No tienes permiso/);
+  });
+
+  test("4.30.6 · con las ventas abiertas no se sortea: primero hay que cerrarlas", async () => {
+    const c = await campaign({ kind: "raffle", shares: 20, sellers: ["dani"] });
+    await sale("dani", c.id, 2);
+    const { db } = await as("gestor");
+    await rejects(db.rpc("lottery_draw_winner", { p_campaign_id: c.id }), /Cierra las ventas antes de sortear/);
+    await rejects(db.rpc("lottery_draw_winner", { p_campaign_id: c.id, p_number: 5 }), /Cierra las ventas antes de sortear/);
+    const events = ok(await admin.from("lottery_raffle_events").select("kind").eq("campaign_id", c.id)) as { kind: string }[];
+    assert.equal(events.length, 0, "no debe quedar nada en el acta");
+  });
+
+  test("4.30.6 · se ven los números vendidos sin cobrar (aviso antes de sortear)", async () => {
+    const c = await campaign({ kind: "raffle", shares: 20, sellers: ["dani"] });
+    const paid = await sale("dani", c.id, 2, { p_paid_cents: 99999 });
+    const half = await sale("dani", c.id, 1, { p_paid_cents: 1 });
+    const none = await sale("dani", c.id, 2);
+    assert.equal(paid.payment_status, "paid");
+    const { db } = await as("gestor");
+    const rows = ok(await db.from("lottery_shares").select("share_number, sale:lottery_sales!inner(payment_status)")
+      .eq("campaign_id", c.id).eq("status", "sold").neq("sale.payment_status", "paid").order("share_number")) as { share_number: number }[];
+    const expected = [...(await numbersOf(half.id)), ...(await numbersOf(none.id))].sort((a, b) => a - b);
+    assert.deepEqual(rows.map((r) => r.share_number), expected);
   });
 });
