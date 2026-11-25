@@ -95,3 +95,59 @@ describe("qué puede tocar cada uno", () => {
     await rejects(gestor.db.from("match_callups").update({ slot: 1 }).eq("match_id", m).eq("player_id", await playerOf("dani@rayo.test")), /duplicate key/);
   });
 });
+
+describe("fichajes con la convocatoria ya hecha (4.30.5)", () => {
+  async function seasonOf(matchId: string) {
+    return (ok(await admin.from("matches").select("season").eq("id", matchId).single()) as { season: string }).season;
+  }
+  const calledIn = async (matchId: string) =>
+    new Set((ok(await admin.from("match_callups").select("player_id, reply").eq("match_id", matchId)) as { player_id: string; reply: Reply }[])
+      .filter((r) => r.reply === "pending").map((r) => r.player_id));
+
+  /** Ficha nueva dada de alta por un gestor, como en Plantilla → Fichar. */
+  async function newPlayer(season: string, status = "active") {
+    const gestor = await as("gestor");
+    const p = ok(await gestor.db.from("players").insert({ first_name: "Nuevo", last_name: `Fichaje ${Date.now()}`, foot: "right" }).select("id").single()) as { id: string };
+    ok(await gestor.db.from("squad_members").insert({ player_id: p.id, season, position: "MCD", status }));
+    return p.id;
+  }
+
+  test("el que se ficha después entra «sin responder» en la convocatoria abierta, publicada o en borrador", async () => {
+    const pub = await matchWithCallup();
+    const draft = await matchWithCallup({ published: false });
+    const id = await newPlayer(await seasonOf(pub));
+    assert.ok((await calledIn(pub)).has(id));
+    assert.ok((await calledIn(draft)).has(id));
+  });
+
+  test("no entra en partidos jugados, suspendidos, sin convocatoria o de otra temporada, ni si llega lesionado", async () => {
+    const played = await matchWithCallup({ status: "played" });
+    const cancelled = await matchWithCallup({ status: "cancelled" });
+    const season = await seasonOf(played);
+    const rival = ok(await admin.from("rivals").select("id").limit(1).single()) as { id: string };
+    const d = new Date(Date.now() + 6 * 86400_000).toISOString().slice(0, 10);
+    const empty = (ok(await admin.from("matches").insert({ match_date: d, rival_id: rival.id, competition: "friendly" }).select("id").single()) as { id: string }).id;
+    const id = await newPlayer(season);
+    for (const m of [played, cancelled, empty]) assert.ok(!(await calledIn(m)).has(id));
+    const open = await matchWithCallup();
+    const [y] = season.split("/").map(Number);
+    const other = await newPlayer(`${y + 5}/${String((y + 6) % 100).padStart(2, "0")}`);
+    const injured = await newPlayer(season, "injured");
+    assert.ok(!(await calledIn(open)).has(other));
+    assert.ok(!(await calledIn(open)).has(injured));
+  });
+
+  test("vuelve de una baja: entra; quien el gestor quitó de la convocatoria no vuelve solo", async () => {
+    const m = await matchWithCallup();
+    const season = await seasonOf(m);
+    const gestor = await as("gestor");
+    const id = await newPlayer(season, "left");
+    assert.ok(!(await calledIn(m)).has(id));
+    ok(await gestor.db.from("squad_members").update({ status: "active" }).eq("player_id", id).eq("season", season));
+    assert.ok((await calledIn(m)).has(id));
+    // El gestor lo quita y luego le cambia el dorsal: no se vuelve a meter
+    ok(await gestor.db.from("match_callups").delete().eq("match_id", m).eq("player_id", id));
+    ok(await gestor.db.from("squad_members").update({ number: 77, status: "active" }).eq("player_id", id).eq("season", season));
+    assert.ok(!(await calledIn(m)).has(id));
+  });
+});
