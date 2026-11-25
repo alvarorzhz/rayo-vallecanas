@@ -1,5 +1,5 @@
 "use client";
-import { useActionState, useMemo, useState, useTransition } from "react";
+import { useActionState, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Bell, BellRing, Megaphone, Trash2 } from "lucide-react";
 import { FormMessage } from "@/components/form-message";
 import { Jersey } from "@/components/squad/jersey";
@@ -204,6 +204,14 @@ export function ReplyBox({ action, reply, note, dark = false }: { action: A; rep
   const [pending, start] = useTransition();
   const [text, setText] = useState(note ?? "");
   const [shot, setShot] = useState(0);
+  // 4.31.3 · El comentario crece hacia abajo en vez de cortarse cuando es largo.
+  const box = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [text]);
   function send(r: Reply) {
     if (r === "yes" && choice !== "yes" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) setShot((n) => n + 1);
     setChoice(r);
@@ -226,11 +234,13 @@ export function ReplyBox({ action, reply, note, dark = false }: { action: A; rep
           );
         })}
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-start gap-2">
         <label htmlFor="reply-note" className="sr-only">Comentario</label>
-        <input id="reply-note" value={text} onChange={(e) => setText(e.target.value)} maxLength={140}
+        <textarea id="reply-note" ref={box} rows={1} value={text} maxLength={140}
+          onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " "))}
+          onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
           placeholder="¿Algo que contar? (llego tarde, voy en coche…)"
-          className={`input py-2 text-sm ${dark ? "bg-white/10 text-white placeholder:text-white/60" : ""}`} />
+          className={`input resize-none overflow-hidden py-2 text-sm leading-snug ${dark ? "bg-white/10 text-white placeholder:text-white/60 focus:bg-white/15" : ""}`} />
         {choice !== "pending" && text !== (note ?? "") && (
           <button type="button" disabled={pending} onClick={() => send(choice)} className={dark ? "btn-primary px-3 text-sm" : "btn-dark px-3 text-sm"}>Enviar</button>
         )}
