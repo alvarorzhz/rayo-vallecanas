@@ -17,6 +17,15 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.30.7",
+    date: "2026-11-25",
+    title: "Bajas de verdad",
+    changes: [
+      { staff: "En Gestión → Equipo, en la ficha de un usuario, ya se le puede dar de baja para siempre con «Dar de baja y borrar sus datos»: se borran su nombre, email, teléfono, foto y cuenta de acceso, y sus ventas, cobros y apuntes se quedan a nombre de «Antiguo miembro». Hay que escribir BAJA para confirmar y no se puede deshacer." },
+      { staff: "Lo puede hacer quien tenga permiso para eliminar usuarios (de serie, solo el superadministrador). Su ficha de jugador sigue en Plantilla con sus estadísticas. Los dados de baja salen aparte, al final de la lista de usuarios." },
+    ],
+  },
+  {
     version: "4.30.6",
     date: "2026-11-25",
     title: "Sorteos sin sorpresas",

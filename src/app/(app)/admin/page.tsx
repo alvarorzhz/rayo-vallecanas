@@ -35,7 +35,7 @@ export default async function OfficeDesk() {
   const admin = createAdminClient();
   const none = Promise.resolve(null);
   const [people, defs, custom, subs, lastNotice, openPolls, todayLog, lastBackup, usage7, material] = await Promise.all([
-    canUsers ? supabase.from("profiles").select("active") : none,
+    canUsers ? supabase.from("profiles").select("active").is("removed_at", null) : none,
     canUsers ? fetchProfileDefs(supabase) : none,
     canUsers ? supabase.from("user_permissions").select("user_id") : none,
     canNotices ? admin.from("push_subscriptions").select("user_id") : none,

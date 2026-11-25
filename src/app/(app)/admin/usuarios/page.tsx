@@ -14,7 +14,7 @@ export default async function UsersPage() {
   const s = await requirePerm("users", "read");
   const supabase = await createClient();
   const [{ data: users }, defs] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, email, phone, role, custom_role_id, active, avatar_url, created_at"),
+    supabase.from("profiles").select("id, full_name, email, phone, role, custom_role_id, active, avatar_url, created_at, removed_at"),
     fetchProfileDefs(supabase),
   ]);
   const byKey = new Map(defs.map((d) => [d.key, d]));
@@ -22,6 +22,9 @@ export default async function UsersPage() {
   // 4.20.4 · Y la lista sale en ese mismo orden, de la ficha 001 en adelante
   const ordered = [...(users ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
   const fileNo = new Map(ordered.map((u, i) => [u.id, i + 1]));
+  // 4.30.7 · Los dados de baja (datos borrados) van aparte, al final, con su nº de ficha de siempre
+  const current = ordered.filter((u) => !u.removed_at);
+  const gone = ordered.filter((u) => u.removed_at);
   const profiles = defs.filter((d) => d.key !== "superadmin" || s.profile.role === "superadmin")
     .map(({ key, name, base, perms }) => ({ key, name, base, perms }));
 
@@ -29,7 +32,7 @@ export default async function UsersPage() {
     <>
       <PageHeader
         title="Usuarios"
-        subtitle="Gestores y jugadores con acceso a la aplicación. Pulsa en una persona para cambiar su perfil, sus permisos o deshabilitar su acceso. En «Perfiles» ves qué hace cada uno."
+        subtitle="Gestores y jugadores con acceso a la aplicación. Pulsa en una persona para cambiar su perfil, sus permisos, deshabilitar su acceso o darle de baja. En «Perfiles» ves qué hace cada uno."
       />
       {s.can("users", "create") && (
         <section className="card mb-6">
@@ -40,7 +43,7 @@ export default async function UsersPage() {
       )}
       {/* Fichero de carnets del club: uno por persona */}
       <ul className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {ordered.map((u) => {
+        {current.map((u) => {
           const def = byKey.get(profileKey(u));
           return (
             <li key={u.id}>
@@ -63,6 +66,27 @@ export default async function UsersPage() {
           );
         })}
       </ul>
+      {gone.length > 0 && (
+        <details className="mt-8">
+          <summary className="cursor-pointer text-sm font-bold text-negro/60">Dados de baja ({gone.length})</summary>
+          <p className="mt-1 text-xs text-negro/65">Sus datos personales se borraron. Sus ventas y apuntes siguen a nombre de «Antiguo miembro».</p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {gone.map((u) => (
+              <li key={u.id}>
+                <Link href={`/admin/usuarios/${u.id}`} prefetch={false} className="card flex items-center gap-3 p-3 opacity-70 sm:p-3">
+                  <Avatar name={u.full_name} url={null} size={36} className="grayscale" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold">{u.full_name}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-negro/40">
+                      Ficha nº {String(fileNo.get(u.id) ?? 0).padStart(3, "0")} · baja el {new Date(u.removed_at!).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Madrid" })}
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </>
   );
 }
