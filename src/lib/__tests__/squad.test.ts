@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ageOf, docExpiry, feeOf, feeStatus, fileSize, fullName, lineOf, nextSeason, prevSeason, ratio, seasonFromSlug, seasonSlug, shirtName, sortRoster, orderRoster, orderFromSlug, groupByLine, type Player } from "../squad.ts";
+import { ageOf, docExpiry, feeOf, feeStatus, fileSize, fullName, lineOf, nextSeason, preparingTime, prevSeason, ratio, seasonFromSlug, seasonSlug, shirtName, sortRoster, orderRoster, orderFromSlug, groupByLine, type Player } from "../squad.ts";
 
 const player = (first_name: string, last_name: string, nickname: string | null = null) => ({ first_name, last_name, nickname }) as Player;
 
@@ -95,4 +95,12 @@ test("la plantilla por líneas no enseña líneas vacías", () => {
   const g = groupByLine(roster);
   assert.deepEqual(g.map((x) => [x.line.key, names(x.rows)]), [["GK", ["Martín"]], ["DEF", ["Pérez"]], ["MID", ["Sin"]], ["FWD", ["Fuentes", "Lucho"]]]);
   assert.deepEqual(groupByLine([row("A", "DC", 9)]).map((x) => x.line.key), ["FWD"]);
+});
+
+test("«Preparar temporada» solo sale de junio a agosto", () => {
+  assert.equal(preparingTime("2027-05-31"), false);
+  assert.equal(preparingTime("2027-06-01"), true);
+  assert.equal(preparingTime("2027-08-31"), true);
+  assert.equal(preparingTime("2027-09-01"), false);
+  assert.equal(preparingTime("2026-11-25"), false);
 });

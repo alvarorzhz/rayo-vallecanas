@@ -26,6 +26,16 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: "4.31.2",
+    date: "2026-11-25",
+    title: "Partidos y Plantilla, más despejadas",
+    changes: [
+      "Partidos y Plantilla tienen ahora arriba los mismos accesos, con la misma forma y los mismos iconos, y como mucho cuatro. En Partidos: Estadísticas, Porra y Cápsula. En Plantilla: Historia.",
+      { staff: "Rivales pasa dentro de Liga (botón «Rivales y escudos»). El botón de crear partido se queda en «+ Partido»." },
+      { staff: "Las cuotas de los jugadores pasan a Finanzas, en una tarjeta junto a Patrocinadores. «Preparar temporada» solo sale en Plantilla de junio a agosto; en septiembre, la temporada nueva vacía ya ofrece copiar la anterior." },
+    ],
+  },
+  {
     version: "4.31.1",
     date: "2026-11-25",
     title: "Talonarios a medida",

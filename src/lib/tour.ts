@@ -78,8 +78,8 @@ export function buildTour(s: Session): TourStep[] {
       "En cada ficha, sus estadísticas, sus logros y sus amarillas del ciclo.",
       "La historia del equipo temporada a temporada.",
     ];
-    if (s.can("squad_private")) p.push("Las cuotas de cada jugador y sus documentos (DNI, ficha, reconocimiento médico).");
-    if (s.can("squad", "update")) p.push("Fichar jugadores, preparar la temporada nueva, recordar la cuota a quien debe y exportar a Excel.");
+    if (s.can("squad_private")) p.push("Los documentos de cada jugador (DNI, ficha, reconocimiento médico).");
+    if (s.can("squad", "update")) p.push("Fichar jugadores, preparar la temporada nueva en verano y exportar a Excel.");
     steps.push({ key: "plantilla", href: "/plantilla", target: "/plantilla", icon: "Shirt", title: "Plantilla", text: "El equipo al completo.", points: p });
   }
 
@@ -95,6 +95,7 @@ export function buildTour(s: Session): TourStep[] {
   if (s.can("finances") || s.can("sponsors")) {
     const p = s.can("finances") ? ["El saldo de la temporada con los ingresos y los gastos.", "Los informes por categoría y por temporada."] : [];
     if (s.can("finances", "create")) p.splice(1, 0, "Apunta cada ingreso o gasto con la foto de su justificante.");
+    if (s.can("finances")) p.push("Cuotas: lo que paga cada jugador, quién debe y el aviso a los que deben.");
     if (s.can("sponsors")) p.push("Patrocinadores: sus acuerdos, contratos y cobros.");
     steps.push({ key: "finanzas", href: "/finanzas", target: "/finanzas", icon: "Wallet", title: "Finanzas", text: "Las cuentas del club. Los jugadores no tienen acceso.", points: p });
   }

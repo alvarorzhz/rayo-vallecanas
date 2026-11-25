@@ -61,7 +61,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
   return (
     <>
       <PageHeader title="Cuotas" subtitle={<>Lo que paga cada jugador en la temporada <b>{season}</b>. Cada pago se apunta como ingreso en Finanzas.</>}
-        back={{ href: `/plantilla?temporada=${seasonSlug(season)}`, label: "Plantilla" }} />
+        back={{ href: `/finanzas?t=${encodeURIComponent(season)}`, label: "Finanzas" }} />
 
       {seasons.length > 1 && (
         <div className="mb-4 flex flex-wrap gap-1">
