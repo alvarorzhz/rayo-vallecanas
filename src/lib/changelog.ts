@@ -26,6 +26,15 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: "4.30.6",
+    date: "2026-11-25",
+    title: "Sorteos sin sorpresas",
+    changes: [
+      { staff: "Las rifas solo se sortean con las ventas cerradas: primero «Cerrar ventas» (queda guardada la lista de números y su huella para compartirla en el grupo) y después se saca el ganador." },
+      { staff: "Antes de sortear, la app avisa si hay números vendidos que aún no están pagados y cuáles son. Hay que marcar que entran para poder sortear." },
+    ],
+  },
+  {
     version: "4.30.5",
     date: "2026-11-25",
     title: "Nadie se queda fuera",

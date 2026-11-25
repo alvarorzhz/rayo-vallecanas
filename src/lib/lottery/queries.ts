@@ -89,3 +89,16 @@ export async function fetchNumbers(
   }
   return rows;
 }
+
+/** 4.30.6 · Números vendidos de una rifa cuya venta todavía no está pagada del todo (entran en el sorteo igual). */
+export async function fetchUnpaidNumbers(supabase: SupabaseClient, campaignId: string): Promise<number[]> {
+  const { data, error } = await supabase
+    .from("lottery_shares")
+    .select("share_number, sale:lottery_sales!inner(payment_status)")
+    .eq("campaign_id", campaignId)
+    .eq("status", "sold")
+    .neq("sale.payment_status", "paid")
+    .order("share_number");
+  if (error) throw error;
+  return (data ?? []).map((r) => r.share_number as number);
+}

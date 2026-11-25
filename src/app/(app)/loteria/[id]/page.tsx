@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { euros, fecha, NUMBERING_MODE_LABEL } from "@/lib/format";
 import { CampaignBadge, Empty, PageHeader, Progress, Stat } from "@/components/ui";
 import { SalesTable } from "@/components/lottery/sales-table";
-import { fetchNumbers, fetchSales, type NumberRow } from "@/lib/lottery/queries";
+import { fetchNumbers, fetchSales, fetchUnpaidNumbers, type NumberRow } from "@/lib/lottery/queries";
 import { DeleteCampaignForm, RaffleDrawForm } from "@/components/lottery/client-forms";
 import { ImportCampaignButton } from "@/components/finance/client-forms";
 import { importCampaign } from "@/app/(app)/finanzas/actions";
@@ -53,6 +53,9 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   if (raffle && c.winning_number && isAdmin) {
     [winner] = await fetchNumbers(supabase, id, { only: c.winning_number });
   }
+
+  // 4.30.6 · Antes de sortear se avisa de los números vendidos sin cobrar
+  const unpaid = raffle && isAdmin && c.status === "closed" && !c.winning_number ? await fetchUnpaidNumbers(supabase, id) : [];
 
   const lastClose = raffle && isAdmin
     ? (await supabase.from("lottery_raffle_events").select("created_at, sold_count, fingerprint")
@@ -219,7 +222,20 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
             ) : (
-              <RaffleDrawForm action={drawRaffle.bind(null, id)} total={c.total_shares} campaignId={id} />
+              c.status === "closed" ? (
+                <RaffleDrawForm action={drawRaffle.bind(null, id)} total={c.total_shares} campaignId={id} unpaid={unpaid} />
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="min-w-0 flex-1 text-sm text-negro/70">
+                    Para sortear, primero <b>cierra las ventas</b>. Así se guarda la lista de números vendidos y su huella, que puedes compartir en el grupo antes de sacar el ganador.
+                  </p>
+                  {!c.archived_at && (
+                    <form action={setCampaignStatus.bind(null, id, "closed")}>
+                      <button className="btn-dark">Cerrar ventas</button>
+                    </form>
+                  )}
+                </div>
+              )
             )
           ) : c.status === "drawn" ? (
             <p className="text-sm">
