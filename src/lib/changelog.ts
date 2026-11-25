@@ -26,6 +26,15 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: "4.30.5",
+    date: "2026-11-25",
+    title: "Nadie se queda fuera",
+    changes: [
+      "Si te das de alta en el equipo con la convocatoria ya hecha, ahora te sale igual y puedes contestar «Voy» o «No voy».",
+      { staff: "Las fichas nuevas (o que vuelven de una baja) entran solas, «sin responder», en las convocatorias abiertas de su temporada. A quien quitaste de una convocatoria no se le vuelve a meter." },
+    ],
+  },
+  {
     version: "4.30.4",
     date: "2026-11-24",
     title: "Entrar sin líos",
