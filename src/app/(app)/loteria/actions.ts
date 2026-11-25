@@ -222,6 +222,38 @@ export async function addBooklet(campaignId: string, _: ActionState, f: FormData
 }
 
 // ---------------------------------------------------------------- Participaciones
+/** 4.31.1 · Corregir un talonario (rango, vendedor o nombre) sin dejar fuera números ya vendidos. */
+export async function updateBooklet(campaignId: string, bookletId: string, _: ActionState, f: FormData): Promise<ActionState> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("lottery_update_booklet", {
+      p_id: bookletId,
+      p_seller_id: str(f, "seller_id"),
+      p_from: Number(str(f, "from_number")),
+      p_to: Number(str(f, "to_number")),
+      p_label: str(f, "label") || null,
+    });
+    if (error) throw error;
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+  revalidatePath(`/loteria/${campaignId}/vendedores`);
+  return { ok: "Talonario corregido" };
+}
+
+/** 4.31.1 · Quitar un talonario que todavía no tiene números vendidos. */
+export async function deleteBooklet(campaignId: string, bookletId: string): Promise<ActionState> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("lottery_delete_booklet", { p_id: bookletId });
+    if (error) throw error;
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+  revalidatePath(`/loteria/${campaignId}/vendedores`);
+  return { ok: "Talonario quitado" };
+}
+
 export async function setShareStatus(campaignId: string, _: ActionState, f: FormData): Promise<ActionState> {
   try {
     const numbers = parseRanges(str(f, "numbers"));

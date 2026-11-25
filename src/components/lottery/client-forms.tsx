@@ -43,6 +43,91 @@ export function BookletForm({ action, sellers }: { action: A; sellers: { id: str
   );
 }
 
+/** 4.31.1 · Un talonario: lo que lleva vendido y, para la directiva, corregirlo o quitarlo. */
+export function BookletRow({ booklet, sellerName, sold, sellers, canEdit, update, remove }: {
+  booklet: { id: string; label: string | null; seller_id: string; from_number: number; to_number: number };
+  sellerName: string;
+  sold: number;
+  sellers: { id: string; full_name: string }[];
+  canEdit: boolean;
+  update: A;
+  remove: () => Promise<ActionState>;
+}) {
+  const [state, formAction] = useActionState(update, undefined);
+  const [open, setOpen] = useState(false);
+  // Campos controlados: si el servidor dice que no, no se pierde lo escrito
+  const [f, setF] = useState({ seller_id: booklet.seller_id, label: booklet.label ?? "", from: String(booklet.from_number), to: String(booklet.to_number) });
+  const [removeState, setRemoveState] = useState<ActionState>(undefined);
+  const [removing, setRemoving] = useState(false);
+  const size = booklet.to_number - booklet.from_number + 1;
+  const pct = Math.min(100, Math.round((sold / size) * 100));
+  return (
+    <li className="card space-y-2.5 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <b className="block truncate">{booklet.label || "Talonario"} · {sellerName}</b>
+          <span className="font-mono text-sm text-negro/70">{booklet.from_number}–{booklet.to_number}</span>
+        </div>
+        <span className={`badge shrink-0 font-extrabold ${sold >= size ? "bg-green-700/15 text-green-900" : "bg-black/5 text-negro/70"}`}>
+          {sold >= size ? "COMPLETO ✓" : `${sold} DE ${size}`}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-black/5" role="img" aria-label={`${sold} de ${size} vendidos`}>
+        <div className="h-full bg-rojo" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="text-xs text-negro/65">{sold} vendidos · {size - sold} libres</p>
+      {canEdit && !open && (
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setOpen(true)} className="btn-ghost min-h-11">Corregir</button>
+          {sold === 0 && (
+            <button type="button" disabled={removing} className="btn-ghost min-h-11 text-rojo ring-rojo/30"
+              onClick={async () => {
+                if (!confirm(`¿Quitar el talonario ${booklet.from_number}–${booklet.to_number} de ${sellerName}? Sus números quedan libres.`)) return;
+                setRemoving(true);
+                setRemoveState(await remove());
+                setRemoving(false);
+              }}>
+              <Trash2 size={16} /> {removing ? "Quitando…" : "Quitar"}
+            </button>
+          )}
+        </div>
+      )}
+      {removeState?.error && <FormMessage state={removeState} />}
+      {canEdit && open && (
+        <form action={formAction} className="space-y-2 rounded-xl bg-gris p-3">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <label className="label" htmlFor={`seller-${booklet.id}`}>Vendedor</label>
+              <select id={`seller-${booklet.id}`} name="seller_id" className="input" value={f.seller_id} onChange={(e) => setF({ ...f, seller_id: e.target.value })} disabled={sold > 0}>
+                {sellers.map((s) => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+              </select>
+              {sold > 0 && <input type="hidden" name="seller_id" value={booklet.seller_id} />}
+            </div>
+            <div>
+              <label className="label" htmlFor={`label-${booklet.id}`}>Nombre</label>
+              <input id={`label-${booklet.id}`} name="label" maxLength={80} className="input" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} placeholder="Talonario (opc.)" />
+            </div>
+            <div>
+              <label className="label" htmlFor={`from-${booklet.id}`}>Desde</label>
+              <input id={`from-${booklet.id}`} name="from_number" type="number" min={1} required className="input font-mono" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} />
+            </div>
+            <div>
+              <label className="label" htmlFor={`to-${booklet.id}`}>Hasta</label>
+              <input id={`to-${booklet.id}`} name="to_number" type="number" min={1} required className="input font-mono" value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} />
+            </div>
+          </div>
+          {sold > 0 && <p className="text-xs text-negro/65">Ya tiene números vendidos: se puede recortar o ampliar, pero sin dejarlos fuera, y no se puede pasar a otro vendedor.</p>}
+          <FormMessage state={state} />
+          <div className="flex flex-wrap justify-end gap-2">
+            <button type="button" onClick={() => setOpen(false)} className="btn-ghost">Cerrar</button>
+            <SubmitButton className="btn-dark" pendingText="Guardando…">Guardar</SubmitButton>
+          </div>
+        </form>
+      )}
+    </li>
+  );
+}
+
 export function RaffleDrawForm({ action, total, campaignId, unpaid = [] }: { action: A; total: number; campaignId: string; unpaid?: number[] }) {
   const [state, formAction] = useActionState(action, undefined);
   // 4.30.6 · Si hay números vendidos sin cobrar, hay que decir que sí entran antes de sortear.

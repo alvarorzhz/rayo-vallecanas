@@ -46,7 +46,7 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
   // Disponibilidad y lista de vendedores, todo a la vez
   const booklet = c.numbering_mode === "booklet";
   const free = supabase.from("lottery_shares").select("id", { count: "exact", head: true }).eq("status", "available");
-  const [bookletsRes, countRes, numbersRes, sellersRes] = await Promise.all([
+  const [bookletsRes, countRes, numbersRes, sellersRes, bookletFreeRes] = await Promise.all([
     booklet ? supabase.from("lottery_booklets").select("id").eq("campaign_id", id).eq("seller_id", s.user.id) : Promise.resolve(null),
     booklet
       // Libres en los talonarios de este vendedor
@@ -59,7 +59,24 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
     isAdmin && assignedIds.length
       ? supabase.from("member_directory").select("id, full_name").in("id", [...new Set([...assignedIds, s.user.id])]).order("full_name")
       : Promise.resolve(null),
+    // 4.31.1 · Números libres de cada talonario, para poder elegirlos (la directiva ve los de todos)
+    booklet
+      ? (() => {
+          let q = supabase.from("lottery_shares").select("share_number, booklet:lottery_booklets!inner(seller_id)")
+            .eq("campaign_id", id).eq("status", "available");
+          if (!isAdmin) q = q.eq("booklet.seller_id", s.user.id);
+          return q.order("share_number").range(0, 4999);
+        })()
+      : Promise.resolve(null),
   ]);
+
+  let bookletNumbers: Record<string, number[]> | undefined;
+  if (bookletFreeRes) {
+    bookletNumbers = {};
+    for (const r of (bookletFreeRes.data ?? []) as unknown as { share_number: number; booklet: { seller_id: string } }[]) {
+      (bookletNumbers[r.booklet.seller_id] ??= []).push(r.share_number);
+    }
+  }
 
   const available = countRes.count ?? 0;
   let hint: string | undefined;
@@ -109,6 +126,7 @@ export default async function SellPage({ params }: { params: Promise<{ id: strin
           emailEnabled={emailConfigured()}
           raffle={c.kind === "raffle"}
           availableNumbers={freeNumbers}
+          bookletNumbers={bookletNumbers}
         />
       </div>
     </>

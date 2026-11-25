@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.31.1",
+    date: "2026-11-25",
+    title: "Talonarios a medida",
+    changes: [
+      "Si vendes con talonario, ahora puedes elegir qué números le das al comprador (sueltos o un rango como 12-15), siempre dentro de tu talonario. Si no eliges, salen solos en orden como antes.",
+      { staff: "En Vendedores y talonarios cada talonario dice cuánto lleva vendido (por ejemplo «32 de 50»)." },
+      { staff: "Los talonarios se pueden corregir (rango, vendedor o nombre) y quitar si aún no tienen ventas. La app no deja dejar fuera números ya vendidos." },
+    ],
+  },
+  {
     version: "4.31.0",
     date: "2026-11-25",
     title: "Los mandos del club",

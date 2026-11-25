@@ -59,26 +59,35 @@ type Props = {
   raffle?: boolean;
   /** Números libres para elegir tocando (modo manual) */
   availableNumbers?: number[];
+  /** 4.31.1 · Talonarios: números libres de cada vendedor (para elegir dentro de su talonario) */
+  bookletNumbers?: Record<string, number[]>;
 };
 
-export function SaleForm({ action, priceCents, available, mode, availableHint, sellers, currentUserId, whatsappApi, emailEnabled = false, raffle = false, availableNumbers }: Props) {
+export function SaleForm({ action, priceCents, available, mode, availableHint, sellers, currentUserId, whatsappApi, emailEnabled = false, raffle = false, availableNumbers, bookletNumbers }: Props) {
   const [state, formAction] = useActionState(action, undefined);
   const [qty, setQty] = useState(1);
   const [manual, setManual] = useState("");
+  const [seller, setSeller] = useState(currentUserId);
+  // 4.31.1 · Con talonarios: siguientes en orden (como siempre) o elegir números de su talonario
+  const [pick, setPick] = useState<"next" | "choose">("next");
+  const booklet = mode === "booklet";
+  const choosing = mode === "manual" || (booklet && pick === "choose");
+  const gridNumbers = booklet ? bookletNumbers?.[seller] ?? [] : availableNumbers;
+  const free = booklet && bookletNumbers ? (bookletNumbers[seller]?.length ?? 0) : available;
   const [paid, setPaid] = useState<"full" | "none" | "partial">("full");
   const [channel, setChannel] = useState<"whatsapp" | "email" | "none">("whatsapp");
   const [buyer, setBuyer] = useState("");
 
   let manualCount = 0;
   let manualError = "";
-  if (mode === "manual" && manual.trim()) {
+  if (choosing && manual.trim()) {
     try {
       manualCount = parseRanges(manual).length;
     } catch (e) {
       manualError = (e as Error).message;
     }
   }
-  const quantity = mode === "manual" ? manualCount : qty;
+  const quantity = choosing ? manualCount : Math.min(qty, Math.max(free, 1));
   let picked = new Set<number>();
   try {
     picked = new Set(parseRanges(manual));
@@ -133,16 +142,22 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
               ? raffle
                 ? "Toca los números que se lleva. Si vuelves a tocar uno, se quita. Solo salen los libres."
                 : "Toca o escribe los números que le entregas (por ejemplo 12, 13, 40-42)."
-              : mode === "booklet"
-                ? "Con + y − dices cuántas le das. Salen solas de tu talonario, en orden."
+              : booklet
+                ? pick === "choose"
+                  ? `Toca los ${raffle ? "números" : "números de participación"} que se lleva, o escribe un rango (por ejemplo 12-15). Solo salen los libres de ${seller === currentUserId ? "tu talonario" : "su talonario"}.`
+                  : `Con + y − dices cuántas le das. Salen solas de ${seller === currentUserId ? "tu talonario" : "su talonario"}, en orden.`
                 : "Con + y − dices cuántas compra. La app le da las siguientes libres."
           } />
-        {mode === "manual" ? (
+        {booklet && (
+          <Segmented name="pick_mode" value={pick} onChange={(v) => { setPick(v); setManual(""); }} tone="negro"
+            options={[["next", "Siguientes en orden"], ["choose", "Elegir números"]] as const} />
+        )}
+        {choosing ? (
           <div>
-            {availableNumbers && availableNumbers.length > 0 && (
+            {gridNumbers && gridNumbers.length > 0 && (
               <div className="mb-3">
                 <div className="grid max-h-80 grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1.5 overflow-y-auto rounded-xl bg-gris p-2">
-                  {availableNumbers.map((n) => {
+                  {gridNumbers.map((n) => {
                     const on = picked.has(n);
                     return (
                       <button key={n} type="button" onClick={() => toggle(n)} aria-pressed={on}
@@ -155,32 +170,32 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
                 </div>
               </div>
             )}
-            <label className="label" htmlFor="share_numbers">{availableNumbers?.length ? "O escríbelos" : raffle ? "Números que vendes" : "Números de participación que entregas"}</label>
+            <label className="label" htmlFor="share_numbers">{gridNumbers?.length ? "O escríbelos" : raffle ? "Números que vendes" : "Números de participación que entregas"}</label>
             <input id="share_numbers" name="share_numbers" value={manual} onChange={(e) => setManual(e.target.value)} required
               className="input font-mono" placeholder="Ej.: 12, 13, 40-42" inputMode="numeric" />
             <p className={`mt-1 text-xs ${manualError ? "text-rojo" : "text-negro/65"}`}>
-              {manualError || `${manualCount} ${raffle ? "seleccionados" : "seleccionadas"}. ${availableNumbers?.length ? "" : availableHint ?? ""}`}
+              {manualError || `${manualCount} ${raffle ? "seleccionados" : "seleccionadas"}. ${gridNumbers?.length ? "" : booklet ? `No quedan libres en ${seller === currentUserId ? "tu talonario" : "su talonario"}.` : availableHint ?? ""}`}
             </p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 rounded-xl bg-gris py-4">
             <div className="flex items-center gap-4">
-              <button type="button" aria-label="Menos" disabled={qty <= 1}
+              <button type="button" aria-label="Menos" disabled={quantity <= 1}
                 className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-negro shadow-sm ring-1 ring-black/10 transition active:scale-90 disabled:opacity-40"
-                onClick={() => setQty((q) => Math.max(1, q - 1))}>
+                onClick={() => setQty(Math.max(1, quantity - 1))}>
                 <Minus size={22} strokeWidth={3} />
               </button>
-              <input aria-label="Cantidad" type="number" min={1} max={available} value={qty}
-                onChange={(e) => setQty(Math.max(1, Math.min(available || 1, Number(e.target.value) || 1)))}
+              <input aria-label="Cantidad" type="number" min={1} max={free} value={quantity}
+                onChange={(e) => setQty(Math.max(1, Math.min(free || 1, Number(e.target.value) || 1)))}
                 className="sport w-24 bg-transparent text-center text-6xl leading-none font-black tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" />
-              <button type="button" aria-label="Más" disabled={qty >= available}
+              <button type="button" aria-label="Más" disabled={quantity >= free}
                 className="flex h-14 w-14 items-center justify-center rounded-full bg-rojo text-white shadow-md shadow-rojo/30 transition active:scale-90 disabled:opacity-40"
-                onClick={() => setQty((q) => Math.min(available || 1, q + 1))}>
+                onClick={() => setQty(Math.min(free || 1, quantity + 1))}>
                 <Plus size={22} strokeWidth={3} />
               </button>
             </div>
             <div className="text-xs text-negro/60">
-              Quedan {available}{mode === "booklet" ? " en tu talonario" : ""}
+              Quedan {free}{booklet ? (seller === currentUserId ? " en tu talonario" : " en su talonario") : ""}
               {availableHint && <> · {availableHint}</>}
             </div>
           </div>
@@ -240,7 +255,7 @@ export function SaleForm({ action, priceCents, available, mode, availableHint, s
         <section className="card reveal">
           <Step n={5} title="¿Quién lo ha vendido?" help="Normalmente tú. Cámbialo solo si estás apuntando una venta que hizo otro compañero." />
           <label className="label mt-3" htmlFor="seller_id">Vendedor</label>
-          <select id="seller_id" name="seller_id" className="input" defaultValue={currentUserId}>
+          <select id="seller_id" name="seller_id" className="input" value={seller} onChange={(e) => { setSeller(e.target.value); setManual(""); }}>
             {sellers!.map((s) => (
               <option key={s.id} value={s.id}>{s.full_name}{s.id === currentUserId ? " (yo)" : ""}</option>
             ))}

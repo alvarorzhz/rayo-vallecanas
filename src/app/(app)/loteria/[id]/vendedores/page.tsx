@@ -4,8 +4,8 @@ import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_LABEL } from "@/lib/format";
 import { Empty, PageHeader } from "@/components/ui";
-import { BookletForm } from "@/components/lottery/client-forms";
-import { addBooklet, assignSellers, removeSeller } from "../../actions";
+import { BookletForm, BookletRow } from "@/components/lottery/client-forms";
+import { addBooklet, assignSellers, deleteBooklet, removeSeller, updateBooklet } from "../../actions";
 
 export const metadata = { title: "Vendedores" };
 
@@ -26,6 +26,9 @@ export default async function SellersPage({ params }: { params: Promise<{ id: st
   const sellers = (members ?? []).filter((m) => assignedIds.has(m.id));
   const others = (members ?? []).filter((m) => !assignedIds.has(m.id));
   const nameOf = new Map((members ?? []).map((m) => [m.id, m.full_name]));
+  // 4.31.1 · Lo que lleva vendido cada talonario
+  const soldCounts = await Promise.all((booklets ?? []).map((b) =>
+    supabase.from("lottery_shares").select("id", { count: "exact", head: true }).eq("booklet_id", b.id).eq("status", "sold").then((r) => r.count ?? 0)));
 
   return (
     <>
@@ -80,22 +83,16 @@ export default async function SellersPage({ params }: { params: Promise<{ id: st
         <h2 className="mb-1 font-bold">Talonarios</h2>
         <p className="mb-4 text-sm text-negro/65">
           {c.numbering_mode === "booklet"
-            ? "Cada vendedor solo vende participaciones de sus talonarios."
+            ? "Cada vendedor solo vende números de sus talonarios: puede dejar que salgan solos en orden o elegirlos dentro de su talonario."
             : "Esta campaña no usa talonarios (puedes cambiarlo en Editar). Aun así puedes registrar qué rangos físicos tiene cada vendedor."}
         </p>
         {booklets?.length ? (
-          <table className="table mb-4">
-            <thead><tr><th>Talonario</th><th>Vendedor</th><th>Participaciones</th></tr></thead>
-            <tbody>
-              {booklets.map((b) => (
-                <tr key={b.id}>
-                  <td>{b.label ?? "—"}</td>
-                  <td>{nameOf.get(b.seller_id)}</td>
-                  <td className="font-mono">{b.from_number}–{b.to_number} ({b.to_number - b.from_number + 1})</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul className="mb-4 grid gap-3 md:grid-cols-2">
+            {booklets.map((b, i) => (
+              <BookletRow key={`${b.id}-${b.from_number}-${b.to_number}-${b.seller_id}-${soldCounts[i]}`} booklet={b} sellerName={nameOf.get(b.seller_id) ?? "—"} sold={soldCounts[i]}
+                sellers={members ?? []} canEdit={canEdit} update={updateBooklet.bind(null, id, b.id)} remove={deleteBooklet.bind(null, id, b.id)} />
+            ))}
+          </ul>
         ) : null}
         {canEdit && <BookletForm action={addBooklet.bind(null, id)} sellers={members ?? []} />}
       </section>
