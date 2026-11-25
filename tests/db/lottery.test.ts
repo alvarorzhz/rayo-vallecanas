@@ -109,6 +109,52 @@ describe("asignación de números", () => {
     await rejects(sell("dani", c.id, 2), /No hay suficientes participaciones disponibles \(solicitadas 2, disponibles 1\)/);
   });
 
+  test("4.31.1 · talonarios: el vendedor puede elegir sueltos o un rango, pero solo de su talonario", async () => {
+    const c = await campaign({ mode: "booklet", shares: 30 });
+    const { db } = await as("gestor");
+    const dani = await as("dani"), javi = await as("javi");
+    ok(await db.from("lottery_booklets").insert({ campaign_id: c.id, seller_id: dani.id, from_number: 1, to_number: 10 }));
+    ok(await db.from("lottery_booklets").insert({ campaign_id: c.id, seller_id: javi.id, from_number: 11, to_number: 20 }));
+    const picked = await sale("dani", c.id, 4, { p_share_numbers: [7, 3, 8, 9] });
+    assert.deepEqual(await numbersOf(picked.id), [3, 7, 8, 9]);
+    await rejects(sell("dani", c.id, 2, { p_share_numbers: [10, 12] }), /Solo puedes vender números de tu talonario \(12\)/);
+    await rejects(sell("dani", c.id, 2, { p_share_numbers: [10, 25] }), /Solo puedes vender números de tu talonario \(25\)/);
+    await rejects(sell("dani", c.id, 2, { p_share_numbers: [3, 4] }), /ya está vendido: 3/);
+    await rejects(sell("dani", c.id, 3, { p_share_numbers: [4, 5] }), /exactamente 3/);
+    // Sin elegir, salen solos en orden saltándose los ya vendidos
+    const next = await sale("dani", c.id, 3);
+    assert.deepEqual(await numbersOf(next.id), [1, 2, 4]);
+    // Un gestor que apunta la venta de otro elige dentro del talonario de ese vendedor
+    const forJavi = await sale("gestor", c.id, 2, { p_seller_id: javi.id, p_share_numbers: [15, 16] });
+    assert.deepEqual(await numbersOf(forJavi.id), [15, 16]);
+    await rejects(sell("gestor", c.id, 1, { p_seller_id: javi.id, p_share_numbers: [5] }), /de tu talonario \(5\)/);
+  });
+
+  test("4.31.1 · corregir y quitar talonarios sin dejar números vendidos fuera", async () => {
+    const c = await campaign({ mode: "booklet", shares: 30 });
+    const { db } = await as("gestor");
+    const dani = await as("dani"), javi = await as("javi");
+    const a = ok(await db.from("lottery_booklets").insert({ campaign_id: c.id, seller_id: dani.id, from_number: 1, to_number: 10 }).select("id").single()) as { id: string };
+    const b = ok(await db.from("lottery_booklets").insert({ campaign_id: c.id, seller_id: javi.id, from_number: 11, to_number: 20 }).select("id").single()) as { id: string };
+    await sale("dani", c.id, 2, { p_share_numbers: [4, 8] });
+    // Recortar sin dejar fuera el 8 no se puede; recortar hasta el 8 sí
+    await rejects(db.rpc("lottery_update_booklet", { p_id: a.id, p_seller_id: dani.id, p_from: 1, p_to: 6 }), /quedarían fuera del talonario: 8/);
+    await rejects(db.rpc("lottery_update_booklet", { p_id: a.id, p_seller_id: javi.id, p_from: 1, p_to: 10 }), /no se puede pasar a otro vendedor/);
+    await rejects(db.rpc("lottery_update_booklet", { p_id: a.id, p_seller_id: dani.id, p_from: 1, p_to: 12 }), /se solapa/);
+    await rejects(db.rpc("lottery_update_booklet", { p_id: a.id, p_seller_id: dani.id, p_from: 1, p_to: 31 }), /supera el total/);
+    ok(await db.rpc("lottery_update_booklet", { p_id: a.id, p_seller_id: dani.id, p_from: 2, p_to: 8, p_label: "Talonario 1" }));
+    const own = ok(await admin.from("lottery_shares").select("share_number").eq("booklet_id", a.id).order("share_number")) as { share_number: number }[];
+    assert.deepEqual(own.map((r) => r.share_number), [2, 3, 4, 5, 6, 7, 8]);
+    // Con vendidos no se quita; sin vendidos, sí, y sus números quedan libres sin talonario
+    await rejects(db.rpc("lottery_delete_booklet", { p_id: a.id }), /ya tiene 2 vendidos/);
+    ok(await db.rpc("lottery_update_booklet", { p_id: b.id, p_seller_id: dani.id, p_from: 11, p_to: 20 }));
+    ok(await db.rpc("lottery_delete_booklet", { p_id: b.id }));
+    const left = ok(await admin.from("lottery_shares").select("share_number").eq("campaign_id", c.id).not("booklet_id", "is", null)) as unknown[];
+    assert.equal(left.length, 7);
+    // Un jugador no puede tocar talonarios
+    await rejects(dani.db.rpc("lottery_delete_booklet", { p_id: a.id }), /No tienes permiso/);
+  });
+
   test("dos sorteos del mismo año con el mismo prefijo no se pisan las referencias (arreglado en 4.20.1)", async () => {
     const prefix = Math.random().toString(36).slice(2, 8).toUpperCase();
     const a = await campaign({ prefix, sellers: ["dani"] });
