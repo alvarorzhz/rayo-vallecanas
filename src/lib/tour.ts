@@ -63,7 +63,7 @@ export function buildTour(s: Session): TourStep[] {
     steps.push({ key: "partidos", href: "/partidos", target: "/partidos", icon: "CalendarDays", title: "Partidos", text: "Todo lo que pasa en el campo.", points: p });
   }
 
-  if (s.can("news")) {
+  if (s.can("news") && !s.off("news")) {
     const p = [
       "Crónicas, previas, entrevistas y comunicados del club. Reacciona a cada noticia con ⚡ 🔥 👏 😂 😮.",
       "Si te hacen una entrevista, te llega un aviso y la contestas desde Inicio.",
@@ -83,7 +83,7 @@ export function buildTour(s: Session): TourStep[] {
     steps.push({ key: "plantilla", href: "/plantilla", target: "/plantilla", icon: "Shirt", title: "Plantilla", text: "El equipo al completo.", points: p });
   }
 
-  if (s.can("lottery_admin") || s.can("lottery_sell")) {
+  if ((s.can("lottery_admin") || s.can("lottery_sell")) && !s.off("lottery")) {
     const p: string[] = [];
     if (s.can("lottery_sell", "create"))
       p.push("Registra cada venta desde el móvil y mándale el justificante al comprador por WhatsApp.", "En «Mis ventas» ves lo que has vendido y apuntas lo que te paguen más tarde.");

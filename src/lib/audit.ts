@@ -106,6 +106,7 @@ export const TABLE_GROUPS: { label: string; tables: Record<string, string> }[] =
       push: "Aviso",
       sessions: "Sesión",
       app: "App",
+      app_settings: "Mandos de la app",
     },
   },
 ];
@@ -122,6 +123,7 @@ export const ACTION_LABEL: Record<string, string> = {
   DELETE_CAMPAIGN: "Eliminación de campaña",
   DRAW: "Sorteo",
   CLOSE_SESSION: "Sesión cerrada",
+  CLOSE_ALL_SESSIONS: "Sesiones de todos cerradas",
 };
 export const ACTION_TONE: Record<string, string> = {
   INSERT: "bg-green-100 text-green-800",
@@ -130,6 +132,7 @@ export const ACTION_TONE: Record<string, string> = {
   CANCEL_SALE: "bg-rojo/10 text-rojo",
   DELETE_CAMPAIGN: "bg-rojo/10 text-rojo",
   CLOSE_SESSION: "bg-amber-100 text-amber-800",
+  CLOSE_ALL_SESSIONS: "bg-amber-100 text-amber-800",
 };
 
 /** Nombres de los campos (los mismos en todas las tablas salvo excepción). */
@@ -139,6 +142,10 @@ const FIELD: Record<string, string> = {
   must_change_password: "Debe cambiar la contraseña", notify_sales: "Avisos de ventas", custom_role_id: "Perfil a medida",
   module: "Módulo", can_read: "Puede ver", can_create: "Puede crear", can_update: "Puede editar", can_delete: "Puede borrar",
   description: "Descripción", base: "Perfil base",
+  // Mandos de la app (4.31.0)
+  maintenance: "Modo mantenimiento", maintenance_message: "Mensaje de mantenimiento", maintenance_until: "Vuelta prevista",
+  maintenance_public: "Páginas públicas cerradas", banner_text: "Mensaje fijo", banner_tone: "Tipo de mensaje", banner_until: "Mensaje hasta",
+  modules_off: "Apartados apagados", reload_at: "Actualización forzada",
   // Sorteos
   year: "Año", lottery_number: "Número jugado", draw_type: "Tipo de sorteo", draw_date: "Fecha del sorteo",
   price_cents: "Precio", played_cents: "Jugado por participación", donation_cents: "Donativo", total_shares: "Participaciones",

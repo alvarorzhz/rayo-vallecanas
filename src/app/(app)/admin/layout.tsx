@@ -14,6 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (s.can("material")) drawers.push({ key: "material", pages: [{ href: "/admin/material", label: "Material" }] });
   if (s.profile.role === "superadmin")
     drawers.push({ key: "control", pages: [
+      { href: "/admin/mandos", label: "Mandos" },
       { href: "/admin/uso", label: "Uso" },
       { href: "/admin/auditoria", label: "Auditoría", prefix: true },
       { href: "/admin/copia", label: "Copia" },

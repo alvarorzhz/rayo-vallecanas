@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { NEWS_NAME } from "@/lib/news";
+import { getPublicStatus } from "@/lib/app-settings-server";
 
 /** Noticias públicas de La Voz del Rayo: se leen sin registrarse. */
-export default function PublicNewsLayout({ children }: { children: React.ReactNode }) {
+export default async function PublicNewsLayout({ children }: { children: React.ReactNode }) {
+  // 4.31.0 · Mantenimiento con las páginas públicas cerradas
+  if ((await getPublicStatus()).public_closed) redirect("/mantenimiento");
   return (
     <div className="min-h-dvh bg-gris">
       <header className="franja bg-negro px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] text-white">

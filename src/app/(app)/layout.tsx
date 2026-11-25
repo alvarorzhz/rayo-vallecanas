@@ -22,6 +22,8 @@ import { TodayStrip } from "@/components/matches/matchday-fx";
 import { CLUB_SHORT, hhmm, rivalShort } from "@/lib/matches";
 import { fetchNewSignings } from "@/lib/squad-queries";
 import { SigningsOnEnter } from "@/components/squad/signing-reveal";
+import { AppStrips } from "@/components/app-strips";
+import { ForceUpdate } from "@/components/force-update";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
@@ -29,9 +31,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (s.can("matches")) items.push({ href: "/partidos", label: "Partidos", icon: "CalendarDays" });
   if (s.can("squad")) items.push({ href: "/plantilla", label: "Plantilla", icon: "Shirt" });
   // La Voz del Rayo: en el ordenador, en el menú; en el móvil, el periódico de la cabecera (la barra de abajo ya va llena)
-  if (s.can("news")) items.push({ href: "/la-voz", label: "La Voz del Rayo", icon: "Newspaper", mobile: false });
+  // 4.31.0 · Un apartado apagado desde Gestión → Control → Mandos desaparece del menú
+  const newsOn = s.can("news") && !s.off("news");
+  if (newsOn) items.push({ href: "/la-voz", label: "La Voz del Rayo", icon: "Newspaper", mobile: false });
   // «Mis ventas» va dentro de Sorteos para no cargar la barra de abajo
-  if (s.can("lottery_admin") || s.can("lottery_sell")) items.push({ href: "/loteria", label: "Sorteos", icon: "Ticket", also: ["/mis-ventas"] });
+  if ((s.can("lottery_admin") || s.can("lottery_sell")) && !s.off("lottery")) items.push({ href: "/loteria", label: "Sorteos", icon: "Ticket", also: ["/mis-ventas"] });
   // 4.30.0 · Los patrocinadores viven en Finanzas
   if (s.can("finances") || s.can("sponsors")) items.push({ href: "/finanzas", label: "Finanzas", icon: "Wallet" });
   // Panel de gestión: equipo (usuarios y perfiles), avisos, material y, para el superadministrador, control
@@ -67,7 +71,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </span>
           </Link>
           <div className="relative flex shrink-0 items-center gap-2">
-            {s.can("news") && (
+            {newsOn && (
               <Link href="/la-voz" prefetch aria-label="La Voz del Rayo" data-tour="/la-voz" className="rounded-lg bg-black/30 p-2 text-white/85 hover:text-dorado">
                 <Newspaper size={18} />
               </Link>
@@ -82,6 +86,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </form>
           </div>
         </header>
+        <AppStrips settings={s.settings} isSuper={s.realRole === "superadmin"} viewingAs={s.viewingAs} />
         {strip && <TodayStrip match={strip} />}
         <main id="contenido" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 outline-none px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-8">
           <div className="page-enter">{children}</div>
@@ -100,6 +105,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       )}
       <PushPrompt />
       <ErrorReporter version={APP_VERSION} />
+      <ForceUpdate reloadAt={s.settings.reload_at} stamp={s.settings.updated_at ?? null} />
       <EasterEggs />
       <Suspense>
         <NavProgress />

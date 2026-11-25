@@ -43,8 +43,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const { error } = await searchParams;
   const s = await getSession();
   const supabase = await createClient();
-  const isAdmin = s.can("lottery_admin");
-  const canSell = s.can("lottery_sell", "create");
+  // 4.31.0 · Los apartados apagados desde Gestión → Control → Mandos no salen en Inicio
+  const isAdmin = s.can("lottery_admin") && !s.off("lottery");
+  const canSell = s.can("lottery_sell", "create") && !s.off("lottery");
+  const canNews = s.can("news") && !s.off("news");
   const season = seasonOf();
   const today = todayMadrid();
   const year = Number(today.slice(0, 4));
@@ -52,7 +54,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const canSquad = s.can("squad");
 
   // 4.26.0 · Cápsula del tiempo: la gala recién abierta o la invitación a escribir
-  const capsuleP = canMatches ? fetchCapsuleHome(supabase, s.user.id).catch(() => null) : Promise.resolve(null);
+  const capsuleP = canMatches && !s.off("capsule") ? fetchCapsuleHome(supabase, s.user.id).catch(() => null) : Promise.resolve(null);
   // 4.30.2 · Sorpresa de la porra: bola de cristal y mote de «Nostradamus»
   const oracleP = canMatches ? fetchMyOracle(supabase, s.user.id, season).catch(() => null) : Promise.resolve(null);
   // 4.19.0 · Inicio más rápido: todo lo que no depende de nada se pide a la vez (antes iba una consulta detrás de otra)
@@ -83,13 +85,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     // Patrocinadores (una línea discreta al final) y votaciones abiertas
     Promise.all([fetchDisplay(supabase), supabase.rpc("sponsor_showcase"), supabase.rpc("poll_board", { p_limit: 10 })]),
     // La Voz del Rayo
-    s.can("news")
+    canNews
       ? Promise.all([fetchPublished(supabase, { limit: 6 }), countPublished(supabase), s.can("news", "create") ? fetchPendingChronicle(supabase) : null])
       : Promise.resolve([[], 0, null] as const),
     // ¿Se acaba de terminar una liga (el Apertura…)? Tres semanas con el acceso a «Tu resumen»
     canMatches ? fetchJustEnded(supabase, today) : Promise.resolve(null),
     // Entrevistas que me ha mandado la redacción y aún no he entregado
-    fetchMyPendingInterviews(supabase, s.user.id),
+    canNews ? fetchMyPendingInterviews(supabase, s.user.id) : Promise.resolve([]),
     canMatches ? fetchMyPlayerId(supabase, s.user.id) : Promise.resolve(null),
     // 4.20.0 · Objetivos de temporada cumplidos en los últimos 3 días
     canMatches
@@ -184,7 +186,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     });
   }
 
-  const polls = ((board.data ?? []) as Poll[])
+  const polls = (s.off("polls") ? [] : (board.data ?? []) as Poll[])
     .filter((p) => p.open && p.can_vote)
     .sort((a, b) => Number(a.my_vote !== null) - Number(b.my_vote !== null));
   const canManagePolls = s.can("users", "update") || s.can("lottery_admin", "update");
@@ -211,6 +213,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       )}
       {error === "permiso" && (
         <div className="mb-4 rounded-xl bg-rojo/10 p-3 text-sm font-medium text-rojo">No tienes permiso para acceder a esa sección.</div>
+      )}
+      {error === "apagado" && (
+        <div className="mb-4 rounded-xl bg-dorado/15 p-3 text-sm font-medium text-negro/80 ring-1 ring-dorado/40">Ese apartado está apagado de momento. Volverá cuando lo encienda un superadministrador.</div>
       )}
 
       {/* 0 · Modo periódico: la noticia destacada abre Inicio (salvo la víspera y el día del partido) */}

@@ -17,6 +17,18 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.31.0",
+    date: "2026-11-25",
+    title: "Los mandos del club",
+    changes: [
+      { staff: "Nuevo en Gestión → Control → Mandos (solo superadministrador): modo mantenimiento. Todo el mundo menos el superadministrador ve «Estamos de obras» con tu mensaje y la hora de vuelta; se puede cerrar también la rifa pública y las noticias." },
+      { staff: "Mensaje fijo para todos: una franja arriba en todas las pantallas, informativa o urgente, que se quita sola en la fecha que elijas." },
+      { staff: "Apagar apartados: Sorteos, La Voz del Rayo, la porra, la cápsula o las votaciones se pueden esconder a todo el mundo y volver a encender cuando toque." },
+      { staff: "Cerrar sesión a todos de golpe (menos a ti) y forzar actualización: cada móvil carga la última versión en cuanto abre la app." },
+      { staff: "Ver como otro perfil: mira la app con los menús de un jugador, un gestor o un perfil a medida, con un botón arriba para volver." },
+    ],
+  },
+  {
     version: "4.30.7",
     date: "2026-11-25",
     title: "Bajas de verdad",

@@ -116,7 +116,7 @@ export default async function SummaryPage({ searchParams }: { searchParams: Prom
             <div className="relative mt-4 flex flex-wrap gap-2">
               <Link href={`/partidos/resumen/historias?${new URLSearchParams({ de: slug, jugador: who.player_id })}`} prefetch
                 className="btn-primary px-3 py-1.5 text-sm"><Play size={15} className="fill-current" /> {who.player.user_id === s.user.id ? "Ver mi Rayo Wrapped" : "Ver su Rayo Wrapped"}</Link>
-              {capsule?.stage === "open" && (
+              {capsule?.stage === "open" && !s.off("capsule") && (
                 <Link href={`/partidos/capsula/gala?temporada=${seasonSlug(season)}`} prefetch
                   className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-sm font-bold text-dorado ring-1 ring-dorado/60 hover:bg-white/15">🔓 Cápsula del tiempo</Link>
               )}

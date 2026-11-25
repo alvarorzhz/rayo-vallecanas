@@ -13,6 +13,7 @@ import { PorraBox } from "@/components/matches/porra-box";
 export async function PorraInline({ m }: { m: MatchRow }) {
   if (!porraOpen(m)) return null;
   const [s, supabase] = await Promise.all([getSession(), createClient()]);
+  if (s.off("porra")) return null;
   const board = await fetchPorra(supabase, m, s.user.id);
   return <PorraBox dark action={savePorra.bind(null, m.id)} mine={board.mine} rival={m.rival} isHome={m.is_home} count={board.count} />;
 }
@@ -21,6 +22,7 @@ export async function PorraInline({ m }: { m: MatchRow }) {
 export async function PorraCard({ m, withMatch = false }: { m: MatchRow; withMatch?: boolean }) {
   if (!porraOpen(m)) return null;
   const [s, supabase] = await Promise.all([getSession(), createClient()]);
+  if (s.off("porra")) return null;
   const board = await fetchPorra(supabase, m, s.user.id);
   return (
     <section className="card mb-6 space-y-2">
@@ -39,6 +41,7 @@ export async function PorraCard({ m, withMatch = false }: { m: MatchRow; withMat
 export async function PorraSection({ m, inlineShown }: { m: MatchRow; inlineShown: boolean }) {
   if (m.status === "cancelled") return null;
   const [s, supabase] = await Promise.all([getSession(), createClient()]);
+  if (s.off("porra")) return null;
   const board = await fetchPorra(supabase, m, s.user.id);
   if (board.open) {
     if (inlineShown) return null;

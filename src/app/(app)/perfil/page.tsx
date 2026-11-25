@@ -43,14 +43,16 @@ export default async function ProfilePage() {
           </Link>
         )}
         {myFee && <MyFeeCard fee={myFee} />}
-        <Link href="/votaciones" prefetch className="card group flex items-center gap-3 hover:ring-rojo/40">
-          <Vote size={22} className="text-rojo" />
-          <span className="flex-1">
-            <span className="block font-bold">Votaciones</span>
-            <span className="block text-xs text-negro/65">Las que están abiertas y los resultados de las anteriores</span>
-          </span>
-          <span className="text-rojo transition-transform duration-200 group-hover:translate-x-1">→</span>
-        </Link>
+        {!s.off("polls") && (
+          <Link href="/votaciones" prefetch className="card group flex items-center gap-3 hover:ring-rojo/40">
+            <Vote size={22} className="text-rojo" />
+            <span className="flex-1">
+              <span className="block font-bold">Votaciones</span>
+              <span className="block text-xs text-negro/65">Las que están abiertas y los resultados de las anteriores</span>
+            </span>
+            <span className="text-rojo transition-transform duration-200 group-hover:translate-x-1">→</span>
+          </Link>
+        )}
         <section className="card">
           <h2 className="mb-3 font-bold">Avisos (notificaciones)</h2>
           <PushSettings isManager={s.can("lottery_admin", "update")} notifySales={p.notify_sales} />

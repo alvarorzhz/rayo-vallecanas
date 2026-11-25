@@ -106,8 +106,8 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       <nav aria-label="Más de Partidos" className="-mx-4 -mt-2 mb-5 flex gap-1.5 [scrollbar-width:none] overflow-x-auto px-4 sm:mx-0 sm:px-0">
         {([
           [`/partidos/estadisticas?temporada=${seasonSlug(season)}`, <BarChart3 key="i" size={15} />, "Estadísticas", true],
-          [`/partidos/porra?temporada=${seasonSlug(season)}`, <Target key="i" size={15} />, "Porra", true],
-          ["/partidos/capsula", <Lock key="i" size={15} />, "Cápsula", true],
+          [`/partidos/porra?temporada=${seasonSlug(season)}`, <Target key="i" size={15} />, "Porra", !s.off("porra")],
+          ["/partidos/capsula", <Lock key="i" size={15} />, "Cápsula", !s.off("capsule")],
           ["/partidos/rivales", <Shield key="i" size={15} />, "Rivales", s.can("matches", "update")],
           ["/partidos/liga", <Trophy key="i" size={15} />, "Liga", s.can("matches", "update")],
         ] as const).filter((x) => x[3]).map(([href, icon, label]) => (

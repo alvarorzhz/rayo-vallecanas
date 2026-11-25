@@ -8,6 +8,7 @@ import { fetchProfileDefs } from "@/lib/roles";
 import { madridDay } from "@/lib/dates";
 import { madridDayRange } from "@/lib/audit";
 import { fecha } from "@/lib/format";
+import { activeBanner } from "@/lib/app-settings";
 import { OfficePlaque } from "@/components/admin-office";
 import { shortfall, tally, type MaterialLot } from "@/lib/material";
 
@@ -74,9 +75,15 @@ export default async function OfficeDesk() {
   if (isSuper) {
     const active7 = new Set((usage7?.data ?? []).map((r) => r.user_id)).size;
     const b = lastBackup?.data;
-    folders.push({ href: "/admin/uso", title: "Control", icon: ShieldCheck, tab: "var(--color-negro)", value: active7, unit: active7 === 1 ? "persona esta semana" : "personas esta semana",
+    // 4.31.0 · Mandos de la app: lo que está tocado sale en rojo en la carpeta
+    const st = s.settings;
+    const touched = [st.maintenance ? "Mantenimiento puesto" : null, st.modules_off.length ? `${st.modules_off.length} ${st.modules_off.length === 1 ? "apartado apagado" : "apartados apagados"}` : null,
+      activeBanner(st) ? "Mensaje fijo visible" : null].filter(Boolean).join(" · ");
+    folders.push({ href: "/admin/mandos", title: "Control", icon: ShieldCheck, tab: "var(--color-negro)", value: active7, unit: active7 === 1 ? "persona esta semana" : "personas esta semana",
       detail: `${todayLog?.count ?? 0} ${todayLog?.count === 1 ? "cambio" : "cambios"} hoy · última copia ${b ? fecha(b.created_at) : "nunca"}`,
-      parts: ["Uso", "Auditoría", "Copia"] });
+      alert: touched || undefined,
+      parts: ["Mandos", "Uso", "Auditoría", "Copia"] });
+    if (st.maintenance) todo.push({ href: "/admin/mandos", text: "La app está en mantenimiento: solo entras tú" });
     // La copia automática sale cada lunes: si pasan más de 8 días, algo ha fallado
     if (!b || Date.now() - new Date(b.created_at).getTime() > 8 * 86400_000)
       todo.push({ href: "/admin/copia", text: b ? `La última copia de seguridad es del ${fecha(b.created_at)}` : "Aún no hay ninguna copia de seguridad" });
