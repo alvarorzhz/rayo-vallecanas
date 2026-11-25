@@ -126,7 +126,7 @@ export function CallupSection({ m, rows, myPlayerId, canEdit }: { m: MatchRow; r
                         <Jersey number={r.number} goalkeeper={lineOf(r.position) === "GK"} size={26} dim={r.reply === "no"} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-bold">{shirtName(r.player)} <span className="font-normal text-negro/65">· {r.position}</span></span>
-                          {r.reply_note && <span className="block truncate text-xs italic text-negro/70">«{r.reply_note}»</span>}
+                          {r.reply_note && <span className="block text-xs italic text-negro/70 [overflow-wrap:anywhere]">«{r.reply_note}»</span>}
                         </span>
                         {canEdit && open ? (
                           <ReplyForSelect action={setReplyFor.bind(null, m.id, r.player_id)} reply={r.reply} name={shirtName(r.player)} />

@@ -81,7 +81,7 @@ export function CallupHistory({ m, rows, report, myPlayerId }: { m: MatchRow; ro
                 <span className="block text-xs text-negro/65">
                   {r.replied_at ? <>Contestó el {fecha(r.replied_at, true)}{byOther && " · lo apuntó un gestor"}</> : "No llegó a contestar"}
                 </span>
-                {r.reply_note && <span className="block truncate text-xs italic text-negro/70">«{r.reply_note}»</span>}
+                {r.reply_note && <span className="block text-xs italic text-negro/70 [overflow-wrap:anywhere]">«{r.reply_note}»</span>}
               </span>
               <span className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center">
                 <span className={`badge ${REPLY_TONE[r.reply]}`}><span aria-hidden>{EMOJI[r.reply]}</span> {REPLY_LABEL[r.reply]}</span>

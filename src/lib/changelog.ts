@@ -17,6 +17,15 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.31.3",
+    date: "2026-11-25",
+    title: "Comentarios enteros",
+    changes: [
+      "En la convocatoria, los comentarios largos («llego tarde porque…») ya no se cortan: se ven enteros en varias líneas, tanto al escribirlos como en la lista de respuestas y en el historial del partido.",
+      "Al escribir el comentario ya se ve lo que pones: antes, en algunos móviles, el texto salía blanco sobre blanco.",
+    ],
+  },
+  {
     version: "4.31.1",
     date: "2026-11-25",
     title: "Talonarios a medida",
