@@ -43,18 +43,34 @@ export function BookletForm({ action, sellers }: { action: A; sellers: { id: str
   );
 }
 
-export function RaffleDrawForm({ action, total, campaignId }: { action: A; total: number; campaignId: string }) {
+export function RaffleDrawForm({ action, total, campaignId, unpaid = [] }: { action: A; total: number; campaignId: string; unpaid?: number[] }) {
   const [state, formAction] = useActionState(action, undefined);
+  // 4.30.6 · Si hay números vendidos sin cobrar, hay que decir que sí entran antes de sortear.
+  const [unpaidOk, setUnpaidOk] = useState(false);
+  const blocked = unpaid.length > 0 && !unpaidOk;
+  const shown = unpaid.slice(0, 12).join(", ") + (unpaid.length > 12 ? ` y ${unpaid.length - 12} más` : "");
   return (
     <form action={formAction} className="space-y-3">
+      {unpaid.length > 0 && (
+        <div className="rounded-xl bg-dorado/20 p-3 text-sm ring-1 ring-dorado/50">
+          <p>
+            <b>Ojo: {unpaid.length === 1 ? "hay 1 número vendido que aún no está pagado" : `hay ${unpaid.length} números vendidos que aún no están pagados`}</b> ({shown}).
+            {" "}Entran en el sorteo igual. Si quieres, cóbralos o anula esas ventas antes de sortear.
+          </p>
+          <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 font-semibold">
+            <input type="checkbox" name="unpaid_ok" value="1" checked={unpaidOk} onChange={(e) => setUnpaidOk(e.target.checked)} className="h-5 w-5 accent-rojo" />
+            Sí, sorteamos con {unpaid.length === 1 ? "ese número dentro" : "esos números dentro"}
+          </label>
+        </div>
+      )}
       <div className="flex flex-wrap items-end gap-2">
         <div>
           <label className="label" htmlFor="number">Número ganador (si ya lo sabes)</label>
           <input id="number" name="number" type="number" min={1} max={total} className="input w-40 font-mono" placeholder={`1 – ${total}`} />
         </div>
-        <SubmitButton className="btn-dark" name="mode" value="manual" pendingText="Registrando…">Registrar número</SubmitButton>
+        <SubmitButton className="btn-dark" name="mode" value="manual" pendingText="Registrando…" disabled={blocked}>Registrar número</SubmitButton>
         <span className="pb-2 text-sm text-negro/65">o</span>
-        <SubmitButton className="btn-primary" name="mode" value="random" pendingText="Sorteando…"
+        <SubmitButton className="btn-primary" name="mode" value="random" pendingText="Sorteando…" disabled={blocked}
           formNoValidate onClick={(e) => { if (!confirm("¿Sortear ahora al azar entre los números vendidos? No se puede repetir.")) e.preventDefault();
             else try { sessionStorage.setItem(bomboFlag(campaignId), "1"); } catch {} }}>
           Sortear al azar

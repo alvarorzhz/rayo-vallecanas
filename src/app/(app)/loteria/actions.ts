@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { euros, parseEuros, parseRanges, phoneE164 } from "@/lib/format";
 import { loadReceipt } from "@/lib/lottery/receipt-data";
+import { fetchUnpaidNumbers } from "@/lib/lottery/queries";
 import { receiptText } from "@/lib/receipt";
 import { sendReceiptEmail, sendReceiptWhatsApp } from "@/lib/notify";
 
@@ -153,6 +154,9 @@ export async function drawRaffle(id: string, _: ActionState, f: FormData): Promi
     const manual = str(f, "mode") === "random" ? "" : str(f, "number");
     if (str(f, "mode") === "manual" && !manual) throw new Error("Escribe el número ganador o pulsa «Sortear al azar»");
     const supabase = await createClient();
+    // 4.30.6 · Con números vendidos sin cobrar hay que confirmar que entran
+    if (str(f, "unpaid_ok") !== "1" && (await fetchUnpaidNumbers(supabase, id)).length)
+      throw new Error("Hay números vendidos sin pagar: marca que entran en el sorteo o cóbralos antes");
     const { data, error } = await supabase.rpc("lottery_draw_winner", {
       p_campaign_id: id,
       p_number: manual ? Number(manual) : null,
