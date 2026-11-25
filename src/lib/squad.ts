@@ -191,6 +191,14 @@ export const nextSeason = (s: string) => {
   const y = Number(s.slice(0, 4)) + 1;
   return `${y}/${String((y + 1) % 100).padStart(2, "0")}`;
 };
+/**
+ * 4.31.2 · ¿Toca preparar la temporada siguiente? De junio a agosto (la temporada cambia el 1 de septiembre;
+ * en septiembre, la temporada nueva vacía ya ofrece copiarla de la anterior). `today` es "AAAA-MM-DD".
+ */
+export const preparingTime = (today: string) => {
+  const m = Number(today.slice(5, 7));
+  return m >= 6 && m <= 8;
+};
 /** "2026/27" -> "2025/26" */
 export const prevSeason = (s: string) => {
   const y = Number(s.slice(0, 4)) - 1;

@@ -68,7 +68,7 @@ export const NOTICE_CATALOG: NoticeKind[] = [
 
   { area: "league", title: "🆕 Jugador nuevo en la liga", when: "Cada mañana (10:00) y al sincronizar con la liga, si en la plantilla del Rayo en futormes aparece alguien que no está en la de la app. Una sola vez por jugador; se añade o se ignora en Plantilla.", who: "Quien puede fichar en Plantilla.", how: "auto" },
   { area: "league", title: "🏆 Hay liga nueva en futormes", when: "Al acabar la liga, cuando la app encuentra al Rayo en otra competición (una sola vez por competición).", who: "Quien puede editar Partidos.", how: "auto" },
-  { area: "fees", title: "💶 Cuota del Rayo", when: "Con «Recordar a los que deben» en Plantilla → Cuotas (como mucho una vez al día). Dice a cada uno lo que le falta.", who: "Solo los jugadores que deben cuota esta temporada.", how: "manual" },
+  { area: "fees", title: "💶 Cuota del Rayo", when: "Con «Recordar a los que deben» en Finanzas → Cuotas (como mucho una vez al día). Dice a cada uno lo que le falta.", who: "Solo los jugadores que deben cuota esta temporada.", how: "manual" },
 
   { area: "access", title: "🔑 … no puede entrar", when: "Cuando alguien pulsa «Avisar a un gestor» en «¿Has olvidado la contraseña?» (como mucho una vez cada 30 minutos por persona). Al tocarlo se abre su ficha para crearle una contraseña provisional.", who: "Quien puede editar usuarios.", how: "auto" },
   { area: "backup", title: "⚠️ La copia de seguridad ha fallado", when: "Si falla la copia automática de los lunes.", who: "Los superadministradores.", how: "auto" },

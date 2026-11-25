@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Target, CalendarDays, Lock, Plus, Shield, Trophy } from "lucide-react";
+import { BarChart3, Target, CalendarDays, Lock, Plus, Trophy } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
@@ -7,6 +7,7 @@ import { fetchMatchSeasons, fetchMatches } from "@/lib/match-queries";
 import { monthLabel, todayMadrid, type MatchRow } from "@/lib/matches";
 import { seasonFromSlug, seasonSlug } from "@/lib/squad";
 import { Empty, PageHeader } from "@/components/ui";
+import { SectionShortcuts } from "@/components/section-shortcuts";
 import { MatchLine, Scoreboard } from "@/components/matches/match-bits";
 import { Ball } from "@/components/squad/ball";
 import { LeagueProblem } from "@/components/matches/league-problem";
@@ -92,7 +93,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="Partidos"
         subtitle={<>Temporada <b>{season}</b>{current ? " · actual" : ""}</>}
-        actions={canCreate ? <Link href="/partidos/nuevo" prefetch className="btn-primary"><Plus size={18} /> Nuevo partido</Link> : undefined}
+        actions={canCreate ? <Link href="/partidos/nuevo" prefetch className="btn-primary"><Plus size={18} /> Partido</Link> : undefined}
       />
       {s.can("matches", "update") && league?.last_summary && <LeagueProblem summary={league.last_summary} compact />}
       {s.can("matches", "update") && !league && current && (
@@ -102,21 +103,13 @@ export default async function MatchesPage({ searchParams }: { searchParams: Prom
       )}
       {sp.eliminado && <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">Partido eliminado del calendario.</p>}
 
-      {/* Lo demás de Partidos, en una sola línea discreta (el balance está en Estadísticas y la tabla en Clasificación) */}
-      <nav aria-label="Más de Partidos" className="-mx-4 -mt-2 mb-5 flex gap-1.5 [scrollbar-width:none] overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        {([
-          [`/partidos/estadisticas?temporada=${seasonSlug(season)}`, <BarChart3 key="i" size={15} />, "Estadísticas", true],
-          [`/partidos/porra?temporada=${seasonSlug(season)}`, <Target key="i" size={15} />, "Porra", !s.off("porra")],
-          ["/partidos/capsula", <Lock key="i" size={15} />, "Cápsula", !s.off("capsule")],
-          ["/partidos/rivales", <Shield key="i" size={15} />, "Rivales", s.can("matches", "update")],
-          ["/partidos/liga", <Trophy key="i" size={15} />, "Liga", s.can("matches", "update")],
-        ] as const).filter((x) => x[3]).map(([href, icon, label]) => (
-          <Link key={label} href={href} prefetch
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-[13px] font-bold text-negro/75 ring-1 ring-black/10 transition hover:text-rojo hover:ring-rojo/40">
-            <span className="text-rojo">{icon}</span> {label}
-          </Link>
-        ))}
-      </nav>
+      {/* 4.31.2 · Los mismos accesos que en Plantilla, como mucho 4 (Rivales está dentro de Liga) */}
+      <SectionShortcuts label="Más de Partidos" items={[
+        { href: `/partidos/estadisticas?temporada=${seasonSlug(season)}`, icon: BarChart3, label: "Estadísticas" },
+        { href: `/partidos/porra?temporada=${seasonSlug(season)}`, icon: Target, label: "Porra", show: !s.off("porra") },
+        { href: "/partidos/capsula", icon: Lock, label: "Cápsula", show: !s.off("capsule") },
+        { href: "/partidos/liga", icon: Trophy, label: "Liga", show: s.can("matches", "update") },
+      ]} />
 
       {!tableView && hero && (
         <section className="mb-6">

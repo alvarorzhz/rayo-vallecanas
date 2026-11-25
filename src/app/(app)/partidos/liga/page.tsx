@@ -3,7 +3,7 @@ import { requirePerm } from "@/lib/session";
 import { seasonSlug } from "@/lib/squad";
 import { createClient } from "@/lib/supabase/server";
 import { fecha } from "@/lib/format";
-import { CalendarCheck, Flag, History, Info, Trophy } from "lucide-react";
+import { CalendarCheck, Flag, History, Info, Shield, Trophy } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import { LEAGUE_DATA } from "@/lib/league-plan";
 import { changesText, leagueOver } from "@/lib/league-status";
@@ -34,7 +34,8 @@ export default async function LeaguePage() {
   const next = sum?.next && sum.next.competition !== cfg?.competition ? sum.next : null;
   return (
     <>
-      <PageHeader title="Liga" subtitle="Trae el calendario, los campos, los rivales con su escudo, los resultados y la plantilla de la web de la liga" back={{ href: "/partidos", label: "Partidos" }} />
+      <PageHeader title="Liga" subtitle="Trae el calendario, los campos, los rivales con su escudo, los resultados y la plantilla de la web de la liga" back={{ href: "/partidos", label: "Partidos" }}
+        actions={<Link href="/partidos/rivales" prefetch className="btn-ghost"><Shield size={16} /> Rivales y escudos</Link>} />
       {sum && <div className="mb-6"><LeagueProblem summary={sum} /></div>}
       {(over || next) && (
         <section className="mb-6 flex items-start gap-3 rounded-2xl bg-dorado/15 p-4 ring-1 ring-dorado/50" data-testid="league-over">

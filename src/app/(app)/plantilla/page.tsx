@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { CalendarPlus, Download, FileSpreadsheet, FileText, FolderLock, History, LayoutGrid, List, Plus, Search, Shirt, Wallet, type LucideIcon } from "lucide-react";
+import { CalendarPlus, Download, FileSpreadsheet, FileText, FolderLock, History, LayoutGrid, List, Plus, Search, Shirt } from "lucide-react";
 import { requirePerm } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { seasonOf } from "@/lib/finance";
 import { fetchRoster, fetchSeasons } from "@/lib/squad-queries";
 import {
   FOOT_LABEL, LINES, LINE_TONE, SQUAD_ORDERS, STATUSES, STATUS_LABEL, STATUS_TONE, POSITION_LABEL,
-  fullName, groupByLine, lineFromSlug, lineOf, nextSeason, orderFromSlug, orderRoster, prevSeason, seasonFromSlug, seasonSlug, shirtName, statusFromSlug,
+  fullName, groupByLine, preparingTime, lineFromSlug, lineOf, nextSeason, orderFromSlug, orderRoster, prevSeason, seasonFromSlug, seasonSlug, shirtName, statusFromSlug,
 } from "@/lib/squad";
 import { Empty, PageHeader } from "@/components/ui";
+import { SectionShortcuts } from "@/components/section-shortcuts";
+import { todayMadrid } from "@/lib/matches";
 import { Armband, PlayerCard, PositionChip } from "@/components/squad/player-card";
 import { Pitch } from "@/components/squad/pitch";
 import { Jersey } from "@/components/squad/jersey";
@@ -87,32 +89,28 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
 
       {canCreate && current && <LeagueNewcomers items={newcomers} />}
 
-      {/* Mesa de la plantilla: las herramientas en baldosas */}
-      <nav aria-label="Herramientas de la plantilla" className="relative z-20 mb-6 grid grid-cols-[repeat(auto-fill,minmax(3.9rem,1fr))] gap-1.5 sm:max-w-2xl sm:grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] sm:gap-3">
-        <DeskTile href="/plantilla/historia" icon={History} label="Historia" />
-        {s.can("finances", "read") && <DeskTile href={`/plantilla/cuotas?temporada=${seasonSlug(season)}`} icon={Wallet} label="Cuotas" />}
-        {canPrivate && (
-          <DeskTile href={docAlerts > 0 ? "/plantilla/documentos?filtro=caducan" : "/plantilla/documentos"} icon={FolderLock} label="Documentos"
-            badge={docAlerts || undefined} note={docAlerts > 0 ? (docAlerts === 1 ? "1 caduca" : `${docAlerts} caducan`) : undefined} />
-        )}
-        {canCreate && !seasons.includes(nextSeason(season)) && roster.length > 0 && (
-          <DeskTile href={`/plantilla/nueva-temporada?desde=${seasonSlug(season)}`} icon={CalendarPlus} label={`Preparar ${nextSeason(season)}`} />
-        )}
-        {s.can("squad", "update") && roster.length > 0 && (
-          <details className="relative open:z-50">
-            <summary className={`${TILE} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
-              <TileIcon icon={Download} /> Exportar
-            </summary>
-            <div className="anim-rise absolute right-0 top-full z-40 mt-2 w-64 space-y-1 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-black/10">
+      {/* 4.31.2 · Los mismos accesos que en Partidos, como mucho 4. Las cuotas están en Finanzas;
+          «Preparar» solo sale en verano, que es cuando se prepara la temporada siguiente */}
+      <SectionShortcuts label="Herramientas de la plantilla" items={[
+        { href: "/plantilla/historia", icon: History, label: "Historia" },
+        { href: docAlerts > 0 ? "/plantilla/documentos?filtro=caducan" : "/plantilla/documentos", icon: FolderLock, label: "Documentos", badge: docAlerts, show: canPrivate },
+        {
+          icon: Download, label: "Exportar", show: s.can("squad", "update") && roster.length > 0,
+          menu: (
+            <>
               <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=xlsx`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileSpreadsheet size={16} className="text-green-700" /> Excel de la plantilla</a>
               <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=pdf`} target="_blank" rel="noopener" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FileText size={16} className="text-rojo" /> PDF de la plantilla</a>
               {canPrivate && (
                 <a href={`/api/plantilla/exportar?temporada=${seasonSlug(season)}&formato=xlsx&datos=1`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-gris"><FolderLock size={16} /> Excel con datos personales</a>
               )}
-            </div>
-          </details>
-        )}
-      </nav>
+            </>
+          ),
+        },
+        {
+          href: `/plantilla/nueva-temporada?desde=${seasonSlug(season)}`, icon: CalendarPlus, label: `Preparar ${nextSeason(season)}`,
+          show: canCreate && current && preparingTime(todayMadrid()) && !seasons.includes(nextSeason(season)) && roster.length > 0,
+        },
+      ]} />
 
       {/* Marcador de la plantilla */}
       <section className="franja relative mb-6 overflow-hidden rounded-3xl bg-negro p-5 text-white shadow-xl sm:p-6">
@@ -299,26 +297,3 @@ function Chip({ href, on, dot, children }: { href: string; on: boolean; dot?: st
 
 const CARD_GRID = "grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-6 md:grid-cols-4 xl:grid-cols-5";
 
-/** Baldosa de la mesa de la plantilla (como los cajones de Gestión, en pequeño). */
-const TILE = "group relative flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl bg-white px-0.5 py-3 text-center text-[10.5px] font-bold tracking-tight sm:px-1 sm:text-xs sm:tracking-normal leading-tight shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:ring-dorado active:scale-[0.97]";
-
-function TileIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return (
-    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gris text-rojo ring-1 ring-black/5 transition group-hover:bg-rojo group-hover:text-white">
-      <Icon size={19} />
-    </span>
-  );
-}
-
-function DeskTile({ href, icon, label, badge, note }: { href: string; icon: LucideIcon; label: string; badge?: number; note?: string }) {
-  return (
-    <Link href={href} prefetch className={TILE}>
-      <TileIcon icon={icon} />
-      <span>{label}</span>
-      {note && <span className="-mt-1 text-[10px] font-semibold text-amber-700">{note}</span>}
-      {badge != null && (
-        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-black text-white ring-2 ring-gris">{badge}</span>
-      )}
-    </Link>
-  );
-}

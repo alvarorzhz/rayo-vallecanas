@@ -7,13 +7,13 @@ import { signOut } from "@/app/login/actions";
 import { Avatar } from "@/components/avatar";
 import { CrestEgg } from "@/components/easter-eggs";
 
-export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; soon?: boolean; mobile?: boolean; also?: string[] };
+export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; soon?: boolean; mobile?: boolean; also?: string[]; not?: string[] };
 
 const ICONS = { Home, Ticket, ShoppingBag, Users, ScrollText, Wallet, Shirt, CalendarDays, Settings, Newspaper };
 
-function isActive(path: string, href: string, also: string[] = []) {
+function isActive(path: string, href: string, also: string[] = [], not: string[] = []) {
   const under = (h: string) => path === h || path.startsWith(h + "/");
-  return href === "/" ? path === "/" : under(href) || also.some(under);
+  return href === "/" ? path === "/" : (under(href) && !not.some(under)) || also.some(under);
 }
 
 export function Sidebar({ items, name, role, version, avatar }: { items: NavItem[]; name: string; role: string; version?: string; avatar?: string | null }) {
@@ -37,7 +37,7 @@ export function Sidebar({ items, name, role, version, avatar }: { items: NavItem
                 <span className="ml-auto rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase">Pronto</span>
               </div>
             );
-          const active = isActive(path, it.href, it.also);
+          const active = isActive(path, it.href, it.also, it.not);
           return (
             <Link
               aria-current={active ? "page" : undefined}
@@ -81,7 +81,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
   // Caben 6 botones: si sobran, se quitan los del medio y «Gestión» (el último) se queda siempre
   const all = items.filter((i) => !i.soon && i.mobile !== false);
   const visible = all.length > 6 ? [...all.slice(0, 5), all[all.length - 1]] : all;
-  const activeIdx = visible.findIndex((it) => isActive(path, it.href, it.also));
+  const activeIdx = visible.findIndex((it) => isActive(path, it.href, it.also, it.not));
   const ref = useRef<HTMLElement>(null);
   useAnchorToScreenBottom(ref);
   return (
@@ -102,7 +102,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
       </span>
       {visible.map((it) => {
         const Icon = ICONS[it.icon];
-        const active = isActive(path, it.href, it.also);
+        const active = isActive(path, it.href, it.also, it.not);
         return (
           <Link
             key={it.href}

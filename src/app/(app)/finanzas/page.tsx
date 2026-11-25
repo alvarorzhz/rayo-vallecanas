@@ -88,9 +88,18 @@ export default async function FinancesPage({ searchParams }: { searchParams: Pro
         </dl>
       </Hero>
       {result < 0 && <p className="-mt-3 mb-6 text-xs font-semibold text-rojo">Esta temporada se ha gastado más de lo ingresado.</p>}
-      {/* 4.30.0 · Los patrocinadores, con el dinero */}
-      {canSponsors && (
-        <Link href="/finanzas/patrocinadores" prefetch className="card group mb-6 flex items-center gap-3 sm:max-w-md">
+      {/* 4.30.0 · Los patrocinadores, con el dinero. 4.31.2 · Y las cuotas de los jugadores, que antes estaban en Plantilla */}
+      <div className="mb-6 grid gap-3 sm:max-w-3xl sm:grid-cols-2">
+        <Link href={`/plantilla/cuotas?temporada=${season.replace("/", "-")}`} prefetch className="card group flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gris text-rojo ring-1 ring-black/5 transition group-hover:bg-rojo group-hover:text-white"><Wallet size={22} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="sport block text-lg font-black leading-tight group-hover:text-rojo">Cuotas</span>
+            <span className="block truncate text-xs text-negro/65">Quién ha pagado y quién debe en {season}</span>
+          </span>
+          <span aria-hidden className="text-negro/30 transition group-hover:translate-x-0.5 group-hover:text-rojo">→</span>
+        </Link>
+        {canSponsors && (
+        <Link href="/finanzas/patrocinadores" prefetch className="card group flex items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gris text-rojo ring-1 ring-black/5 transition group-hover:bg-rojo group-hover:text-white"><Handshake size={22} /></span>
           <span className="min-w-0 flex-1">
             <span className="sport block text-lg font-black leading-tight group-hover:text-rojo">Patrocinadores</span>
@@ -100,7 +109,8 @@ export default async function FinancesPage({ searchParams }: { searchParams: Pro
           </span>
           <span aria-hidden className="text-negro/30 transition group-hover:translate-x-0.5 group-hover:text-rojo">→</span>
         </Link>
-      )}
+        )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <section className="card min-w-0">
