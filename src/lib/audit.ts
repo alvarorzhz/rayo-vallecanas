@@ -95,22 +95,70 @@ export const TABLE_GROUPS: { label: string; tables: Record<string, string> }[] =
     },
   },
   {
-    label: "Usuarios y app",
+    label: "Votaciones y avisos",
+    tables: {
+      polls: "Votación",
+      push: "Aviso",
+    },
+  },
+  {
+    label: "Usuarios y permisos",
     tables: {
       profiles: "Usuario",
       user_permissions: "Permisos personalizados",
       role_permissions: "Permisos por perfil",
       custom_roles: "Perfil a medida",
       custom_role_permissions: "Permisos de perfil a medida",
-      polls: "Votación",
-      push: "Aviso",
-      sessions: "Sesión",
-      app: "App",
+    },
+  },
+  {
+    label: "Configuración de la app",
+    tables: {
       app_settings: "Mandos de la app",
+      app: "App",
+    },
+  },
+  {
+    label: "Sesiones",
+    tables: {
+      sessions: "Sesión",
     },
   },
 ];
 export const TABLE_LABEL: Record<string, string> = Object.assign({}, ...TABLE_GROUPS.map((g) => g.tables));
+
+/**
+ * 4.32.0 · Tres auditorías separadas:
+ * - funcional: lo del día a día del club (partidos, cuotas, rifa, patrocinadores, material…);
+ * - administrativa: quién cambió usuarios, permisos, configuración o mantenimiento, y quién sacó datos (exportaciones, copias);
+ * - seguridad: entradas, salidas, intentos fallidos, dispositivos y sesiones cerradas (historial de accesos + sesiones abiertas).
+ */
+export type AuditKind = "funcional" | "administrativa" | "seguridad";
+/** Tablas cuyos cambios son administración (usuarios, permisos y mandos de la app). */
+export const ADMIN_TABLES = ["profiles", "user_permissions", "role_permissions", "custom_roles", "custom_role_permissions", "app_settings", "app"];
+/** Acciones administrativas en cualquier tabla: datos que salen de la app. */
+export const ADMIN_ACTIONS = ["EXPORT", "BACKUP"];
+/** Tablas de seguridad dentro de audit_log (el resto de la seguridad vive en access_log). */
+export const SECURITY_TABLES = ["sessions"];
+
+/** A qué auditoría pertenece un registro de audit_log. */
+export function auditKind(r: Pick<AuditRow, "table_name" | "action">): AuditKind {
+  if (SECURITY_TABLES.includes(r.table_name)) return "seguridad";
+  if (ADMIN_TABLES.includes(r.table_name) || ADMIN_ACTIONS.includes(r.action)) return "administrativa";
+  return "funcional";
+}
+
+/** Apartados del filtro que tiene cada auditoría. */
+export function tableGroupsFor(kind: "funcional" | "administrativa") {
+  return TABLE_GROUPS.map((g) => ({
+    label: g.label,
+    tables: Object.fromEntries(Object.entries(g.tables).filter(([t]) =>
+      kind === "administrativa" ? ADMIN_TABLES.includes(t) : !ADMIN_TABLES.includes(t) && !SECURITY_TABLES.includes(t))),
+  })).filter((g) => Object.keys(g.tables).length > 0);
+}
+
+/** Lista PostgREST «(a,b,c)». */
+export const pgList = (xs: string[]) => `(${xs.join(",")})`;
 
 export const ACTION_LABEL: Record<string, string> = {
   INSERT: "Alta",
@@ -124,6 +172,7 @@ export const ACTION_LABEL: Record<string, string> = {
   DRAW: "Sorteo",
   CLOSE_SESSION: "Sesión cerrada",
   CLOSE_ALL_SESSIONS: "Sesiones de todos cerradas",
+  REMOVE_MEMBER: "Baja",
 };
 export const ACTION_TONE: Record<string, string> = {
   INSERT: "bg-green-100 text-green-800",
@@ -133,6 +182,9 @@ export const ACTION_TONE: Record<string, string> = {
   DELETE_CAMPAIGN: "bg-rojo/10 text-rojo",
   CLOSE_SESSION: "bg-amber-100 text-amber-800",
   CLOSE_ALL_SESSIONS: "bg-amber-100 text-amber-800",
+  REMOVE_MEMBER: "bg-rojo/10 text-rojo",
+  EXPORT: "bg-dorado/30 text-negro",
+  BACKUP: "bg-dorado/30 text-negro",
 };
 
 /** Nombres de los campos (los mismos en todas las tablas salvo excepción). */

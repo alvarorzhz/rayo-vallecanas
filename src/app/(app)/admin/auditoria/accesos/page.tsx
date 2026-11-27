@@ -10,7 +10,7 @@ import { Pager } from "@/components/pager";
 import { AuditTabs } from "@/components/audit/audit-tabs";
 import { DeviceLabel } from "@/components/audit/device-label";
 
-export const metadata = { title: "Auditoría · Accesos" };
+export const metadata = { title: "Auditoría · Seguridad" };
 const PAGE = 50;
 
 type SP = { p?: string; e?: string; u?: string; desde?: string; hasta?: string };
@@ -34,11 +34,12 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
   if (to) q = q.lte("created_at", to);
 
   const week = new Date(Date.now() - 7 * 86400_000).toISOString();
-  const [{ data, count, error }, { data: people }, logins7, failed7] = await Promise.all([
+  const [{ data, count, error }, { data: people }, logins7, failed7, revoked7] = await Promise.all([
     q,
     supabase.from("member_directory").select("id, full_name, active").order("full_name"),
     supabase.from("access_log").select("id", { count: "exact", head: true }).in("event", ["login", "link"]).gte("created_at", week),
     supabase.from("access_log").select("id", { count: "exact", head: true }).eq("event", "login_failed").gte("created_at", week),
+    supabase.from("access_log").select("id", { count: "exact", head: true }).eq("event", "revoked").gte("created_at", week),
   ]);
   const rows = (data ?? []) as Access[];
   const names = new Map((people ?? []).map((p) => [p.id, p.full_name]));
@@ -70,8 +71,8 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <PageHeader title="Auditoría" subtitle="Entradas, salidas e intentos fallidos, con el dispositivo y la IP." />
-      <AuditTabs current="/admin/auditoria/accesos" />
+      <PageHeader title="Auditoría" subtitle="Lo que pasa en la app, separado en tres: funcional, administrativa y de seguridad. No se puede modificar." />
+      <AuditTabs current="seguridad" sub="accesos" />
 
       {error ? (
         <div className="card text-sm text-negro/70">
@@ -79,9 +80,10 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
         </div>
       ) : (
         <>
-          <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="mb-4 grid grid-cols-3 gap-3">
             <Stat label="Entradas · 7 días" value={logins7.count ?? 0} />
             <Stat label="Intentos fallidos · 7 días" value={failed7.count ?? 0} />
+            <Stat label="Sesiones cerradas · 7 días" value={revoked7.count ?? 0} />
           </div>
 
           {lastSeen.length > 0 && (
@@ -108,6 +110,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
                 <option value="logout">Salidas</option>
                 <option value="password">Cambios de contraseña</option>
                 <option value="revoked">Sesiones cerradas a distancia</option>
+                <option value="disabled">Usuarios deshabilitados</option>
               </select>
             </label>
             <label className="block">

@@ -51,10 +51,10 @@ La barra inferior del móvil tiene seis apartados: **Inicio · Partidos · Plant
 - **Patrocinadores**: fichas, acuerdos por temporada (dinero, especie o mixto), plazos de cobro y avisos de vencimiento.
 - **Material**: inventario del club (equipaciones por talla y dorsal, balones, petos, botiquín…) con estado nuevo/usado/roto, quién tiene cada cosa, mínimo con aviso «Lo que falta» y botón para apuntar la compra en Finanzas. Cada jugador ve en su ficha solo lo suyo («Mi material»).
 - **Avisos**: mensajes push al equipo, **votaciones sí/no** y registro de todos los avisos enviados.
-- **Auditoría** (solo superadministrador):
-  - *Cambios*: quién cambió qué y cuándo, con el **valor anterior y el nuevo** de cada campo, en lenguaje claro. Filtros por apartado, acción, persona y fechas, e historial completo de cualquier registro.
-  - *Accesos*: entradas, salidas, intentos fallidos y cambios de contraseña, con dispositivo e IP; última conexión de cada persona (la apunta la app en cada página), de la más reciente a la más antigua.
-  - *Sesiones abiertas*: dispositivos con la sesión iniciada, ordenados por última conexión, y botón para cerrarla al momento (por ejemplo, si alguien pierde el móvil).
+- **Auditoría** (solo superadministrador), separada en tres (`auditKind()` en `src/lib/audit.ts`):
+  - *Funcional*: el día a día del club (partidos, cuotas, rifa, finanzas, patrocinadores, material, noticias…): quién cambió qué y cuándo, con el **valor anterior y el nuevo** de cada campo, en lenguaje claro. Filtros por apartado, acción, persona y fechas, e historial completo de cualquier registro.
+  - *Administrativa*: usuarios, perfiles y permisos, bajas, mandos de la app (mantenimiento, mensaje fijo, apartados apagados, actualización forzada), exportaciones y copias de seguridad. Mismos filtros.
+  - *Seguridad*: historial de accesos (entradas, salidas, intentos fallidos, cambios de contraseña, sesiones cerradas a distancia y por quién, con dispositivo e IP; última conexión de cada persona) y *sesiones abiertas*, con botón para cerrarlas al momento (por ejemplo, si alguien pierde el móvil).
 - **Uso** (solo superadministrador): qué pantallas abre el equipo (personas distintas y veces), personas por día, quién entra y cuánto, app instalada o navegador, avisos activados, participación (convocatorias, MVP, notas, porra, votaciones, reacciones, felicitaciones, entrevistas) y pantallas que nadie abre. Se guarda una cuenta por persona, pantalla y día (`usage_daily`, con `track_usage()`), durante un año.
 - **Copia de seguridad** (solo superadministrador): todo en Excel o JSON, y copia automática cada lunes con los archivos (en Vercel Blob si está `BLOB_READ_WRITE_TOKEN`; si no, en un cajón privado de Supabase), guardando las 8 últimas.
 

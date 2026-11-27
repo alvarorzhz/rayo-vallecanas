@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.32.0",
+    date: "2026-11-27",
+    title: "Tres auditorías",
+    changes: [
+      { staff: "La auditoría (Gestión → Control, solo superadministrador) se separa en tres pestañas. Funcional: quién cambió un partido, una cuota, una venta, un patrocinador o el material." },
+      { staff: "Administrativa: quién cambió usuarios, perfiles y permisos, quién dio de baja a alguien, quién tocó los mandos de la app (mantenimiento, mensaje fijo, apartados) y quién exportó datos o hizo copias." },
+      { staff: "Seguridad: quién entró y salió, desde qué dispositivo, los intentos fallidos, las sesiones abiertas y qué sesiones se cerraron y quién las cerró." },
+    ],
+  },
+  {
     version: "4.31.3",
     date: "2026-11-25",
     title: "Comentarios enteros",

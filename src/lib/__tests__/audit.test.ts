@@ -57,3 +57,23 @@ test("dispositivo legible a partir del navegador", () => {
   assert.equal(parseDevice("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15").label, "Mac · Safari");
   assert.equal(parseDevice(null).label, "Dispositivo desconocido");
 });
+
+test("4.32.0 · cada registro cae en su auditoría: funcional, administrativa o seguridad", async () => {
+  const { auditKind, tableGroupsFor } = await import("../audit.ts");
+  assert.equal(auditKind({ table_name: "matches", action: "UPDATE" }), "funcional");
+  assert.equal(auditKind({ table_name: "squad_fee_plans", action: "INSERT" }), "funcional");
+  assert.equal(auditKind({ table_name: "sponsors", action: "DELETE" }), "funcional");
+  assert.equal(auditKind({ table_name: "lottery_sales", action: "CANCEL_SALE" }), "funcional");
+  assert.equal(auditKind({ table_name: "push", action: "NOTICE" }), "funcional");
+  assert.equal(auditKind({ table_name: "role_permissions", action: "UPDATE" }), "administrativa");
+  assert.equal(auditKind({ table_name: "profiles", action: "REMOVE_MEMBER" }), "administrativa");
+  assert.equal(auditKind({ table_name: "app_settings", action: "UPDATE" }), "administrativa");
+  assert.equal(auditKind({ table_name: "app", action: "BACKUP" }), "administrativa");
+  assert.equal(auditKind({ table_name: "finance_movements", action: "EXPORT" }), "administrativa");
+  assert.equal(auditKind({ table_name: "sessions", action: "CLOSE_SESSION" }), "seguridad");
+  assert.equal(auditKind({ table_name: "sessions", action: "CLOSE_ALL_SESSIONS" }), "seguridad");
+  const fun = tableGroupsFor("funcional").flatMap((g) => Object.keys(g.tables));
+  const adm = tableGroupsFor("administrativa").flatMap((g) => Object.keys(g.tables));
+  assert.ok(fun.includes("matches") && !fun.includes("profiles") && !fun.includes("sessions"));
+  assert.ok(adm.includes("profiles") && adm.includes("app_settings") && !adm.includes("matches"));
+});
