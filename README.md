@@ -65,7 +65,7 @@ Cuatro cajones: **Equipo**, **Avisos**, **Material** y **Control**.
 - **Avisos**: mensajes push al equipo, **votaciones sí/no** (también «en directo») y registro de todo lo enviado.
 - **Material**: inventario del club (equipaciones por talla y dorsal, balones, petos, botiquín…), quién tiene cada cosa, aviso «Lo que falta» y compra apuntada en Finanzas. Cada jugador ve en su ficha solo lo suyo.
 - **Control** (solo superadministrador):
-  - *Auditoría*: cambios con el valor anterior y el nuevo, accesos (entradas, fallos, cambios de contraseña con dispositivo e IP) y sesiones abiertas con botón para cerrarlas.
+  - *Auditoría*, separada en tres (`auditKind()` en `src/lib/audit.ts`): **funcional** (partidos, cuotas, rifa, finanzas, patrocinadores, material… con el valor anterior y el nuevo), **administrativa** (usuarios, perfiles y permisos, bajas, Mandos, exportaciones y copias) y **seguridad** (entradas, fallos, cambios de contraseña y sesiones cerradas con dispositivo e IP, más las sesiones abiertas con botón para cerrarlas).
   - *Uso*: qué pantallas abre el equipo, quién entra, app instalada o navegador, participación.
   - *Copia de seguridad*: Excel o JSON a mano y copia automática cada lunes con los archivos, ver [docs/recuperacion.md](docs/recuperacion.md).
   - *Mandos*: modo mantenimiento, mensaje fijo para todos, apagar apartados, cerrar sesión a todos, forzar actualización y «ver como» otro perfil.

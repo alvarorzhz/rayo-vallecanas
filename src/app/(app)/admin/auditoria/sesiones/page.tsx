@@ -7,7 +7,7 @@ import { AuditTabs } from "@/components/audit/audit-tabs";
 import { DeviceLabel } from "@/components/audit/device-label";
 import { CloseSessionButton } from "@/components/audit/close-session-button";
 
-export const metadata = { title: "Auditoría · Sesiones" };
+export const metadata = { title: "Auditoría · Sesiones abiertas" };
 
 type Row = { id: string; user_id: string; full_name: string | null; role: string | null; created_at: string; last_seen: string | null; not_after: string | null; ip: string | null; user_agent: string | null };
 
@@ -23,8 +23,8 @@ export default async function SessionsPage() {
 
   return (
     <>
-      <PageHeader title="Auditoría" subtitle="Dispositivos con la sesión abierta ahora mismo. Si alguien pierde el móvil, ciérrala desde aquí." />
-      <AuditTabs current="/admin/auditoria/sesiones" />
+      <PageHeader title="Auditoría" subtitle="Lo que pasa en la app, separado en tres: funcional, administrativa y de seguridad. No se puede modificar." />
+      <AuditTabs current="seguridad" sub="sesiones" />
       {error ? (
         <div className="card text-sm text-negro/70">
           Las sesiones todavía no están activadas en la base de datos. Hay que ejecutar el SQL de la versión 3.21.0.
@@ -33,6 +33,7 @@ export default async function SessionsPage() {
         <div className="card">
           <p className="mb-2 text-sm text-negro/65">
             {rows.length} {rows.length === 1 ? "sesión abierta" : "sesiones abiertas"} de {people} {people === 1 ? "persona" : "personas"}.
+            Si alguien pierde el móvil, ciérrala desde aquí.
           </p>
           {!rows.length ? (
             <Empty>No hay sesiones abiertas.</Empty>
