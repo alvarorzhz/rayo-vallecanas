@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.31.6",
+    date: "2026-11-27",
+    title: "Documentación técnica al día",
+    quiet: true,
+    changes: [
+      { staff: "Documentación técnica del proyecto al día: arquitectura con diagrama, relaciones de la base de datos, funciones SQL críticas, variables de entorno y registro de cambios de la base de datos junto al de la app." },
+      { staff: "Procedimiento para volver a montar la app desde una copia de seguridad, con un script que restaura usuarios, datos y archivos en un proyecto nuevo. Probado de principio a fin con los datos de ejemplo." },
+    ],
+  },
+  {
     version: "4.31.3",
     date: "2026-11-25",
     title: "Comentarios enteros",
