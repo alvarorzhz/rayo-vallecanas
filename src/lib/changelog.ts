@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.32.3",
+    date: "2026-11-27",
+    title: "Pantallas de fallo con el escudo",
+    quiet: true,
+    changes: [
+      "Si una dirección no existe (un enlace viejo o mal escrito, o algo que se borró), sale una pantalla del Rayo, «Fuera de juego», con un botón para volver a Inicio, en lugar de la página en blanco con «404».",
+      "Si algo se rompe por dentro, la pantalla de fallo tiene ahora el mismo aire del club y un botón para volver a Inicio, además de «Volver a intentar» y «Reparar la app».",
+    ],
+  },
+  {
     version: "4.32.2",
     date: "2026-11-27",
     title: "Auditoría más ligera",
