@@ -37,6 +37,18 @@ export const CHANGELOG: Release[] = [
     ],
   },
   {
+    version: "4.31.4",
+    date: "2026-11-27",
+    title: "Botones de los avisos, más seguros",
+    changes: [
+      "Los botones «Voy / No voy» y «Sí / No» de los avisos valen una sola vez: si ya contestaste desde ese aviso, para cambiar de idea entra en la app (cada recordatorio trae botones nuevos).",
+      "Si se pierde un móvil, al cerrarle la sesión a esa persona o al cambiar ella su contraseña, los botones de sus avisos anteriores dejan de funcionar.",
+      "Ningún botón de un aviso vale más de 15 días, y uno de convocatoria ya no sirve para una votación ni al revés.",
+      "Los avisos enviados antes de esta versión ya no apuntan respuestas desde el botón: toca el aviso y contesta en la app.",
+    ],
+    quiet: true,
+  },
+  {
     version: "4.31.3",
     date: "2026-11-25",
     title: "Comentarios enteros",
