@@ -91,7 +91,7 @@ Cuatro cajones: **Equipo**, **Avisos**, **Material** y **Control**.
 5. **El primer usuario que se cree será superadministrador.** Créalo en *Authentication → Users → Add user*; al resto se les da de alta desde *Gestión → Usuarios*. (Si vas a restaurar una copia, no crees ninguno: sigue [docs/recuperacion.md](docs/recuperacion.md).)
 
 ### 2. Variables de entorno
-Copia `.env.example` a `.env.local` (y en Vercel, *Settings → Environment Variables*). Obligatorias: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL` y, en producción, `CRON_SECRET`. Las opcionales (Gemini, Vercel Blob, email, WhatsApp) y qué pasa sin cada una: [docs/variables-de-entorno.md](docs/variables-de-entorno.md).
+Copia `.env.example` a `.env.local` (y en Vercel, *Settings → Environment Variables*). Obligatorias: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL` y, en producción, `CRON_SECRET` (sin ella las tareas automáticas no se ejecutan). Las opcionales (Gemini, Vercel Blob, email, WhatsApp) y qué pasa sin cada una: [docs/variables-de-entorno.md](docs/variables-de-entorno.md).
 
 ### 3. Tareas automáticas
 Vercel Cron, definido en `vercel.json`: recordatorios de convocatorias, plazos y cumpleaños, comprobación de la liga, fichajes nuevos, búsqueda del resultado el día del partido, cierre del MVP, cápsula del tiempo y copia semanal. Horarios en [docs/arquitectura.md](docs/arquitectura.md#tareas-automáticas-verceljson).
