@@ -33,12 +33,16 @@ export async function fetchRosterEntry(supabase: DB, season: string, playerId: s
 export async function fetchNewSignings(supabase: DB, since: string): Promise<RosterEntry[]> {
   const month = new Date(Date.now() - 30 * 864e5).toISOString();
   const from = since > month ? since : month;
+  // 4.31.5 · Va en todas las pantallas: primero se mira en la tabla de jugadores (casi siempre no hay ninguno nuevo)
+  // y solo si hay alguno se piden sus cromos con las estadísticas (la vista que las suma es la consulta más cara)
+  const { data: fresh } = await supabase.from("players").select("id").gt("created_at", from).limit(30);
+  if (!fresh?.length) return [];
   const { data } = await supabase
     .from("squad_members_full")
     .select("*, player:players!inner(*)")
     .eq("season", seasonOf())
     .neq("status", "left")
-    .gt("player.created_at", from)
+    .in("player_id", fresh.map((p) => p.id as string))
     .limit(30)
     .returns<(Membership & { player: Player })[]>();
   return data ?? [];

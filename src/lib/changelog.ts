@@ -17,6 +17,16 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.31.5",
+    date: "2026-11-27",
+    title: "Inicio, más rápido",
+    changes: [
+      "Inicio se abre antes: lo que necesita la portada se pide de una vez en lugar de en varias tandas seguidas (en nuestras pruebas, de casi medio segundo a unas tres décimas).",
+      "La plantilla también tarda un poco menos en salir.",
+      { staff: "Medido el rendimiento de Inicio, Partidos, Plantilla, Finanzas y Auditoría: las demás ya iban bien, con las consultas a la vez y las listas largas por páginas." },
+    ],
+  },
+  {
     version: "4.31.3",
     date: "2026-11-25",
     title: "Comentarios enteros",

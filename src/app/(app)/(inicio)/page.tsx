@@ -6,7 +6,7 @@ import { fetchMatchWeather } from "@/lib/weather";
 import { MyCallupCard, callupOpen } from "@/components/matches/callup-section";
 import { PorraCard } from "@/components/matches/porra";
 import { OracleEgg } from "@/components/matches/oracle-egg";
-import { fetchMyOracle } from "@/lib/porra-queries";
+import { fetchMyOracle, preloadPorra } from "@/lib/porra-queries";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { euros, fecha } from "@/lib/format";
@@ -58,9 +58,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   // 4.30.2 · Sorpresa de la porra: bola de cristal y mote de «Nostradamus»
   const oracleP = canMatches ? fetchMyOracle(supabase, s.user.id, season).catch(() => null) : Promise.resolve(null);
   // 4.19.0 · Inicio más rápido: todo lo que no depende de nada se pide a la vez (antes iba una consulta detrás de otra)
-  const [campaign, roster, bdayRows, [matchday, focus], [display, showcase, board], [news, newsCount, pendingChronicle], ended, myInterviews, myPlayerId, goalsWon] = await Promise.all([
-    // Campaña activa más reciente visible para el usuario (solo mientras está abierta)
-    (async (): Promise<Campaign | null> => {
+  // 4.31.5 · Y lo que depende de algo arranca en cuanto llega eso, sin esperar a que acabe toda la primera tanda
+  // Campaña activa más reciente visible para el usuario (solo mientras está abierta)
+  const campaignP = (async (): Promise<Campaign | null> => {
       if (isAdmin) {
         const { data } = await supabase.from("lottery_campaigns").select("*").eq("status", "active").is("archived_at", null).order("created_at", { ascending: false }).limit(1).returns<Campaign[]>();
         return data?.[0] ?? null;
@@ -75,13 +75,68 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         return (data?.[0]?.campaign as unknown as Campaign) ?? null;
       }
       return null;
-    })(),
-    // Plantilla de la temporada (de ahí sale también la ficha del propio usuario)
-    canSquad ? fetchRoster(supabase, season) : Promise.resolve([] as Awaited<ReturnType<typeof fetchRoster>>),
-    // Cumpleaños de la plantilla (solo día y mes)
-    canSquad ? supabase.rpc("squad_birthdays", { p_season: season }).then((r) => (r.data ?? []) as BirthdayRow[]) : Promise.resolve([] as BirthdayRow[]),
-    // Partidos: el próximo y los últimos resultados
-    canMatches ? Promise.all([fetchMatchday(supabase, 40), fetchMatchdayFocus(supabase)]) : Promise.resolve([null, null] as const),
+    })();
+  // Plantilla de la temporada (de ahí sale también la ficha del propio usuario)
+  const rosterP = canSquad ? fetchRoster(supabase, season) : Promise.resolve([] as Awaited<ReturnType<typeof fetchRoster>>);
+  // Cumpleaños de la plantilla (solo día y mes)
+  const bdayP = canSquad ? supabase.rpc("squad_birthdays", { p_season: season }).then((r) => (r.data ?? []) as BirthdayRow[]) : Promise.resolve([] as BirthdayRow[]);
+  // Partidos: el próximo y los últimos resultados
+  const matchdayP = canMatches ? Promise.all([fetchMatchday(supabase, 40), fetchMatchdayFocus(supabase)]) : Promise.resolve([null, null] as const);
+  const myPlayerIdP = canMatches ? fetchMyPlayerId(supabase, s.user.id) : Promise.resolve(null);
+
+  // Lo que depende de lo anterior
+  const salesP = campaignP.then((campaign) => campaign
+    ? Promise.all([
+        supabase.rpc("lottery_campaign_summary", { p_campaign_id: campaign.id }),
+        supabase.from("lottery_sales").select("quantity, total_cents, paid_cents").eq("campaign_id", campaign.id).eq("seller_id", s.user.id).is("cancelled_at", null),
+      ])
+    : null);
+  // «Tu temporada»: basta con saber cuál es mi ficha (no hace falta esperar a toda la plantilla)
+  const myLogP = myPlayerIdP.then((id) => id && canSquad && canMatches ? fetchPlayerLog(supabase, id, season) : []);
+  // Cumpleaños de hoy: quién ha felicitado
+  const bdayIdsP = Promise.all([rosterP, bdayP]).then(([roster, rows]) => {
+    const inSquad = new Set(roster.filter((r) => r.status !== "left").map((r) => r.player_id));
+    return birthdays(rows, today).today.map((r) => r.player_id).filter((id) => inSquad.has(id));
+  });
+  const wishP = bdayIdsP.then((ids) => ids.length ? supabase.rpc("birthday_wishers", { p_players: ids, p_year: year }).then((r) => r.data) : null);
+  // ¿Me han convocado para el próximo partido? También durante el final y el post partido del anterior:
+  // la convocatoria de la semana siguiente se publica antes de que se quite el resultado de la portada.
+  const callupP = matchdayP.then(async ([matchday, focus]) => {
+    // La porra (si está abierta) también va empezando, para que su tarjeta no espere a todo lo demás
+    if (!s.off("porra")) for (const m of [matchday?.next, focus?.m]) if (m) preloadPorra(m);
+    const afterMatch = !!focus && (focus.phase === "final" || focus.phase === "post") && matchday?.next?.id !== focus.m.id;
+    const wantCallup = (!focus || afterMatch) && !!matchday?.next && callupOpen(matchday.next);
+    return { afterMatch, nextCallups: wantCallup && matchday?.next ? await fetchCallups(supabase, matchday.next) : null };
+  });
+  // Especial Matchday: la víspera y el día del partido, Inicio se convierte en la portada del partido
+  const mdP = matchdayP.then(([, focus]) => focus
+    ? (async () => {
+        const final = focus.phase === "final" || focus.phase === "post";
+        const [mvp, callups, preview, report, weather, lv, myPlayerId] = await Promise.all([
+          // Votación del MVP (si ya toca, hace el recuento antes de leer el acta)
+          final ? fetchMvpBoard(supabase, focus.m.id) : Promise.resolve(null),
+          final ? Promise.resolve([]) : fetchCallups(supabase, focus.m),
+          final ? Promise.resolve({ lastH2H: null, topScorer: null, hot: [], ranks: null, stake: null, dato: null }) : fetchMatchdayPreview(supabase, focus.m),
+          final && focus.m.report_saved_at ? fetchReport(supabase, focus.m) : Promise.resolve(null),
+          // El tiempo en Salamanca a la hora del partido: la víspera y el mismo día
+          focus.phase === "eve" || focus.phase === "day" ? fetchMatchWeather(focus.m.match_date, focus.m.kickoff) : Promise.resolve(null),
+          // Acta en vivo: el marcador sale en la portada en cuanto quien lo lleva da el pitido inicial
+          focus.phase === "live" || focus.phase === "day" ? fetchLiveView(supabase, focus.m) : Promise.resolve(null),
+          myPlayerIdP,
+        ]);
+        if (mvp?.winner_id) focus.m.mvp_player_id = mvp.winner_id;
+        // Gala del MVP: sale sola en Inicio la primera vez tras el recuento
+        const galaEntry = mvp?.winner_id && galaFresh(mvp) ? await fetchRosterEntry(supabase, focus.m.season, mvp.winner_id) : null;
+        const gala = galaEntry && mvp?.winner_id
+          ? { entry: galaEntry, me: s.user.id, rival: `${focus.m.is_home ? "vs" : "en"} ${focus.m.rival.name}`, auto: true, votes: mvp.tally?.[mvp.winner_id] ?? 0, picked: mvp.picked }
+          : null;
+        const live = lv && (lv.started || lv.events.length) ? lv : null;
+        return { ...focus, callups, myPlayerId, ...preview, report, weather, mvp, gala, live };
+      })()
+    : null);
+
+  const [campaign, roster, bdayRows, [matchday], [display, showcase, board], [news, newsCount, pendingChronicle], ended, myInterviews, myPlayerId, goalsWon, sales, myLog, wishData, { afterMatch, nextCallups }, md, capsule, oracle] = await Promise.all([
+    campaignP, rosterP, bdayP, matchdayP,
     // Patrocinadores (una línea discreta al final) y votaciones abiertas
     Promise.all([fetchDisplay(supabase), supabase.rpc("sponsor_showcase"), supabase.rpc("poll_board", { p_limit: 10 })]),
     // La Voz del Rayo
@@ -92,17 +147,17 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     canMatches ? fetchJustEnded(supabase, today) : Promise.resolve(null),
     // Entrevistas que me ha mandado la redacción y aún no he entregado
     canNews ? fetchMyPendingInterviews(supabase, s.user.id) : Promise.resolve([]),
-    canMatches ? fetchMyPlayerId(supabase, s.user.id) : Promise.resolve(null),
+    myPlayerIdP,
     // 4.20.0 · Objetivos de temporada cumplidos en los últimos 3 días
     canMatches
       ? supabase.from("season_goals").select("id, season, kind, target, sort, achieved_at").eq("season", season)
           .gte("achieved_at", new Date(Date.now() - 3 * 86_400_000).toISOString()).order("achieved_at", { ascending: false }).returns<SeasonGoal[]>()
           .then((r) => r.data ?? [])
       : Promise.resolve([] as SeasonGoal[]),
+    salesP, myLogP, wishP, callupP, mdP, capsuleP, oracleP,
   ]);
   // Revisa si se ha cumplido algún objetivo (por detrás, sin frenar Inicio)
   if (canMatches) after(() => checkSeasonGoals());
-  const [capsule, oracle] = await Promise.all([capsuleP, oracleP]);
   // Si se acaba de abrir la cápsula, avisa al equipo (por detrás; solo una vez)
   if (capsule?.stage === "open") after(() => capsuleTick());
 
@@ -114,49 +169,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const bd = birthdays(bdayRows, today);
   const bdaySoon = bd.upcoming.filter((r) => byId.has(r.player_id)).slice(0, 3).map((r) => ({ name: shirtName(byId.get(r.player_id)!.player), when: whenLabel(r.date, r.inDays) }));
   const bdayIds = bd.today.map((r) => r.player_id).filter((id) => byId.has(id));
-
-  // ¿Me han convocado para el próximo partido? También durante el final y el post partido del anterior:
-  // la convocatoria de la semana siguiente se publica antes de que se quite el resultado de la portada.
-  const afterMatch = !!focus && (focus.phase === "final" || focus.phase === "post") && matchday?.next?.id !== focus.m.id;
-  const wantCallup = (!focus || afterMatch) && !!matchday?.next && callupOpen(matchday.next);
-
-  // Segunda tanda: lo que depende de la primera, también a la vez
-  const [sales, myLog, wishData, nextCallups, md] = await Promise.all([
-    campaign
-      ? Promise.all([
-          supabase.rpc("lottery_campaign_summary", { p_campaign_id: campaign.id }),
-          supabase.from("lottery_sales").select("quantity, total_cents, paid_cents").eq("campaign_id", campaign.id).eq("seller_id", s.user.id).is("cancelled_at", null),
-        ])
-      : null,
-    me && canMatches ? fetchPlayerLog(supabase, me.player_id, season) : Promise.resolve([]),
-    bdayIds.length ? supabase.rpc("birthday_wishers", { p_players: bdayIds, p_year: year }).then((r) => r.data) : Promise.resolve(null),
-    wantCallup && matchday?.next ? fetchCallups(supabase, matchday.next) : Promise.resolve(null),
-    // Especial Matchday: la víspera y el día del partido, Inicio se convierte en la portada del partido
-    focus
-      ? (async () => {
-          const final = focus.phase === "final" || focus.phase === "post";
-          const [mvp, callups, preview, report, weather, lv] = await Promise.all([
-            // Votación del MVP (si ya toca, hace el recuento antes de leer el acta)
-            final ? fetchMvpBoard(supabase, focus.m.id) : Promise.resolve(null),
-            final ? Promise.resolve([]) : fetchCallups(supabase, focus.m),
-            final ? Promise.resolve({ lastH2H: null, topScorer: null, hot: [], ranks: null, stake: null, dato: null }) : fetchMatchdayPreview(supabase, focus.m),
-            final && focus.m.report_saved_at ? fetchReport(supabase, focus.m) : Promise.resolve(null),
-            // El tiempo en Salamanca a la hora del partido: la víspera y el mismo día
-            focus.phase === "eve" || focus.phase === "day" ? fetchMatchWeather(focus.m.match_date, focus.m.kickoff) : Promise.resolve(null),
-            // Acta en vivo: el marcador sale en la portada en cuanto quien lo lleva da el pitido inicial
-            focus.phase === "live" || focus.phase === "day" ? fetchLiveView(supabase, focus.m) : Promise.resolve(null),
-          ]);
-          if (mvp?.winner_id) focus.m.mvp_player_id = mvp.winner_id;
-          // Gala del MVP: sale sola en Inicio la primera vez tras el recuento
-          const galaEntry = mvp?.winner_id && galaFresh(mvp) ? await fetchRosterEntry(supabase, focus.m.season, mvp.winner_id) : null;
-          const gala = galaEntry && mvp?.winner_id
-            ? { entry: galaEntry, me: s.user.id, rival: `${focus.m.is_home ? "vs" : "en"} ${focus.m.rival.name}`, auto: true, votes: mvp.tally?.[mvp.winner_id] ?? 0, picked: mvp.picked }
-            : null;
-          const live = lv && (lv.started || lv.events.length) ? lv : null;
-          return { ...focus, callups, myPlayerId, ...preview, report, weather, mvp, gala, live };
-        })()
-      : null,
-  ]);
 
   let summary: Summary | null = null;
   let mine = { shares: 0, total: 0, paid: 0 };

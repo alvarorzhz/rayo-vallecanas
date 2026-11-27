@@ -1,5 +1,6 @@
 import "server-only";
-import type { createClient } from "@/lib/supabase/server";
+import { cache } from "react";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { shirtName } from "@/lib/squad";
 import { porraOpen, porraPoints, porraTable, type Prediction } from "@/lib/porra";
@@ -33,18 +34,36 @@ export async function porraNames(ids: string[]): Promise<Map<string, PorraName>>
 export type PorraPick = { user_id: string; goals_for: number; goals_against: number; points: number | null; name: string; avatar: string | null; me: boolean };
 export type PorraBoard = { open: boolean; mine: { goals_for: number; goals_against: number } | null; count: number; picks: PorraPick[] };
 
+/**
+ * 4.31.5 · Los pronósticos de un partido y, mientras está abierta, el total; las dos consultas a la vez.
+ * Se guarda durante la petición: Inicio la pide por adelantado (preloadPorra) en cuanto sabe el partido,
+ * y la tarjeta de la porra ya se la encuentra hecha en vez de esperar a que acabe todo lo demás.
+ */
+const porraRowsCached = cache(async (matchId: string, open: boolean) => fetchPorraRows(await createClient(), matchId, open));
+async function fetchPorraRows(supabase: DB, matchId: string, open: boolean) {
+  const [{ data }, total] = await Promise.all([
+    supabase.from("match_predictions").select("match_id, user_id, goals_for, goals_against").eq("match_id", matchId).returns<Prediction[]>(),
+    // Mientras está abierta cada uno ve solo el suyo: el total se cuenta con la clave de servicio (solo el número)
+    open ? createAdminClient().from("match_predictions").select("match_id", { count: "exact", head: true }).eq("match_id", matchId).then((r) => r.count) : null,
+  ]);
+  return { data, total };
+}
+// Fuera de una petición de React (pruebas…) cache no guarda nada: se usa el cliente que llega
+const porraRows = (supabase: DB, matchId: string, open: boolean) => porraRowsCached(matchId, open).catch(() => fetchPorraRows(supabase, matchId, open));
+
+/** Empieza a leer la porra de un partido (solo si está abierta, que es cuando sale la tarjeta). */
+export function preloadPorra(m: Pick<Match, "id" | "status" | "match_date" | "kickoff">) {
+  if (porraOpen(m)) porraRowsCached(m.id, true).catch(() => null);
+}
+
 /** La porra de un partido: mi pronóstico, cuántos han jugado y, ya cerrada, los de todos con sus puntos. */
 export async function fetchPorra(supabase: DB, m: Pick<Match, "id" | "status" | "match_date" | "kickoff" | "goals_for" | "goals_against">, userId: string): Promise<PorraBoard> {
   const open = porraOpen(m);
-  const { data } = await supabase.from("match_predictions").select("match_id, user_id, goals_for, goals_against").eq("match_id", m.id).returns<Prediction[]>();
+  const { data, total } = await porraRows(supabase, m.id, open);
   const rows = data ?? [];
   const mineRow = rows.find((r) => r.user_id === userId) ?? null;
   const mine = mineRow ? { goals_for: mineRow.goals_for, goals_against: mineRow.goals_against } : null;
-  if (open) {
-    // Mientras está abierta cada uno ve solo el suyo: el total se cuenta con la clave de servicio (solo el número)
-    const { count } = await createAdminClient().from("match_predictions").select("match_id", { count: "exact", head: true }).eq("match_id", m.id);
-    return { open, mine, count: count ?? rows.length, picks: [] };
-  }
+  if (open) return { open, mine, count: total ?? rows.length, picks: [] };
   const names = await porraNames(rows.map((r) => r.user_id));
   const picks = rows
     .map((r) => ({ ...r, points: porraPoints(r, m), name: names.get(r.user_id)?.name ?? "—", avatar: names.get(r.user_id)?.avatar ?? null, me: r.user_id === userId }))
