@@ -17,6 +17,26 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.32.0",
+    date: "2026-11-27",
+    title: "Tres auditorías",
+    changes: [
+      { staff: "La auditoría (Gestión → Control, solo superadministrador) se separa en tres pestañas. Funcional: quién cambió un partido, una cuota, una venta, un patrocinador o el material." },
+      { staff: "Administrativa: quién cambió usuarios, perfiles y permisos, quién dio de baja a alguien, quién tocó los mandos de la app (mantenimiento, mensaje fijo, apartados) y quién exportó datos o hizo copias." },
+      { staff: "Seguridad: quién entró y salió, desde qué dispositivo, los intentos fallidos, las sesiones abiertas y qué sesiones se cerraron y quién las cerró." },
+    ],
+  },
+  {
+    version: "4.31.6",
+    date: "2026-11-27",
+    title: "Documentación técnica al día",
+    quiet: true,
+    changes: [
+      { staff: "Documentación técnica del proyecto al día: arquitectura con diagrama, relaciones de la base de datos, funciones SQL críticas, variables de entorno y registro de cambios de la base de datos junto al de la app." },
+      { staff: "Procedimiento para volver a montar la app desde una copia de seguridad, con un script que restaura usuarios, datos y archivos en un proyecto nuevo. Probado de principio a fin con los datos de ejemplo." },
+    ],
+  },
+  {
     version: "4.31.5",
     date: "2026-11-27",
     title: "Inicio, más rápido",
@@ -25,6 +45,18 @@ export const CHANGELOG: Release[] = [
       "La plantilla también tarda un poco menos en salir.",
       { staff: "Medido el rendimiento de Inicio, Partidos, Plantilla, Finanzas y Auditoría: las demás ya iban bien, con las consultas a la vez y las listas largas por páginas." },
     ],
+  },
+  {
+    version: "4.31.4",
+    date: "2026-11-27",
+    title: "Botones de los avisos, más seguros",
+    changes: [
+      "Los botones «Voy / No voy» y «Sí / No» de los avisos valen una sola vez: si ya contestaste desde ese aviso, para cambiar de idea entra en la app (cada recordatorio trae botones nuevos).",
+      "Si se pierde un móvil, al cerrarle la sesión a esa persona o al cambiar ella su contraseña, los botones de sus avisos anteriores dejan de funcionar.",
+      "Ningún botón de un aviso vale más de 15 días, y uno de convocatoria ya no sirve para una votación ni al revés.",
+      "Los avisos enviados antes de esta versión ya no apuntan respuestas desde el botón: toca el aviso y contesta en la app.",
+    ],
+    quiet: true,
   },
   {
     version: "4.31.3",

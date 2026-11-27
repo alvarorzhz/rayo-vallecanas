@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { appSecret } from "@/lib/app-secret";
 import { readToken, signToken } from "@/lib/signed-token";
+import { tokenRevoked } from "@/lib/token-guard";
 import type { PerUser } from "@/lib/push";
 import type { PollAudience } from "@/lib/polls";
 
@@ -22,9 +23,10 @@ export async function pollAudienceUsers(audience: PollAudience): Promise<string[
  */
 const SECRET = "poll_reply_secret";
 
-export async function verifyPollToken(token: string): Promise<{ pollId: string; userId: string } | null> {
-  const t = readToken(await appSecret(SECRET), token);
-  return t && { pollId: t.subjectId, userId: t.userId };
+export async function verifyPollToken(token: string): Promise<{ pollId: string; userId: string; issuedAt: number } | null> {
+  const t = readToken(await appSecret(SECRET), "poll", token);
+  if (!t || (await tokenRevoked(t.userId, t.issuedAt))) return null;
+  return { pollId: t.subjectId, userId: t.userId, issuedAt: t.issuedAt };
 }
 
 /** Botones «Sí / No» con el token de cada destinatario. Si algo falla, el aviso sale sin botones. */
@@ -35,7 +37,7 @@ export async function pollButtons(pollId: string, closesAt: string): Promise<Per
     const exp = new Date(closesAt);
     return (userId) => ({
       actions: [{ action: "yes", title: "✅ Sí" }, { action: "no", title: "❌ No" }],
-      reply: { token: signToken(key, pollId, userId, exp), endpoint: "/api/votacion/responder" },
+      reply: { token: signToken(key, "poll", pollId, userId, exp), endpoint: "/api/votacion/responder" },
     });
   } catch {
     return undefined;

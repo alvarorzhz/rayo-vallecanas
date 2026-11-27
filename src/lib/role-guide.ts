@@ -44,7 +44,7 @@ export const MODULE_GUIDE: Record<string, { title: string; soon?: boolean; acts:
   },
   audit: {
     title: "Auditoría (solo superadministradores)",
-    acts: { read: "Consultar el registro de todo lo que se ha hecho en la app: quién, qué y cuándo." },
+    acts: { read: "Consultar el registro de todo lo que se ha hecho en la app, separado en tres: funcional (partidos, cuotas, rifa…), administrativa (usuarios, permisos, mandos) y de seguridad (entradas, dispositivos y sesiones)." },
   },
   finances: {
     title: "Finanzas (nunca para jugadores)",
