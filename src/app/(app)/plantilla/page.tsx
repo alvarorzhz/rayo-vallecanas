@@ -37,7 +37,15 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
 
   const canPrivate = s.can("squad_private", "read");
   const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
-  const [roster, seasons, stats, docAlerts, lastMvp] = await Promise.all([
+  const canCreate = s.can("squad", "create");
+  const current = season === seasonOf();
+  // Nuevos en la liga (4.31.5: a la vez que lo demás; antes iba después): solo para quien puede fichar (la configuración de la liga es de Partidos, se lee en el servidor)
+  const newcomersP: PromiseLike<NewcomerItem[]> = canCreate && current
+    ? createAdminClient().from("league_sync").select("last_summary").eq("id", 1).maybeSingle()
+      .then((r) => storedNewcomers(r.data?.last_summary as Record<string, unknown> | null).newcomers
+        .map((n) => ({ extId: n.extId, name: n.name, number: n.number, line: n.line, returning: !!n.playerId, apps: n.apps, goals: n.goals, seenAt: n.seenAt })))
+    : Promise.resolve([]);
+  const [roster, seasons, stats, docAlerts, lastMvp, newcomers] = await Promise.all([
     fetchRoster(supabase, season),
     fetchSeasons(supabase),
     supabase.rpc("squad_season_stats", { p_season: season }).then((r) => r.data as { avg_age: number | null; with_birth: number } | null),
@@ -48,6 +56,7 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
     supabase.from("matches").select("mvp_player_id").eq("season", season).eq("status", "played")
       .order("match_date", { ascending: false }).order("kickoff", { ascending: false, nullsFirst: false }).limit(1)
       .then((r) => (r.data?.[0]?.mvp_player_id as string | null | undefined) ?? null),
+    newcomersP,
   ]);
 
   const inSquad = roster.filter((r) => r.status !== "left");
@@ -58,14 +67,6 @@ export default async function SquadPage({ searchParams }: { searchParams: Promis
       (!q || `${fullName(r.player)} ${r.player.nickname ?? ""} ${r.number ?? ""}`.toLowerCase().includes(q)),
   ), order);
 
-  const canCreate = s.can("squad", "create");
-  const current = season === seasonOf();
-  // Nuevos en la liga: solo para quien puede fichar (la configuración de la liga es de Partidos, se lee en el servidor)
-  const newcomers: NewcomerItem[] = canCreate && current
-    ? await createAdminClient().from("league_sync").select("last_summary").eq("id", 1).maybeSingle()
-      .then((r) => storedNewcomers(r.data?.last_summary as Record<string, unknown> | null).newcomers
-        .map((n) => ({ extId: n.extId, name: n.name, number: n.number, line: n.line, returning: !!n.playerId, apps: n.apps, goals: n.goals, seenAt: n.seenAt })))
-    : [];
   const link = (p: Partial<SP>) => {
     const next = { temporada: seasonSlug(season), vista: view, linea: sp.linea, estado: sp.estado, orden: sp.orden, q: sp.q, ...p };
     const qs = new URLSearchParams(Object.entries(next).filter(([k, v]) => v && !(k === "vista" && v === "cromos") && !(k === "orden" && v === "lineas")) as [string, string][]);

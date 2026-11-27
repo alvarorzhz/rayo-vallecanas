@@ -205,12 +205,15 @@ export async function fetchReport(supabase: DB, m: Pick<Match, "id" | "season" |
 
 /** Partidos jugados por un jugador en una temporada (según las actas), del más reciente al más antiguo, con sus goles y asistencias. */
 export async function fetchPlayerLog(supabase: DB, playerId: string, season: string) {
-  const { data } = await supabase.from("match_appearances").select("*, match:matches!inner(*, rival:rivals!inner(*))")
-    .eq("player_id", playerId).eq("match.season", season).eq("match.status", "played").returns<(Appearance & { match: MatchRow })[]>();
+  // 4.31.5 · Las apariciones y los goles/asistencias de la temporada, a la vez (antes, los goles esperaban a las apariciones)
+  const [{ data }, { data: goals }] = await Promise.all([
+    supabase.from("match_appearances").select("*, match:matches!inner(*, rival:rivals!inner(*))")
+      .eq("player_id", playerId).eq("match.season", season).eq("match.status", "played").returns<(Appearance & { match: MatchRow })[]>(),
+    supabase.from("match_goals").select("match_id, scorer_id, assist_id, match:matches!inner(season, status)")
+      .eq("match.season", season).eq("match.status", "played").or(`scorer_id.eq.${playerId},assist_id.eq.${playerId}`)
+      .returns<Pick<MatchGoal, "match_id" | "scorer_id" | "assist_id">[]>(),
+  ]);
   const apps = (data ?? []).sort((a, b) => byKickoff(b.match, a.match));
-  const { data: goals } = apps.length
-    ? await supabase.from("match_goals").select("match_id, scorer_id, assist_id").in("match_id", apps.map((a) => a.match_id)).or(`scorer_id.eq.${playerId},assist_id.eq.${playerId}`)
-    : { data: [] as Pick<MatchGoal, "match_id" | "scorer_id" | "assist_id">[] };
   return apps.map((a) => ({
     ...a,
     goals: (goals ?? []).filter((g) => g.match_id === a.match_id && g.scorer_id === playerId).length,

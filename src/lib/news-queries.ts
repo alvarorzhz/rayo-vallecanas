@@ -180,15 +180,15 @@ export async function fetchPlayerOptions(supabase: DB): Promise<PlayerOption[]> 
 
 /** El último partido jugado con acta que aún no tiene crónica (para proponerla en Inicio y en la portada). */
 export async function fetchPendingChronicle(supabase: DB): Promise<{ id: string; rival: string } | null> {
-  const { data: last } = await supabase.from("matches").select("id, report_saved_at, rival:rivals!inner(name)").eq("status", "played")
-    .not("report_saved_at", "is", null).order("match_date", { ascending: false }).limit(1)
-    .returns<{ id: string; report_saved_at: string; rival: { name: string } }[]>();
+  // 4.31.5 · Una sola consulta: el último partido con acta y, a la vez, si ya tiene crónica (antes eran dos seguidas)
+  const { data: last } = await supabase.from("matches").select("id, report_saved_at, rival:rivals!inner(name), cronica:news_articles(id)").eq("status", "played")
+    .not("report_saved_at", "is", null).eq("cronica.kind", "cronica").order("match_date", { ascending: false }).limit(1)
+    .returns<{ id: string; report_saved_at: string; rival: { name: string }; cronica: { id: string }[] }[]>();
   const m = last?.[0];
   if (!m) return null;
   // Solo si es de las dos últimas semanas
   if (Date.now() - new Date(m.report_saved_at).getTime() > 14 * 86_400_000) return null;
-  const { count } = await supabase.from("news_articles").select("id", { count: "exact", head: true }).eq("kind", "cronica").eq("match_id", m.id);
-  return count ? null : { id: m.id, rival: m.rival.name };
+  return m.cronica?.length ? null : { id: m.id, rival: m.rival.name };
 }
 
 // ------------------------------------------------------------------ Entrevistas en la app (4.2.0)
