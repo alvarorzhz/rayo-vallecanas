@@ -137,6 +137,17 @@ describe("superadministrador", () => {
     await visit(s, `${campaign}/participaciones`);
   });
 
+  test("una dirección que no existe enseña «Fuera de juego» dentro de la app y lleva a Inicio", async () => {
+    for (const path of ["/esto-no-existe", "/partidos/00000000-0000-0000-0000-000000000000"]) {
+      // Sin comprobar el 404: la app empieza a enviar la página (pantalla de carga) antes de saber que no existe
+      await s.page.goto(BASE + path, { waitUntil: "networkidle" });
+      assert.ok(await s.page.getByText("Fuera de juego").isVisible(), `${path} no enseña la pantalla del club`);
+      assert.ok(await s.page.locator('nav[aria-label="Menú principal"]:visible').first().isVisible(), `${path} pierde la barra de la app`);
+    }
+    await s.page.getByRole("link", { name: "Volver a Inicio" }).click();
+    await s.page.waitForURL((u) => u.pathname === "/");
+  });
+
   test("la pantalla de la liga explica qué datos se traen y deja buscar la competición", async () => {
     await visit(s, "/partidos/liga");
     const data = s.page.getByTestId("league-data");
@@ -221,6 +232,7 @@ describe("sin iniciar sesión", () => {
     // Una noticia que no es pública no existe para quien no ha entrado
     const res = await page.goto(BASE + "/noticias/no-existe-esta-noticia", { waitUntil: "networkidle" });
     assert.equal(res?.status(), 404);
+    assert.ok(await page.getByText("Fuera de juego").isVisible(), "la noticia que no existe no enseña la pantalla del club");
     await ctx.close();
   });
 });
