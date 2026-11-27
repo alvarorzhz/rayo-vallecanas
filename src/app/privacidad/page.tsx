@@ -127,6 +127,9 @@ export default function PrivacyPage() {
           <p>Cada lunes se hace una copia de seguridad de todos los datos y archivos, que se guarda en el mismo almacén privado de
             Frankfurt. Se conservan las 8 últimas (unos dos meses) y solo las puede descargar el superadministrador.</p>
           <p>Las cuentas de uso de la app (qué pantallas se abren cada día) se guardan un año y después se borran solas.</p>
+          <p>La auditoría (quién cambió qué) y el historial de accesos a la app se guardan dos años y después se borran solos. Los
+            datos privados de los jugadores (teléfono, email, contacto de emergencia, nacimiento y notas) no se copian en la auditoría:
+            solo queda apuntado que se cambiaron, quién y cuándo.</p>
         </S>
 
         <S title="7. Tus derechos">

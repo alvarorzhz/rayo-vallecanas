@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { AUDIT_RETENTION_MONTHS } from "@/lib/audit";
 import { cronDenied } from "@/lib/cron";
 import { runBackup } from "@/lib/backup";
 import { sendPush } from "@/lib/push";
@@ -8,13 +9,19 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** Copia de seguridad automática de los lunes (Vercel Cron). Si falla, avisa a los superadministradores. */
+/**
+ * Copia de seguridad automática de los lunes (Vercel Cron). Si falla, avisa a los superadministradores.
+ * 4.32.2 · Después de una copia buena, borra la auditoría y los accesos de hace más de AUDIT_RETENTION_MONTHS
+ * (lo que se borra ya está en esta copia y en las anteriores). Si la copia falla, no se borra nada.
+ */
 export async function GET(req: Request) {
   const denied = cronDenied(req);
   if (denied) return denied;
   try {
     const r = await runBackup();
-    return NextResponse.json({ ok: true, ...r });
+    const { data: purge, error } = await createAdminClient().rpc("purge_audit_log", { p_months: AUDIT_RETENTION_MONTHS });
+    if (error) console.error("[copia] limpieza de la auditoría:", error.message);
+    return NextResponse.json({ ok: true, ...r, purge: error ? { error: error.message } : purge });
   } catch (e) {
     const message = (e as Error).message;
     try {

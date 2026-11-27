@@ -21,6 +21,8 @@ export type AuditRow = {
   record_id: string | null;
   old_data: Record<string, unknown> | null;
   new_data: Record<string, unknown> | null;
+  /** 4.32.2 · Campos que cambiaron en una modificación (en esas filas solo se guardan esos y los que identifican el registro). */
+  changed?: string[] | null;
   created_at: string;
 };
 
@@ -137,7 +139,7 @@ export type AuditKind = "funcional" | "administrativa" | "seguridad";
 /** Tablas cuyos cambios son administración (usuarios, permisos y mandos de la app). */
 export const ADMIN_TABLES = ["profiles", "user_permissions", "role_permissions", "custom_roles", "custom_role_permissions", "app_settings", "app"];
 /** Acciones administrativas en cualquier tabla: datos que salen de la app. */
-export const ADMIN_ACTIONS = ["EXPORT", "BACKUP"];
+export const ADMIN_ACTIONS = ["EXPORT", "BACKUP", "PURGE"];
 /** Tablas de seguridad dentro de audit_log (el resto de la seguridad vive en access_log). */
 export const SECURITY_TABLES = ["sessions"];
 
@@ -173,6 +175,7 @@ export const ACTION_LABEL: Record<string, string> = {
   CLOSE_SESSION: "Sesión cerrada",
   CLOSE_ALL_SESSIONS: "Sesiones de todos cerradas",
   REMOVE_MEMBER: "Baja",
+  PURGE: "Limpieza de la auditoría",
 };
 export const ACTION_TONE: Record<string, string> = {
   INSERT: "bg-green-100 text-green-800",
@@ -189,6 +192,7 @@ export const ACTION_TONE: Record<string, string> = {
 
 /** Nombres de los campos (los mismos en todas las tablas salvo excepción). */
 const FIELD: Record<string, string> = {
+  detail: "Detalle", before: "Borrado lo anterior a",
   full_name: "Nombre", name: "Nombre", first_name: "Nombre", last_name: "Apellidos", nickname: "Apodo",
   email: "Email", phone: "Teléfono", role: "Perfil", active: "Activo", avatar_url: "Foto", photo_url: "Foto",
   must_change_password: "Debe cambiar la contraseña", notify_sales: "Avisos de ventas", custom_role_id: "Perfil a medida",
@@ -252,6 +256,10 @@ const FIELD: Record<string, string> = {
 
 /** Campos que no aportan nada al leer un cambio. */
 const NOISE = new Set(["updated_at", "sale_seq", "refresh_token_hmac_key"]);
+/** 4.32.2 · Lo que guarda la base de datos en lugar de un dato privado del jugador (teléfono, email, notas…). */
+export const PRIVATE = "(dato privado)";
+/** 4.32.2 · Meses que se guarda la auditoría: la copia de los lunes borra lo anterior (decisión de Alvaro, dos temporadas). */
+export const AUDIT_RETENTION_MONTHS = 24;
 
 const fieldLabel = (key: string) => FIELD[key] ?? key.replace(/_/g, " ");
 
@@ -308,6 +316,7 @@ const eur = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" 
 /** Valor legible: euros, Sí/No, fechas, nombres en vez de ids… */
 export function formatValue(key: string, value: unknown, names: Map<string, string> = new Map(), table = ""): string {
   if (value === null || value === undefined || value === "") return "—";
+  if (value === PRIVATE) return "Dato privado";
   if (typeof value === "boolean") return value ? "Sí" : "No";
   if (typeof value === "number") {
     if (key.endsWith("_cents")) return eur.format(value / 100);
@@ -332,18 +341,22 @@ export function formatValue(key: string, value: unknown, names: Map<string, stri
 export type FieldChange = { key: string; label: string; before: string; after: string };
 
 /** Campos que cambiaron en una modificación, con el valor anterior y el nuevo. */
-export function changedFields(row: Pick<AuditRow, "old_data" | "new_data" | "table_name">, names?: Map<string, string>): FieldChange[] {
+export function changedFields(row: Pick<AuditRow, "old_data" | "new_data" | "table_name" | "changed">, names?: Map<string, string>): FieldChange[] {
   const { old_data: o, new_data: n } = row;
   if (!o || !n) return [];
-  const keys = [...new Set([...Object.keys(o), ...Object.keys(n)])];
-  return keys
-    .filter((k) => !NOISE.has(k) && JSON.stringify(o[k] ?? null) !== JSON.stringify(n[k] ?? null))
-    .map((k) => ({
+  // 4.32.2 · La base de datos ya dice qué cambió (un texto largo recortado o un dato privado pueden verse iguales)
+  const keys = row.changed
+    ? (() => { const order = Object.keys(n); return row.changed.filter((k) => !NOISE.has(k)).sort((x, y) => order.indexOf(x) - order.indexOf(y)); })()
+    : [...new Set([...Object.keys(o), ...Object.keys(n)])].filter((k) => !NOISE.has(k) && JSON.stringify(o[k] ?? null) !== JSON.stringify(n[k] ?? null));
+  return keys.map((k) => {
+    const hidden = o[k] === PRIVATE && n[k] === PRIVATE;
+    return {
       key: k,
       label: fieldLabel(k),
-      before: formatValue(k, o[k], names, row.table_name),
-      after: formatValue(k, n[k], names, row.table_name),
-    }));
+      before: hidden ? "Oculto" : formatValue(k, o[k], names, row.table_name),
+      after: hidden ? "Cambiado (oculto)" : formatValue(k, n[k], names, row.table_name),
+    };
+  });
 }
 
 /** Todos los campos con valor de un alta o un borrado (sin ids internos ni campos vacíos). */

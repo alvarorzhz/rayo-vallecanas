@@ -17,6 +17,17 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.32.2",
+    date: "2026-11-27",
+    title: "Auditoría más ligera",
+    quiet: true,
+    changes: [
+      { staff: "La auditoría ocupa mucho menos: de cada cambio se guarda solo lo que cambió (antes se copiaba la ficha entera dos veces). La vista «antes/ahora» se ve igual." },
+      { staff: "Los datos privados de los jugadores (teléfono, email, contacto de emergencia, nacimiento y notas) ya no se copian en la auditoría: sale quién los cambió y cuándo, pero no el valor." },
+      { staff: "La auditoría y el historial de accesos se guardan dos años. Lo más antiguo se borra solo los lunes, justo después de la copia de seguridad, y la limpieza queda apuntada en la auditoría administrativa." },
+    ],
+  },
+  {
     version: "4.32.1",
     date: "2026-11-27",
     title: "Tareas automáticas, cerradas sin su clave",

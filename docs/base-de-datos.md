@@ -174,7 +174,8 @@ Casi todas son `security definer`: corren con permisos de dueño, así que **com
 
 | Función | Qué hace |
 |---|---|
-| `audit_trigger()` | Disparador de casi todas las tablas: guarda en `audit_log` quién, cuándo, qué tabla, el valor anterior y el nuevo. |
+| `audit_trigger()` | Disparador de casi todas las tablas: guarda en `audit_log` quién, cuándo y qué tabla. En un alta o un borrado, la fila sin campos vacíos; en una modificación, solo los campos que cambian (lista en `changed`) más los que identifican el registro (`audit_identity_keys()`). Los datos de `player_private` se guardan como «(dato privado)» y los textos de más de 500 caracteres, recortados (4.32.2). |
+| `purge_audit_log(meses)` | Borra de `audit_log` y `access_log` lo de hace más de N meses (mínimo 6) y apunta la limpieza. La llama la copia automática de los lunes con 24 meses, después de hacer la copia. |
 | `log_action`, `log_export`, `log_backup`, `log_notice` | Apuntan en la auditoría exportaciones, descargas de la copia (y comprueban que es superadministrador) y avisos enviados. |
 | `track_usage`, `log_app_error` | Registro de uso por persona/pantalla/día y de fallos de la app. |
 
