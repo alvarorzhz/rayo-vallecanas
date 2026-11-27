@@ -14,7 +14,7 @@ export type AuditSP = { p?: string; t?: string; a?: string; u?: string; r?: stri
 /** Acciones del filtro en cada auditoría. */
 const ACTIONS: Record<"funcional" | "administrativa", [string, string][]> = {
   funcional: [["UPDATE", "Modificaciones"], ["INSERT", "Altas"], ["DELETE", "Borrados"], ["other", "Acciones (anulaciones, avisos, sorteos…)"]],
-  administrativa: [["UPDATE", "Modificaciones"], ["INSERT", "Altas"], ["DELETE", "Borrados"], ["REMOVE_MEMBER", "Bajas"], ["EXPORT", "Exportaciones"], ["BACKUP", "Copias de seguridad"]],
+  administrativa: [["UPDATE", "Modificaciones"], ["INSERT", "Altas"], ["DELETE", "Borrados"], ["REMOVE_MEMBER", "Bajas"], ["EXPORT", "Exportaciones"], ["BACKUP", "Copias de seguridad"], ["PURGE", "Limpiezas de la auditoría"]],
 };
 
 /**

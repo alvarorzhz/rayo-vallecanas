@@ -12,6 +12,7 @@ Producción: proyecto Supabase `cakmcerhielecrfxgdlk`. Para ver qué hay aplicad
 
 | Migración | Versión | Qué cambia | Toca datos | En producción |
 |---|---|---|---|---|
+| `20261127000200_audit_compact.sql` | 4.32.2 | Auditoría más ligera: solo los campos que cambian (columna `changed`), datos privados de jugadores ocultos, textos largos recortados y `purge_audit_log()` (2 años, la llama la copia de los lunes); compacta lo que ya había | Columna nueva + datos compactados | Pendiente |
 | `20261125000190_booklet_pick.sql` | 4.31.1 | Talonarios a medida: elegir números dentro del talonario, corregir y quitar talonarios | Solo funciones | 2026-11-25 |
 | `20261125000180_app_control.sql` | 4.31.0 | Mandos de la app: tabla `app_settings`, mantenimiento, mensaje fijo, apartados, cerrar sesiones, forzar actualización | Tabla nueva | 2026-11-25 |
 | `20261125000170_remove_member.sql` | 4.30.7 | Dar de baja usuarios borrando sus datos (`remove_member`, `profiles.removed_at`) | Columna nueva | 2026-11-25 |

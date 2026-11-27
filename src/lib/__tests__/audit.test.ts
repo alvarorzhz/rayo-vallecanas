@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { changedFields, collectIds, formatValue, madridDayRange, recordSummary, snapshotFields } from "../audit.ts";
+import { PRIVATE, changedFields, collectIds, formatValue, madridDayRange, recordSummary, snapshotFields } from "../audit.ts";
 import { parseDevice } from "../device.ts";
 
 const U = "11111111-2222-3333-4444-555555555555";
@@ -76,4 +76,17 @@ test("4.32.0 · cada registro cae en su auditoría: funcional, administrativa o 
   const adm = tableGroupsFor("administrativa").flatMap((g) => Object.keys(g.tables));
   assert.ok(fun.includes("matches") && !fun.includes("profiles") && !fun.includes("sessions"));
   assert.ok(adm.includes("profiles") && adm.includes("app_settings") && !adm.includes("matches"));
+});
+
+test("4.32.2 · con la lista de cambios de la base de datos: datos privados ocultos y textos recortados", () => {
+  const c = changedFields({
+    table_name: "player_private",
+    old_data: { player_id: U, phone: PRIVATE, email: null },
+    new_data: { player_id: U, phone: PRIVATE, email: PRIVATE },
+    changed: ["email", "phone"],
+  });
+  assert.deepEqual(c.map((x) => [x.key, x.before, x.after]), [["phone", "Oculto", "Cambiado (oculto)"], ["email", "—", "Dato privado"]]);
+  // Aunque los dos textos recortados se vean iguales, cuenta como cambio
+  const t = changedFields({ table_name: "news_articles", old_data: { title: "T", body: "aaa… (900 caracteres)" }, new_data: { title: "T", body: "aaa… (900 caracteres)" }, changed: ["body"] });
+  assert.deepEqual(t.map((x) => x.key), ["body"]);
 });
