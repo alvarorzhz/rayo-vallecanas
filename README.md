@@ -1,10 +1,22 @@
 # ⚡ Rayo Vallecañas · Plataforma de gestión
 
-App web instalable (PWA) para llevar todo el Rayo Vallecañas, equipo amateur de **fútbol 7**, en un único sitio: sorteos, dinero, plantilla, partidos, patrocinadores y avisos al móvil. Sustituye a los Excel y a los procesos a mano.
+App web instalable (PWA) para llevar todo el Rayo Vallecañas, equipo amateur de **fútbol 7**, en un único sitio: sorteos, dinero, plantilla, partidos, patrocinadores, material, periódico del club y avisos al móvil. Sustituye a los Excel y a los procesos a mano.
 
 - **Producción:** <https://rayo-vallecanas.vercel.app>
-- **Versión actual:** 4.9.0 (el historial completo está en la propia app, en *Novedades*, y en `src/lib/changelog.ts`).
-- **Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS 4 · Supabase (Postgres, Auth, Storage, RLS) · Web Push · Vercel (región Frankfurt).
+- **Versión actual:** 4.31.6. El historial de la app está en la propia app (*Novedades*) y en `src/lib/changelog.ts`; el de la base de datos, en [docs/cambios-base-de-datos.md](docs/cambios-base-de-datos.md).
+- **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Supabase (Postgres, Auth, Storage, RLS) · Web Push · Vercel (región Frankfurt).
+
+## Documentación técnica
+
+| Documento | Qué cuenta |
+|---|---|
+| [Arquitectura](docs/arquitectura.md) | Diagrama de las piezas, cómo habla la app con la base de datos, tareas automáticas y estructura del código |
+| [Base de datos](docs/base-de-datos.md) | Relaciones principales por módulo y funciones SQL críticas (qué hacen y qué no tocar) |
+| [Cambios de la base de datos](docs/cambios-base-de-datos.md) | Cada migración, con su versión de la app y si ya está en producción |
+| [Variables de entorno](docs/variables-de-entorno.md) | Obligatorias, opcionales y de pruebas, y qué pasa si falta cada una |
+| [Recuperación de copias](docs/recuperacion.md) | Qué copias hay y el procedimiento, probado, para volver a montar la app desde una copia |
+
+Unas pruebas (`npm test`) fallan si una migración, una tabla o una variable de entorno nueva no está apuntada en estos documentos.
 
 ## Qué hace la app
 
@@ -12,87 +24,77 @@ La barra inferior del móvil tiene seis apartados: **Inicio · Partidos · Plant
 
 ### Inicio
 - Portada centrada en el partido, en tres momentos: semana normal, víspera/día de partido (**Especial Matchday**, con cuenta atrás y el tiempo previsto) y post partido (resultado, MVP y la siguiente convocatoria).
-- Tarjeta «¡Estás convocado!» para responder sin salir de Inicio, votaciones abiertas y la votación del MVP.
+- «¡Estás convocado!» para responder sin salir de Inicio, votaciones abiertas, la votación del MVP, la noticia destacada de La Voz y cumpleaños.
 - Logos de patrocinadores (discretos, se pueden apagar), tutorial de bienvenida y ventana de novedades al actualizar.
 
 ### Partidos
 - Calendario y resultados de liga, copa, amistosos y torneos; rivales con escudo, color y campo.
-- **Sincronización con la liga** (futormes): importa calendario, resultados y **clasificación**. El día del partido la app mira sola la web y avisa «Ya están los datos del partido».
-- **Convocatorias**: lista, hora y lugar de quedada, notas; cada jugador responde Voy / No voy / Duda, también desde el propio aviso del móvil. Recordatorio automático e historial.
-- **Actas**: alineación, goles, asistencias, tarjetas, portero y goles encajados. Las estadísticas de la temporada se calculan solas.
-- **La porra**: cada uno pronostica el resultado (debajo de «Voy / No voy»), se cierra al pitido; 3 puntos por clavarlo y 1 por el signo, con clasificación de la temporada.
-- **Resumen de temporada** de cada jugador (por temporada o por liga), con imagen para compartir.
-- **MVP votado por el equipo**: al guardar el acta se abre la votación (voto secreto, hasta las 23:59), con desempate por goles o por un gestor.
-- **Imágenes para compartir** en WhatsApp o Instagram, reunidas en la ficha del partido: convocatoria, «Hoy jugamos» y resultado, en formato publicación o historia (con los patrocinadores si se quiere).
+- **Sincronización con la liga** (futormes): calendario, resultados y **clasificación**, con histórico por competición (Apertura y Clausura en la misma temporada). El día del partido la app mira sola la web y avisa «Ya están los datos del partido». Aviso de jugadores nuevos en la liga.
+- **Convocatorias**: lista, hora y lugar de quedada, notas; Voy / No voy / Duda con comentario, también desde el propio aviso del móvil. Recordatorio automático e historial. Los fichajes entran solos en la convocatoria abierta.
+- **Actas**, también **en directo** durante el partido: alineación, goles, asistencias, tarjetas (con ciclo de amarillas), portero y goles encajados. Las estadísticas se calculan solas.
+- **MVP votado por el equipo** y **notas 1–10** de cada partido (se ve el podio al cerrar), con desempate por votos, nota, goles o un gestor.
+- **La porra**, **objetivos de temporada**, rachas, «¿Subimos? ¿Ganamos?» (simulación de la liga), **cápsula del tiempo** de la temporada, **Rayo Wrapped** y resumen de temporada de cada jugador.
+- **Imágenes para compartir** en WhatsApp o Instagram: convocatoria con cromos, «Hoy jugamos» y resultado, en formato publicación o historia.
 
 ### Plantilla
-- Fichas estilo **cromo** con foto, posición, dorsal y estadísticas, por temporada; vista de campo por líneas.
+- Fichas estilo **cromo** con foto, posición, dorsal, logros y estadísticas por temporada, agrupadas por líneas.
 - Datos personales y contactos de emergencia (solo con permiso), documentos con caducidad (DNI, ficha, reconocimiento médico…).
-- **Cuotas** por temporada, cuotas especiales y su cobro (pasa a Finanzas). Botón para recordar la cuota a los que deben; cada jugador ve la suya en Mi perfil.
-- Preparar la temporada nueva, historia del club, **presentación animada de fichajes** y exportación a Excel/PDF.
+- Historia del club, **presentación animada de fichajes**, preparar la temporada nueva (junio–agosto) y exportación a Excel/PDF.
+
+### La Voz del Rayo
+- El periódico del club: crónicas, previas, entrevistas que contesta el propio jugador, comunicados y promociones de patrocinadores. Borradores con IA (Gemini, solo con apodos), reacciones con emoji, **rueda de prensa de Don Rayo** con voz, y noticias públicas en `/noticias`.
 
 ### Sorteos (lotería y rifas)
 - Campañas de **lotería** (un número) o **rifa** (números del 1 al N): precio, importe jugado, donativo, fecha, premio.
-- Numeración automática, por talonarios por vendedor o elegida a mano. Venta desde el móvil, sin números repetidos aunque vendan muchos a la vez.
-- Cobros totales o parciales, anulaciones controladas, ranking de vendedores y **Mis ventas** para cada vendedor.
+- Numeración automática, por **talonarios** (eligiendo números dentro del talonario) o a mano. Venta desde el móvil, sin números repetidos aunque vendan muchos a la vez.
+- Cobros totales o parciales, anulaciones controladas, cuentas y ranking de vendedores y **Mis ventas** para cada vendedor.
 - **Justificante** para el comprador en PDF o por WhatsApp con el mensaje ya escrito.
-- **Página pública de la rifa**: transparencia, «comprueba tu número» y acta del sorteo con huella digital.
+- **Página pública de la rifa**: transparencia, «comprueba tu número» y acta del sorteo con huella digital; solo se sortea con las ventas cerradas.
 - Lo cobrado pasa a Finanzas con un botón. Exportación a Excel.
 
 ### Finanzas
 - Ingresos y gastos con categorías, justificantes adjuntos, saldo inicial y temporadas (septiembre–agosto).
 - Los movimientos no se borran: se anulan con motivo y queda registrado.
-- Informes con filtros y exportación a Excel y PDF. Las cuotas, los sorteos y los plazos de patrocinio llegan aquí.
-- Los jugadores **nunca** acceden a Finanzas (bloqueado también en la base de datos).
+- **Cuotas** de los jugadores (con cuotas especiales y botón para recordarlas) y **Patrocinadores** (acuerdos por temporada, plazos de cobro y avisos de vencimiento).
+- Informes con filtros y exportación a Excel y PDF. Los jugadores **nunca** acceden a Finanzas (bloqueado también en la base de datos).
 
 ### Gestión
-- **Usuarios**: altas con contraseña provisional, deshabilitar accesos, foto de perfil.
+Cuatro cajones: **Equipo**, **Avisos**, **Material** y **Control**.
+- **Usuarios**: altas con contraseña provisional, deshabilitar accesos, bajas que borran los datos personales («Antiguo miembro»).
 - **Perfiles y permisos**: superadministrador, gestor y jugador, más **perfiles a medida** y excepciones por persona (ver, crear, editar, borrar en cada módulo).
-- **Patrocinadores**: fichas, acuerdos por temporada (dinero, especie o mixto), plazos de cobro y avisos de vencimiento.
-- **Material**: inventario del club (equipaciones por talla y dorsal, balones, petos, botiquín…) con estado nuevo/usado/roto, quién tiene cada cosa, mínimo con aviso «Lo que falta» y botón para apuntar la compra en Finanzas. Cada jugador ve en su ficha solo lo suyo («Mi material»).
-- **Avisos**: mensajes push al equipo, **votaciones sí/no** y registro de todos los avisos enviados.
-- **Auditoría** (solo superadministrador), separada en tres (`auditKind()` en `src/lib/audit.ts`):
-  - *Funcional*: el día a día del club (partidos, cuotas, rifa, finanzas, patrocinadores, material, noticias…): quién cambió qué y cuándo, con el **valor anterior y el nuevo** de cada campo, en lenguaje claro. Filtros por apartado, acción, persona y fechas, e historial completo de cualquier registro.
-  - *Administrativa*: usuarios, perfiles y permisos, bajas, mandos de la app (mantenimiento, mensaje fijo, apartados apagados, actualización forzada), exportaciones y copias de seguridad. Mismos filtros.
-  - *Seguridad*: historial de accesos (entradas, salidas, intentos fallidos, cambios de contraseña, sesiones cerradas a distancia y por quién, con dispositivo e IP; última conexión de cada persona) y *sesiones abiertas*, con botón para cerrarlas al momento (por ejemplo, si alguien pierde el móvil).
-- **Uso** (solo superadministrador): qué pantallas abre el equipo (personas distintas y veces), personas por día, quién entra y cuánto, app instalada o navegador, avisos activados, participación (convocatorias, MVP, notas, porra, votaciones, reacciones, felicitaciones, entrevistas) y pantallas que nadie abre. Se guarda una cuenta por persona, pantalla y día (`usage_daily`, con `track_usage()`), durante un año.
-- **Copia de seguridad** (solo superadministrador): todo en Excel o JSON, y copia automática cada lunes con los archivos (en Vercel Blob si está `BLOB_READ_WRITE_TOKEN`; si no, en un cajón privado de Supabase), guardando las 8 últimas.
+- **Avisos**: mensajes push al equipo, **votaciones sí/no** (también «en directo») y registro de todo lo enviado.
+- **Material**: inventario del club (equipaciones por talla y dorsal, balones, petos, botiquín…), quién tiene cada cosa, aviso «Lo que falta» y compra apuntada en Finanzas. Cada jugador ve en su ficha solo lo suyo.
+- **Control** (solo superadministrador):
+  - *Auditoría*, separada en tres (`auditKind()` en `src/lib/audit.ts`): **funcional** (partidos, cuotas, rifa, finanzas, patrocinadores, material… con el valor anterior y el nuevo), **administrativa** (usuarios, perfiles y permisos, bajas, Mandos, exportaciones y copias) y **seguridad** (entradas, fallos, cambios de contraseña y sesiones cerradas con dispositivo e IP, más las sesiones abiertas con botón para cerrarlas).
+  - *Uso*: qué pantallas abre el equipo, quién entra, app instalada o navegador, participación.
+  - *Copia de seguridad*: Excel o JSON a mano y copia automática cada lunes con los archivos, ver [docs/recuperacion.md](docs/recuperacion.md).
+  - *Mandos*: modo mantenimiento, mensaje fijo para todos, apagar apartados, cerrar sesión a todos, forzar actualización y «ver como» otro perfil.
 
 ### Para todos
-- PWA instalable con el escudo, funciona en móvil y ordenador, pantallas ya vistas sin conexión.
-- **Avisos al móvil** (Web Push) configurables por cada persona.
+- PWA instalable con el escudo, en móvil y ordenador; pantallas ya vistas sin conexión y `/reparar` si la app se queda en blanco.
+- **Avisos al móvil** (Web Push) configurables por cada persona; cambiar la contraseña en *Perfil*.
 - Página de privacidad. Identidad del club: rojo, negro, dorado y blanco.
 
 ## Seguridad
 - Toda la seguridad está también en la base de datos (**RLS** de Postgres): aunque alguien manipule la app, solo lee y cambia lo que su perfil permite.
 - Registro abierto desactivado: solo entra quien da de alta un gestor.
-- Auditoría automática (triggers) de todas las tablas importantes; no se puede modificar desde la app.
+- Auditoría automática (disparadores) de todas las tablas importantes; no se puede modificar desde la app.
+- Más detalle en [docs/arquitectura.md](docs/arquitectura.md) y [docs/base-de-datos.md](docs/base-de-datos.md).
 
 ## Puesta en marcha
 
 ### 1. Supabase
 1. Crea un proyecto en [supabase.com](https://supabase.com) (región UE, p. ej. Frankfurt).
-2. Aplica las migraciones de `supabase/migrations/` en orden (SQL Editor, o `npx supabase link` + `npx supabase db push`).
+2. Aplica las migraciones de `supabase/migrations/` en orden (`npx supabase link` + `npx supabase db push`, o pegándolas en el SQL Editor).
 3. **Authentication → Providers → Email**: desactiva *Allow new users to sign up*.
 4. **Authentication → URL Configuration**: Site URL = la URL de la app; añade `https://TU-DOMINIO/auth/callback` a Redirect URLs.
-5. **El primer usuario que se cree será superadministrador.** Créalo en *Authentication → Users → Add user*; al resto se les da de alta desde *Gestión → Usuarios*.
+5. **El primer usuario que se cree será superadministrador.** Créalo en *Authentication → Users → Add user*; al resto se les da de alta desde *Gestión → Usuarios*. (Si vas a restaurar una copia, no crees ninguno: sigue [docs/recuperacion.md](docs/recuperacion.md).)
 
 ### 2. Variables de entorno
-Copia `.env.example` a `.env.local` (y en Vercel, *Settings → Environment Variables*):
+Copia `.env.example` a `.env.local` (y en Vercel, *Settings → Environment Variables*). Obligatorias: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL` y, en producción, `CRON_SECRET`. Las opcionales (Gemini, Vercel Blob, email, WhatsApp) y qué pasa sin cada una: [docs/variables-de-entorno.md](docs/variables-de-entorno.md).
 
-| Variable | Para qué |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Conexión a Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Solo servidor: altas de usuarios, avisos, historial de accesos |
-| `NEXT_PUBLIC_SITE_URL` | URL pública (enlaces de los emails y del justificante) |
-| `CRON_SECRET` | Protege las tareas automáticas de Vercel |
-| `RESEND_*` | Email (opcional; desactivado mientras no haya dominio) |
-| `WHATSAPP_*` | WhatsApp Business (opcional; sin él se abre WhatsApp con el mensaje escrito) |
-
-Las claves de los avisos push (VAPID) se generan solas y se guardan en la base de datos.
-
-### 3. Tareas automáticas (Vercel Cron, `vercel.json`)
-Recordatorio de convocatorias (cada mañana), comprobación de la liga (lunes), búsqueda del resultado el día del partido (varias vueltas) y cierre de la votación del MVP (23:15).
+### 3. Tareas automáticas
+Vercel Cron, definido en `vercel.json`: recordatorios de convocatorias, plazos y cumpleaños, comprobación de la liga, fichajes nuevos, búsqueda del resultado el día del partido, cierre del MVP, cápsula del tiempo y copia semanal. Horarios en [docs/arquitectura.md](docs/arquitectura.md#tareas-automáticas-verceljson).
 
 ### 4. Desarrollo local
 ```bash
@@ -105,9 +107,9 @@ npm run dev
 
 ### Pruebas
 ```bash
-npm test             # lógica de cada módulo (node --test), sin base de datos
-npm run test:db      # contra el Supabase local (supabase start): sorteos, Finanzas, convocatorias
-                     # y la sincronización con la liga (con la web de la liga simulada)
+npm test             # lógica de cada módulo (node --test), sin base de datos; incluye que la documentación esté al día
+npm run test:db      # contra el Supabase local (supabase start): sorteos, Finanzas, convocatorias, votaciones,
+                     # MVP, cápsula, bajas, mandos y la sincronización con la liga (con la web de la liga simulada)
 npm run test:live    # la web de la liga de verdad: comprueba que se sigue leyendo bien
 npm run build && npm start &
 npm run test:e2e     # prueba de humo: entra como superadministrador y como jugador y recorre la app
@@ -116,25 +118,11 @@ npx tsc --noEmit && npm run lint
 En cada PR, GitHub Actions pasa las pruebas de lógica, los tipos, el lint, las pruebas contra la base de datos y la prueba de humo contra un Supabase local. `test:db` se niega a correr si la dirección de Supabase no es localhost: escribe datos de prueba.
 
 ### 5. Despliegue
-Cada cambio que entra en `main` se despliega en Vercel. Si un cambio trae SQL nuevo, se ejecuta primero en el *SQL Editor* de Supabase y después se fusiona.
-
-## Estructura
-```
-supabase/migrations/   Esquema, RLS, funciones y auditoría (una migración por versión con SQL)
-src/app/(app)/         Pantallas con sesión: inicio, partidos, plantilla, loteria, finanzas, admin…
-src/app/login, auth/   Entrar, salir, invitaciones y recuperar contraseña
-src/app/rifa/          Página pública de las rifas
-src/app/api/           Exportaciones, copia de seguridad, respuestas desde avisos y tareas automáticas
-src/lib/               Sesión y permisos, lógica de cada módulo, liga, avisos, formatos
-src/components/        Componentes de pantalla compartidos
-e2e/                   Prueba de humo de la app entera (Playwright)
-public/                Escudo, iconos de la PWA, logos y service worker
-```
+Cada cambio que entra en `main` se despliega en Vercel. Si un cambio trae SQL nuevo, se ejecuta primero en el *SQL Editor* de producción, se apunta en [docs/cambios-base-de-datos.md](docs/cambios-base-de-datos.md) y después se fusiona.
 
 ## Versiones
-Cada cambio sube la versión en `package.json` y añade una entrada en `src/lib/changelog.ts` (MAYOR.MENOR.PARCHE: fase nueva · función nueva · arreglo). Lo que se ve en *Novedades* sale de ahí.
+Cada cambio sube la versión en `package.json` y añade una entrada en `src/lib/changelog.ts` (MAYOR.MENOR.PARCHE: fase nueva · función nueva · arreglo). Lo que se ve en *Novedades* sale de ahí. Si la versión trae una migración, va también en [docs/cambios-base-de-datos.md](docs/cambios-base-de-datos.md).
 
 ## Pendiente
-- Material deportivo.
 - Email (falta dominio propio + Resend) y WhatsApp Business oficial.
 - Página pública de patrocinadores e importación del Excel antiguo de cuentas (aplazadas).
