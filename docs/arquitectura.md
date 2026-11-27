@@ -60,7 +60,7 @@ flowchart LR
 | **Funciones SQL (RPC)** | Lo delicado (vender números, cobrar, sortear, votar, dar de baja…) se hace dentro de una función SQL, en una sola transacción. | ver [base-de-datos.md](base-de-datos.md#funciones-sql-críticas) |
 | **Storage** | Cajones de archivos. Públicos (se ven con el enlace): `avatars`, `player-photos`, `rival-crests`, `sponsor-logos`, `news-photos`, `news-press` (voz de Don Rayo). Privados (solo con permiso): `finance-docs`, `player-docs`, `sponsor-docs` y `backups` (lo crea la primera copia). | migraciones (`insert into storage.buckets`) |
 | **Web Push** | Avisos al móvil. Las claves VAPID se generan solas la primera vez y se guardan en `app_secrets`. | `src/lib/push.ts`, `public/sw.js` |
-| **Vercel Cron** | Tareas programadas (abajo). Cada una comprueba la cabecera `Authorization: Bearer CRON_SECRET`. | `vercel.json`, `src/app/api/cron/`, `src/lib/cron.ts` |
+| **Vercel Cron** | Tareas programadas (abajo). Cada una comprueba la cabecera `Authorization: Bearer CRON_SECRET`; si falta `CRON_SECRET` en el servidor, todas se rechazan (503) en lugar de quedar abiertas (4.32.1). | `vercel.json`, `src/app/api/cron/`, `src/lib/cron.ts` |
 | **Copias** | Copia completa cada lunes (tablas + archivos) en Vercel Blob o, si no hay, en el cajón `backups`; se guardan 8. | `src/lib/backup.ts`, ver [recuperacion.md](recuperacion.md) |
 
 ### Tres formas de hablar con la base de datos

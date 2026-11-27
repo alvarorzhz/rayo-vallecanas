@@ -17,6 +17,15 @@ export const visibleChanges = (r: Release, staff: boolean): string[] => r.change
 
 export const CHANGELOG: Release[] = [
   {
+    version: "4.32.1",
+    date: "2026-11-27",
+    title: "Tareas automáticas, cerradas sin su clave",
+    quiet: true,
+    changes: [
+      { staff: "Las tareas automáticas (recordatorios de convocatoria, liga, resultado, fichajes, MVP, cápsula y copia de seguridad) ya no se pueden lanzar desde fuera si en el servidor falta su clave: en ese caso no se ejecutan y queda apuntado, en lugar de quedar abiertas a cualquiera." },
+    ],
+  },
+  {
     version: "4.32.0",
     date: "2026-11-27",
     title: "Tres auditorías",
